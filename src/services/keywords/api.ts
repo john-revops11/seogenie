@@ -5,7 +5,6 @@ import {
   DomainKeywordResponse, 
   GoogleKeywordInsightResponse 
 } from './types';
-import { generateDomainKeywords } from './syntheticData';
 import { 
   API_HOST, 
   API_KEY, 
@@ -21,7 +20,7 @@ function getCompetitionLabel(difficulty: number): string {
   return "high";
 }
 
-// New function to fetch keywords using Google Keyword Insight API
+// Function to fetch keywords using Google Keyword Insight API
 export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
     const queryParams = new URLSearchParams({
@@ -39,19 +38,17 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       }
     });
 
-    // Check for API quota exceeded or other errors
+    // Check for API errors
     if (!response.ok) {
-      console.warn(`Google Keyword API error ${response.status} for ${domainUrl}. Falling back to synthetic data.`);
-      toast.info("Using synthetic keyword data (API limit reached)");
-      return generateDomainKeywords(domainUrl);
+      console.warn(`Google Keyword API error ${response.status} for ${domainUrl}`);
+      throw new Error(`API error ${response.status}`);
     }
 
     const data: GoogleKeywordInsightResponse = await response.json();
     
     if (data.status !== "success" || !data.keywords || data.keywords.length === 0) {
-      console.warn(`Google Keyword API unsuccessful for ${domainUrl}. Falling back to synthetic data.`);
-      toast.info("Using synthetic keyword data (API request unsuccessful)");
-      return generateDomainKeywords(domainUrl);
+      console.warn(`Google Keyword API unsuccessful for ${domainUrl}`);
+      throw new Error("API returned no keywords");
     }
 
     // Transform the API response to our KeywordData format
@@ -62,12 +59,11 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       competition_index: item.difficulty,
       cpc: item.cpc,
       position: item.current_rank,
-      rankingUrl: null, // We'll simulate this for now
+      rankingUrl: null,
     }));
   } catch (error) {
     console.error(`Error fetching Google keywords for ${domainUrl}:`, error);
-    toast.info("Using synthetic keyword data (API connection error)");
-    return generateDomainKeywords(domainUrl);
+    throw error;
   }
 };
 
@@ -83,7 +79,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     console.error("Error with Google Keyword Insight API, falling back to alternative:", error);
   }
   
-  // Fall back to the original API if Google API fails
+  // Fall back to the original API
   try {
     const queryParams = new URLSearchParams({
       url: domainUrl,
@@ -102,26 +98,23 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       }
     });
 
-    // Check for API quota exceeded or other errors
+    // Check for API errors
     if (!response.ok) {
-      console.warn(`API error ${response.status} for ${domainUrl}. Falling back to synthetic data.`);
-      toast.info("Using synthetic keyword data (API limit reached)");
-      return generateDomainKeywords(domainUrl);
+      console.warn(`API error ${response.status} for ${domainUrl}`);
+      throw new Error(`API error ${response.status}`);
     }
 
     const data: DomainKeywordResponse = await response.json();
     
     if (!data.success) {
-      console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}. Falling back to synthetic data.`);
-      toast.info("Using synthetic keyword data (API request unsuccessful)");
-      return generateDomainKeywords(domainUrl);
+      console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
+      throw new Error(`API unsuccessful: ${data.reason || 'Unknown reason'}`);
     }
 
-    // If API returns no keywords, fall back to synthetic data
+    // If API returns no keywords, throw error
     if (!data.data || data.data.length === 0) {
-      console.warn(`API returned no keywords for ${domainUrl}. Falling back to synthetic data.`);
-      toast.info("Using synthetic keyword data (no keywords found)");
-      return generateDomainKeywords(domainUrl);
+      console.warn(`API returned no keywords for ${domainUrl}`);
+      throw new Error("API returned no keywords");
     }
 
     // Transform the API response to our KeywordData format
@@ -131,13 +124,12 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       competition: item.competition,
       competition_index: item.competition_index,
       cpc: ((item.low_bid + item.high_bid) / 2) || 0, // Average of low and high bid
-      position: null, // We'll populate this separately
-      rankingUrl: null, // We'll simulate this for now
+      position: null,
+      rankingUrl: null,
     }));
   } catch (error) {
     console.error(`Error fetching domain keywords for ${domainUrl}:`, error);
-    toast.info("Using synthetic keyword data (API connection error)");
-    return generateDomainKeywords(domainUrl);
+    throw error;
   }
 };
 

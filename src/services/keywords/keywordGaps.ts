@@ -214,51 +214,7 @@ export const findKeywordGaps = async (
     console.error("Error finding keyword gaps:", error);
     toast.error(`Failed to find keyword gaps: ${(error as Error).message}`);
     
-    // Return mock keyword gaps if the API fails, ensuring at least 10 per competitor
-    const mockGaps: KeywordGap[] = [];
-    
-    // Extract domain names for the mock data
-    const extractDomain = (url: string) => {
-      try {
-        return new URL(url).hostname.replace(/^www\./, '');
-      } catch (e) {
-        return url;
-      }
-    };
-    
-    const competitorDomainNames = competitorDomains.map(extractDomain);
-    
-    // Base template gaps that we'll customize for each competitor
-    const baseGapTemplates = [
-      { keyword: 'seo competitor analysis', volume: 1200, difficulty: 45, opportunity: 'high' as const },
-      { keyword: 'keyword gap tool', volume: 880, difficulty: 38, opportunity: 'high' as const },
-      { keyword: 'best keyword research method', volume: 720, difficulty: 52, opportunity: 'medium' as const },
-      { keyword: 'seo tools comparison', volume: 650, difficulty: 60, opportunity: 'medium' as const },
-      { keyword: 'keyword research techniques', volume: 950, difficulty: 42, opportunity: 'high' as const },
-      { keyword: 'seo competitor tracking', volume: 590, difficulty: 47, opportunity: 'medium' as const },
-      { keyword: 'find competitor keywords', volume: 1050, difficulty: 56, opportunity: 'medium' as const },
-      { keyword: 'keyword analysis for seo', volume: 780, difficulty: 63, opportunity: 'medium' as const },
-      { keyword: 'seo gap analysis', volume: 850, difficulty: 51, opportunity: 'high' as const },
-      { keyword: 'competitive keyword research', volume: 720, difficulty: 58, opportunity: 'medium' as const }
-    ];
-    
-    // Create 10 gaps for each competitor
-    competitorDomainNames.forEach(competitor => {
-      baseGapTemplates.forEach((template, i) => {
-        // Slightly randomize values for variety
-        const volume = template.volume + Math.floor(Math.random() * 200 - 100);
-        const difficulty = Math.min(99, Math.max(1, template.difficulty + Math.floor(Math.random() * 10 - 5)));
-        
-        mockGaps.push({
-          keyword: `${template.keyword} ${i % 3 === 0 ? 'guide' : i % 3 === 1 ? 'tools' : 'methods'}`,
-          volume,
-          difficulty,
-          opportunity: template.opportunity,
-          competitor
-        });
-      });
-    });
-    
-    return mockGaps;
+    // Return empty array if we have an error - we're not falling back to mock data anymore
+    return [];
   }
 };

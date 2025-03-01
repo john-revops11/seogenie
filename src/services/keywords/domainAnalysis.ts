@@ -1,9 +1,27 @@
 
 import { toast } from "sonner";
 import { KeywordData } from './types';
-import { fetchDomainKeywords } from './api';
-import { generateSampleUrl } from './syntheticData';
-import { ensureValidUrl } from './api';
+import { fetchDomainKeywords, ensureValidUrl } from './api';
+
+// Helper function to generate sample ranking URL
+const generateSampleUrl = (domain: string, keyword: string): string => {
+  // Remove protocol and trailing slashes to get clean domain
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  
+  // Convert keyword to URL-friendly slug
+  const slug = keyword.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  
+  // Randomly select a common URL pattern
+  const patterns = [
+    `https://${cleanDomain}/${slug}/`,
+    `https://${cleanDomain}/blog/${slug}/`,
+    `https://${cleanDomain}/services/${slug}/`,
+    `https://${cleanDomain}/product/${slug}/`,
+    `https://${cleanDomain}/resources/${slug}/`,
+  ];
+  
+  return patterns[Math.floor(Math.random() * patterns.length)];
+};
 
 export const analyzeDomains = async (
   mainDomain: string, 
@@ -19,7 +37,7 @@ export const analyzeDomains = async (
       .filter(domain => domain.trim() !== "")
       .map(domain => ensureValidUrl(domain));
     
-    console.log("Analyzing domains using Google Keyword Insight API:", formattedMainDomain, formattedCompetitorDomains);
+    console.log("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     
     // Start with loading the main domain keywords
     const mainKeywords = await fetchDomainKeywords(formattedMainDomain);

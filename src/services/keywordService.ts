@@ -6,4 +6,3 @@ export * from './keywords/domainAnalysis';
 export * from './keywords/contentGeneration';
 export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
-export * from './keywords/syntheticData';
