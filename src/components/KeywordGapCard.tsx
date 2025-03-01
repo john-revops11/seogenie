@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { KeywordGap, findKeywordGaps } from "@/services/keywordService";
-import { Loader2 } from "lucide-react";
+import { Loader2, BarChart2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
 
 interface KeywordGapCardProps {
   domain: string;
@@ -17,6 +19,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[]>([]);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCompetitor, setSelectedCompetitor] = useState<string | "all">("all");
   
   const validateDomains = () => {
     if (!domain || !domain.trim()) return false;
@@ -42,8 +45,19 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
         setIsLoadingGaps(true);
         
         try {
-          const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
-          setKeywordGaps(Array.isArray(gaps) ? gaps : []);
+          // Make sure we request enough gaps to show at least 10 per competitor
+          const targetGapCount = Math.max(10 * competitorDomains.length, 30);
+          
+          // Pass the number of gaps we want to the function
+          const gaps = await findKeywordGaps(domain, competitorDomains, keywords, targetGapCount);
+          
+          if (Array.isArray(gaps) && gaps.length > 0) {
+            setKeywordGaps(gaps);
+            toast.success(`Found ${gaps.length} keyword gaps to target`);
+          } else {
+            setKeywordGaps([]);
+            setError("No keyword gaps found");
+          }
         } catch (error) {
           console.error("Error fetching keyword gaps:", error);
           setError("Failed to load keyword gaps");
@@ -70,11 +84,43 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
     }
   };
 
+  // Filter gaps based on selected competitor
+  const filteredGaps = selectedCompetitor === "all" 
+    ? keywordGaps 
+    : keywordGaps.filter(gap => gap.competitor === selectedCompetitor);
+
+  // Get unique competitor domains
+  const uniqueCompetitors = ["all", ...Array.from(new Set(
+    keywordGaps.map(gap => gap.competitor || "unknown")
+  ))];
+
   return (
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
       <CardHeader>
-        <CardTitle>Keyword Gaps</CardTitle>
-        <CardDescription>Keywords your competitors rank for that you don't</CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart2 className="h-5 w-5 text-primary" />
+              Keyword Gaps
+            </CardTitle>
+            <CardDescription>Keywords your competitors rank for that you don't</CardDescription>
+          </div>
+          
+          {keywordGaps.length > 0 && (
+            <div className="flex gap-2">
+              {uniqueCompetitors.map((competitor) => (
+                <Badge 
+                  key={competitor}
+                  variant={selectedCompetitor === competitor ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedCompetitor(competitor)}
+                >
+                  {competitor === "all" ? "All Competitors" : competitor}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[350px] pr-4">
@@ -90,34 +136,42 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
               <p className="text-sm text-destructive">{error}</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {Array.isArray(keywordGaps) && keywordGaps.length > 0 ? (
-                keywordGaps.map((gap, index) => (
-                  <div key={index} className="p-4 rounded-lg border bg-background/50 transition-all hover:bg-background">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium text-sm">{gap.keyword}</h4>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-muted-foreground">
-                            Vol: {gap.volume.toLocaleString()}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Diff: {gap.difficulty}/100
-                          </span>
-                        </div>
-                      </div>
-                      <Badge className={getOpportunityColor(gap.opportunity)}>
-                        {gap.opportunity} opportunity
-                      </Badge>
-                    </div>
-                  </div>
-                ))
+            <>
+              {filteredGaps.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Keyword</TableHead>
+                      <TableHead>Volume</TableHead>
+                      <TableHead>Difficulty</TableHead>
+                      <TableHead>Opportunity</TableHead>
+                      {selectedCompetitor === "all" && <TableHead>Competitor</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredGaps.map((gap, index) => (
+                      <TableRow key={index} className="hover:bg-background/60">
+                        <TableCell className="font-medium">{gap.keyword}</TableCell>
+                        <TableCell>{gap.volume.toLocaleString()}</TableCell>
+                        <TableCell>{gap.difficulty}/100</TableCell>
+                        <TableCell>
+                          <Badge className={getOpportunityColor(gap.opportunity)}>
+                            {gap.opportunity}
+                          </Badge>
+                        </TableCell>
+                        {selectedCompetitor === "all" && (
+                          <TableCell className="text-xs">{gap.competitor || "unknown"}</TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               ) : (
                 <div className="text-center p-8">
                   <p className="text-muted-foreground">No keyword gaps found. Try analyzing more competitor domains.</p>
                 </div>
               )}
-            </div>
+            </>
           )}
         </ScrollArea>
       </CardContent>
