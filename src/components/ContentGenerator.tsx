@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -13,9 +13,26 @@ import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { Loader2, RefreshCw, Plus } from "lucide-react";
 import { GeneratorForm } from "./content-generator/GeneratorForm";
 import { keywordGapsCache } from "@/components/KeywordGapCard";
-import { useKeywordGaps } from "@/components/KeywordGapCard";
+import KeywordGapCard from "@/components/KeywordGapCard";
 import TopicsList from "./content-generator/TopicsList";
 import TitleSuggestions from "./content-generator/TitleSuggestions";
+
+// Creating a custom hook to extract useKeywordGaps functionality since it's not exported
+const useKeywordGaps = () => {
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
+  
+  const handleSelectKeywords = (keywords: string[]) => {
+    setSelectedKeywords(keywords);
+    keywordGapsCache.selectedKeywords = keywords;
+  };
+  
+  return {
+    keywordGaps: keywordGapsCache.data || [],
+    seoRecommendations: [], // Default empty array
+    selectedKeywords,
+    handleSelectKeywords
+  };
+};
 
 interface ContentGeneratorProps {
   domain: string;
