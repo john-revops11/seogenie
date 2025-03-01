@@ -613,20 +613,29 @@ export const generateContent = async (
         messages: [
           {
             role: 'system',
-            content: `You are an expert SEO content creator who writes high-quality, engaging content optimized for search engines. 
-            You follow SEO best practices such as proper keyword usage, heading structure, and readability.`
+            content: `You are a leading Pricing & Analytics Consultant for Revology Analytics, with expertise in Revenue Growth Management, content creation, and SEO optimization.
+            
+Your expertise includes:
+- Pricing & Revenue Optimization: Value-based pricing, dynamic models, subscription strategies
+- Analytics & Forecasting: Statistical modeling, revenue projections, performance metrics
+- Revenue Growth Management (RGM): Promotion effectiveness, product mix optimization, channel strategies
+- SEO & Content Strategy: Creating engaging, optimized content that ranks well on search engines
+
+You follow best practices like proper keyword usage, heading structure, and data-driven insights.`
           },
           {
             role: 'user',
-            content: `Create ${contentType} content for the website "${domain}" with the title "${title}".
+            content: `Create ${contentType} content for Revology Analytics (${domain}) with the title "${title}".
             
-            Target keywords: ${keywords.join(', ')}
-            
-            Return a JSON object with these properties:
-            - title: An SEO-optimized title that includes primary keywords
-            - metaDescription: A compelling meta description under 160 characters that includes keywords and encourages clicks
-            - outline: An array of section headings (5-7 items)
-            - content: The full content in Markdown format, properly structured with headings, paragraphs, and occasional bullet points. Include primary keywords naturally in headings and throughout the content.`
+Target keywords: ${keywords.join(', ')}
+
+The content should demonstrate thought leadership in pricing and revenue growth, using data analysis and industry insights to highlight best practices, key trends, and actionable takeaways.
+
+Return a JSON object with these properties:
+- title: An optimized title that includes primary keywords
+- metaDescription: A compelling meta description under 160 characters that includes keywords and encourages clicks
+- outline: An array of section headings (5-7 items)
+- content: The full content in Markdown format, properly structured with headings, paragraphs, and occasional bullet points. Include primary keywords naturally in headings and throughout the content, while maintaining a focus on pricing strategy, revenue management, and analytics insights.`
           }
         ],
         temperature: creativity / 100, // Convert 0-100 scale to 0-1
@@ -644,79 +653,86 @@ export const generateContent = async (
     console.error("Error generating content:", error);
     toast.error(`Failed to generate content: ${(error as Error).message}`);
     
-    // Return mock content if the API fails
+    // Return mock content if the API fails - now with pricing and revenue focus
     return {
       title: title,
-      metaDescription: `Discover the best ${keywords.join(", ")} and strategies to improve your SEO performance. Learn how to analyze and optimize your website for better rankings.`,
+      metaDescription: `Discover advanced ${keywords.join(", ")} strategies to optimize your pricing and revenue management. Learn data-driven approaches to enhance profitability and competitive advantage.`,
       outline: [
-        "Introduction to SEO Tools and Keyword Research",
-        "Why Keyword Research is Critical for SEO Success",
-        "Top 5 SEO Tools for Effective Keyword Analysis",
-        "How to Identify Valuable Keywords for Your Industry",
-        "Implementing Keyword Strategy for Better Rankings",
-        "Measuring and Tracking Keyword Performance",
-        "Conclusion and Next Steps"
+        "Introduction to Revenue Growth Management",
+        "The Role of Pricing Strategy in Business Performance",
+        "Data-Driven Approaches to Revenue Optimization",
+        "Key Metrics for Measuring Pricing Effectiveness",
+        "Implementing Dynamic Pricing Models",
+        "Customer Segmentation for Strategic Pricing",
+        "Conclusion: Building a Sustainable Revenue Growth Framework"
       ],
       content: `# ${title}
 
-## Introduction to SEO Tools and Keyword Research
+## Introduction to Revenue Growth Management
 
-In today's competitive digital landscape, having the right **SEO tools** at your disposal can make the difference between online visibility and obscurity. Effective **keyword research** forms the foundation of any successful SEO strategy, allowing businesses to understand what their potential customers are searching for.
+In today's competitive business landscape, effective **Revenue Growth Management (RGM)** has become a critical differentiator between market leaders and followers. At its core, RGM integrates **pricing strategy**, promotional planning, and product portfolio optimization to maximize sustainable revenue and profit growth.
 
-## Why Keyword Research is Critical for SEO Success
+## The Role of Pricing Strategy in Business Performance
 
-**Keyword research** isn't just about finding popular search terms; it's about uncovering the specific language your audience uses when looking for solutions. By understanding these patterns, you can create content that directly addresses their needs and questions.
+**Pricing strategy** is perhaps the most powerful lever for improving profitability. Research consistently shows that a 1% improvement in price can yield up to 11% increase in operating profit—far exceeding the impact of similar improvements in variable costs, fixed costs, or sales volume.
 
-- Identifies customer pain points and questions
-- Reveals new market opportunities
-- Helps prioritize content creation efforts
-- Provides competitive intelligence
+- Establishes clear value perception in the market
+- Directly impacts margin and profit performance
+- Creates strategic positioning against competitors
+- Supports long-term sustainable growth objectives
 
-## Top 5 SEO Tools for Effective Keyword Analysis
+## Data-Driven Approaches to Revenue Optimization
 
-The market offers numerous **SEO tools** designed to simplify and enhance your keyword discovery process:
+Modern **revenue optimization** relies on robust analytics and data-driven decision making. Organizations that excel in this area follow a systematic approach:
 
-1. **SEMrush** - Comprehensive keyword data with competitive analysis
-2. **Ahrefs** - In-depth backlink analysis and keyword difficulty metrics
-3. **Moz Keyword Explorer** - Keyword suggestions with opportunity scores
-4. **Google Keyword Planner** - Direct insights from Google's data
-5. **Ubersuggest** - User-friendly interface with content ideas
+1. **Data Collection & Integration**: Consolidating transactional, customer, competitor, and market data
+2. **Advanced Analytics**: Applying statistical methods to identify patterns and opportunities
+3. **Scenario Modeling**: Testing potential pricing and promotional strategies
+4. **Implementation & Measurement**: Executing changes and tracking results through clear KPIs
 
-Each of these tools offers unique features that can help you identify valuable keywords and understand their potential.
+## Key Metrics for Measuring Pricing Effectiveness
 
-## How to Identify Valuable Keywords for Your Industry
+To effectively manage your **pricing strategy**, you must track the right metrics. The most valuable indicators include:
 
-Not all keywords are created equal. The most valuable keywords for your business will balance search volume, competition, and relevance:
+* **Price Realization**: The actual price achieved versus list price
+* **Price Waterfall Analysis**: Visualization of discounts, rebates, and other reductions
+* **Pocket Margin**: The true profit after accounting for all costs
+* **Price Elasticity**: How demand responds to price changes
+* **Customer Value Metrics**: How pricing correlates with customer-perceived value
 
-* **Search Volume**: How many people are searching for this term monthly
-* **Keyword Difficulty**: How hard it will be to rank for this term
-* **Commercial Intent**: How likely searchers are to convert
-* **Relevance**: How closely the keyword matches your offerings
+## Implementing Dynamic Pricing Models
 
-## Implementing Keyword Strategy for Better Rankings
+**Dynamic pricing** models allow businesses to adjust prices in real-time based on market conditions, demand fluctuations, customer segments, and competitive positioning. Implementation follows these key phases:
 
-Once you've identified your target keywords, implementation becomes key:
+- Assessment of current pricing capability and data infrastructure
+- Development of pricing rules and algorithms based on business objectives
+- Testing in controlled market segments
+- Iterative refinement based on performance data
+- Full-scale deployment with continuous monitoring
 
-- Incorporate primary keywords in titles, headings, and opening paragraphs
-- Use secondary keywords naturally throughout your content
-- Optimize meta descriptions and URL structures
-- Create topic clusters around related keywords
-- Develop a content calendar based on keyword opportunities
+## Customer Segmentation for Strategic Pricing
 
-## Measuring and Tracking Keyword Performance
+Effective **pricing strategy** requires a deep understanding of your customer segments. By segmenting customers based on willingness-to-pay, value perception, and purchasing behavior, organizations can develop tailored pricing approaches that maximize revenue while maintaining customer satisfaction.
 
-The work doesn't end with implementation. Regular monitoring helps you understand what's working and what needs adjustment:
+1. Identify key segmentation variables (industry, size, purchase behavior)
+2. Analyze price sensitivity by segment
+3. Develop segment-specific value propositions
+4. Establish tiered pricing structures aligned with segment characteristics
+5. Measure and refine based on segment performance
 
-1. Track ranking positions for target keywords
-2. Monitor organic traffic to optimized pages
-3. Analyze user behavior and engagement metrics
-4. Adjust strategy based on performance data
+## Conclusion: Building a Sustainable Revenue Growth Framework
 
-## Conclusion and Next Steps
+Building a sustainable **revenue growth management** framework requires integration of pricing strategy, promotional effectiveness, and product portfolio optimization. The most successful organizations treat RGM as an ongoing capability rather than a one-time initiative.
 
-**SEO tools** and effective **keyword research** are not one-time tasks but ongoing processes that evolve with your business and the digital landscape. By consistently refining your approach and staying informed about changes in search algorithms, you can maintain and improve your website's visibility.
+To maximize your organization's pricing and revenue potential:
 
-Ready to take your SEO strategy to the next level? Start by conducting a comprehensive keyword audit and identifying new opportunities for growth.`
+1. Establish cross-functional alignment on pricing objectives
+2. Invest in analytics capabilities and data infrastructure
+3. Develop clear governance and decision-making processes
+4. Create a culture of continuous testing and learning
+5. Measure impact through clear KPIs tied to financial outcomes
+
+Ready to transform your approach to revenue management? Start by conducting a comprehensive assessment of your current pricing capabilities and identifying the highest-value opportunities for improvement.`
     };
   }
 };

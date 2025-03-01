@@ -22,7 +22,7 @@ interface ContentGeneratorProps {
 const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) => {
   const [title, setTitle] = useState("");
   const [contentType, setContentType] = useState("blog");
-  const [keywords, setKeywords] = useState<string[]>(["seo tools", "keyword research"]);
+  const [keywords, setKeywords] = useState<string[]>(["pricing strategy", "revenue management"]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<{
     title: string;
@@ -33,7 +33,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   const [activeTab, setActiveTab] = useState("editor");
   const [creativity, setCreativity] = useState([50]);
   
-  // New state variables for topics and title suggestions
+  // State variables for topics and title suggestions
   const [selectedTopic, setSelectedTopic] = useState("");
   const [topics, setTopics] = useState<string[]>([]);
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
@@ -64,9 +64,9 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   
   const contentTypeOptions = [
     { value: "blog", label: "Blog Post" },
-    { value: "landing", label: "Landing Page" },
-    { value: "product", label: "Product Description" },
-    { value: "email", label: "Email Newsletter" },
+    { value: "case_study", label: "Case Study" },
+    { value: "whitepaper", label: "Whitepaper" },
+    { value: "newsletter", label: "Email Newsletter" },
   ];
   
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -75,26 +75,26 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   };
   
   const generateTopics = () => {
-    // Generate at least 5 topics based on keywords
+    // Generate topics based on pricing and revenue management keywords
     const keywordBased = keywords.slice(0, 3).map(keyword => {
-      return `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} strategies`;
+      return `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} Strategies`;
     });
     
-    // Add some predefined topics that are relevant to SEO
-    const seoTopics = [
-      "SEO Best Practices",
-      "Content Marketing",
-      "Link Building",
-      "Technical SEO",
-      "Local SEO",
-      "Keyword Research",
-      "Mobile Optimization",
-      "Voice Search SEO",
-      "E-commerce SEO"
+    // Add predefined topics related to pricing and revenue management
+    const pricingTopics = [
+      "Value-Based Pricing",
+      "Dynamic Pricing Models",
+      "Revenue Growth Management",
+      "Pricing Analytics",
+      "Subscription Revenue Optimization",
+      "Price Elasticity Analysis",
+      "Competitive Price Intelligence",
+      "Customer Segmentation for Pricing",
+      "Promotional Effectiveness"
     ];
     
     // Combine topics and ensure we have at least 5
-    let combinedTopics = [...new Set([...keywordBased, ...seoTopics])];
+    let combinedTopics = [...new Set([...keywordBased, ...pricingTopics])];
     combinedTopics = combinedTopics.slice(0, Math.max(5, keywordBased.length + 2));
     
     setTopics(combinedTopics);
@@ -110,23 +110,24 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
     
     // Simulate API call with timeout
     setTimeout(() => {
-      // Generate title suggestions based on selected topic and keywords
+      // Generate title suggestions based on selected topic and pricing/revenue keywords
       const suggestions = [];
       const topKeywords = keywords.slice(0, 3);
+      const currentYear = new Date().getFullYear();
       
-      // Generate titles with different formats
-      suggestions.push(`${topic}: Ultimate Guide for ${domain.split(".")[0].charAt(0).toUpperCase() + domain.split(".")[0].slice(1)}`);
+      // Generate titles with different formats focused on pricing and revenue
+      suggestions.push(`${topic}: A Strategic Framework for Maximizing Revenue Growth`);
       
       if (topKeywords.length > 0) {
-        suggestions.push(`How to Improve Your ${topic} with ${topKeywords[0].charAt(0).toUpperCase() + topKeywords[0].slice(1)}`);
+        suggestions.push(`How to Optimize ${topic} with Advanced Analytics for Better Profitability`);
       }
       
-      suggestions.push(`${Math.floor(Math.random() * 10) + 5} ${topic} Tips That Will Boost Your Rankings`);
+      suggestions.push(`${Math.floor(Math.random() * 5) + 5} ${topic} Best Practices That Drive Bottom-Line Impact`);
       
       // Add more variations if we need them
       if (suggestions.length < 3) {
-        suggestions.push(`${topic} in ${new Date().getFullYear()}: What You Need to Know`);
-        suggestions.push(`The Complete Guide to ${topic} for Beginners`);
+        suggestions.push(`${topic} in ${currentYear}: Emerging Trends and Strategic Insights`);
+        suggestions.push(`Transforming Your ${topic} Approach: Data-Driven Methods for Success`);
       }
       
       setTitleSuggestions(suggestions.slice(0, 3));
@@ -189,13 +190,15 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
     setKeywords(newKeywords);
   };
   
+  // Suggested keywords for pricing and revenue management
   const suggestedKeywords = allKeywords.length > 0 
     ? [...new Set(allKeywords.slice(0, 15))]
         .filter(kw => !keywords.includes(kw))
         .slice(0, 6)
     : [
-        "seo analysis", "backlink checker", "website ranking", 
-        "content optimization", "meta description", "search engine optimization"
+        "value-based pricing", "revenue optimization", "pricing strategy", 
+        "dynamic pricing", "customer segmentation", "competitive analysis",
+        "price elasticity", "revenue growth management", "subscription pricing"
       ];
 
   return (
@@ -203,7 +206,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
       <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
         <CardHeader>
           <CardTitle>AI Content Generator</CardTitle>
-          <CardDescription>Create SEO-optimized content based on your keyword analysis</CardDescription>
+          <CardDescription>Create expert pricing and revenue management content for Revology Analytics</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -358,7 +361,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                     className="transition-all"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Conservative</span>
+                    <span>Data-Driven</span>
                     <span>Creative</span>
                   </div>
                 </div>
@@ -395,12 +398,12 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
+                      Generating Expert Content...
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Content
+                      Generate Pricing & Analytics Content
                     </>
                   )}
                 </Button>
@@ -413,7 +416,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold">{generatedContent.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Content generated for {domain}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Pricing & Analytics content for {domain}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={handleCopyContent}>

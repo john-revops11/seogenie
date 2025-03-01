@@ -226,7 +226,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
                   <p className="text-muted-foreground">
                     {keywordGaps.length > 0 
                       ? "No keyword gaps found for the selected competitor. Try selecting a different competitor." 
-                      : "No keyword gaps found. Try analyzing more domains."}
+                      : "No keyword gaps found. Try analyzing pricing strategy terms and revenue management keywords."}
                   </p>
                 </div>
               )}
