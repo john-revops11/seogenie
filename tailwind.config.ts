@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -117,8 +116,67 @@ export default {
 				'fade-out': 'fadeOut 0.5s ease-out',
 				'slide-up': 'slideUp 0.5s ease-out',
 				'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-			}
+			},
+			typography: {
+				DEFAULT: {
+					css: {
+						'h1': {
+							fontSize: '2rem',
+							marginTop: '1.5rem',
+							marginBottom: '1rem',
+							fontWeight: '700',
+							lineHeight: '1.2',
+							color: 'hsl(var(--foreground))',
+						},
+						'h2': {
+							fontSize: '1.5rem',
+							marginTop: '1.5rem',
+							marginBottom: '0.75rem',
+							fontWeight: '600',
+							lineHeight: '1.3',
+							color: 'hsl(var(--foreground))',
+						},
+						'h3': {
+							fontSize: '1.25rem',
+							marginTop: '1.5rem',
+							marginBottom: '0.5rem',
+							fontWeight: '600',
+							lineHeight: '1.4',
+							color: 'hsl(var(--foreground))',
+						},
+						'p': {
+							marginTop: '0.75rem',
+							marginBottom: '0.75rem',
+						},
+						'ul': {
+							marginTop: '0.75rem',
+							marginBottom: '0.75rem',
+							paddingLeft: '1.25rem',
+						},
+						'ol': {
+							marginTop: '0.75rem',
+							marginBottom: '0.75rem',
+							paddingLeft: '1.25rem',
+						},
+						'li': {
+							marginTop: '0.25rem',
+							marginBottom: '0.25rem',
+						},
+						'blockquote': {
+							fontStyle: 'italic',
+							borderLeftWidth: '4px',
+							borderLeftColor: 'hsl(var(--border))',
+							paddingLeft: '1rem',
+							marginLeft: '0',
+							marginRight: '0',
+						},
+					},
+				},
+			},
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		require("@tailwindcss/typography"),
+	],
 } satisfies Config;

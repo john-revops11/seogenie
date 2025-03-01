@@ -155,8 +155,8 @@ export const ContentPreview = ({
           />
         ) : (
           <ScrollArea className="h-[500px] border rounded-md bg-white">
-            <div className="p-4 whitespace-pre-wrap font-mono text-sm">
-              {generatedContent.content}
+            <div className="p-4 prose prose-slate max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
             </div>
           </ScrollArea>
         )}
