@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,7 +157,7 @@ const Index = () => {
             <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
               <span className="text-revology">Revology Analytics</span>
               <span className="text-2xl font-normal text-muted-foreground">|</span>
-              <span>SeoGenie</span>
+              <span>SeoCrafter</span>
             </h1>
             <p className="mt-2 text-muted-foreground">Keyword analysis and AI-driven content generation</p>
           </div>
