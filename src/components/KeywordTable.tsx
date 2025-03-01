@@ -6,15 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, Search, Download, ArrowUpDown, Loader2 } from "lucide-react";
-
-interface KeywordData {
-  keyword: string;
-  volume: number;
-  difficulty: number;
-  cpc: number;
-  mainRanking: number | null;
-  competitorRankings: Record<string, number | null>;
-}
+import { KeywordData } from "@/services/keywordService";
 
 interface KeywordTableProps {
   domain: string;
@@ -27,7 +19,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
   const [filteredKeywords, setFilteredKeywords] = useState<KeywordData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{column: string; direction: 'asc' | 'desc'}>({
-    column: 'volume',
+    column: 'monthly_search',
     direction: 'desc'
   });
   
@@ -56,20 +48,20 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     setSortConfig({ column, direction: newDirection });
     
     const sorted = [...filteredKeywords].sort((a, b) => {
-      // Special case for mainRanking
-      if (column === 'mainRanking') {
+      // Special case for position
+      if (column === 'position') {
         // Handle null values in ranking
-        if (a.mainRanking === null && b.mainRanking === null) return 0;
-        if (a.mainRanking === null) return newDirection === 'asc' ? 1 : -1;
-        if (b.mainRanking === null) return newDirection === 'asc' ? -1 : 1;
+        if (a.position === null && b.position === null) return 0;
+        if (a.position === null) return newDirection === 'asc' ? 1 : -1;
+        if (b.position === null) return newDirection === 'asc' ? -1 : 1;
         
         return newDirection === 'asc' 
-          ? a.mainRanking - b.mainRanking 
-          : b.mainRanking - a.mainRanking;
+          ? a.position - b.position 
+          : b.position - a.position;
       }
       
       // For other numeric columns
-      if (['volume', 'difficulty', 'cpc'].includes(column)) {
+      if (['monthly_search', 'competition_index', 'cpc'].includes(column)) {
         const aValue = a[column as keyof KeywordData] as number;
         const bValue = b[column as keyof KeywordData] as number;
         return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
@@ -112,11 +104,11 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     
     // Add data rows
     keywords.forEach(item => {
-      csvContent += `"${item.keyword}",${item.volume},${item.difficulty},${item.cpc.toFixed(2)},`;
-      csvContent += `${item.mainRanking || "-"},`;
+      csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},`;
+      csvContent += `${item.position || "-"},`;
       competitorDomains.forEach(comp => {
         const domainName = new URL(comp).hostname.replace(/^www\./, '');
-        csvContent += `${item.competitorRankings[domainName] || "-"},`;
+        csvContent += `${item.competitorRankings?.[domainName] || "-"},`;
       });
       csvContent += "\n";
     });
@@ -179,18 +171,18 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                       )}
                     </div>
                   </TableHead>
-                  <TableHead onClick={() => handleSort('volume')} className="cursor-pointer">
+                  <TableHead onClick={() => handleSort('monthly_search')} className="cursor-pointer">
                     <div className="flex items-center">
                       Volume
-                      {sortConfig.column === 'volume' && (
+                      {sortConfig.column === 'monthly_search' && (
                         sortConfig.direction === 'asc' ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />
                       )}
                     </div>
                   </TableHead>
-                  <TableHead onClick={() => handleSort('difficulty')} className="cursor-pointer">
+                  <TableHead onClick={() => handleSort('competition_index')} className="cursor-pointer">
                     <div className="flex items-center">
                       Difficulty
-                      {sortConfig.column === 'difficulty' && (
+                      {sortConfig.column === 'competition_index' && (
                         sortConfig.direction === 'asc' ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />
                       )}
                     </div>
@@ -203,7 +195,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                       )}
                     </div>
                   </TableHead>
-                  <TableHead onClick={() => handleSort('mainRanking')} className="cursor-pointer">
+                  <TableHead onClick={() => handleSort('position')} className="cursor-pointer">
                     <div className="flex items-center">
                       {domain} <ArrowUpDown className="ml-1 h-3 w-3" />
                     </div>
@@ -229,15 +221,15 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                   filteredKeywords.map((item, index) => (
                     <TableRow key={index} className="transition-all hover:bg-muted/50">
                       <TableCell className="font-medium">{item.keyword}</TableCell>
-                      <TableCell>{item.volume.toLocaleString()}</TableCell>
+                      <TableCell>{item.monthly_search.toLocaleString()}</TableCell>
                       <TableCell>
-                        <span className={getDifficultyColor(item.difficulty)}>{item.difficulty}/100</span>
+                        <span className={getDifficultyColor(item.competition_index)}>{item.competition_index}/100</span>
                       </TableCell>
                       <TableCell>${item.cpc.toFixed(2)}</TableCell>
                       <TableCell>
-                        {item.mainRanking ? (
-                          <Badge className={`${getRankingBadgeColor(item.mainRanking)}`}>
-                            {item.mainRanking}
+                        {item.position ? (
+                          <Badge className={`${getRankingBadgeColor(item.position)}`}>
+                            {item.position}
                           </Badge>
                         ) : (
                           <Badge variant="outline">-</Badge>
@@ -247,7 +239,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                         const domainName = new URL(competitor).hostname.replace(/^www\./, '');
                         return (
                           <TableCell key={idx}>
-                            {item.competitorRankings[domainName] ? (
+                            {item.competitorRankings?.[domainName] ? (
                               <Badge className={`${getRankingBadgeColor(item.competitorRankings[domainName])}`}>
                                 {item.competitorRankings[domainName]}
                               </Badge>

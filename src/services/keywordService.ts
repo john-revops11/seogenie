@@ -11,8 +11,9 @@ export interface KeywordData {
   monthly_search: number;
   competition: string;
   competition_index: number;
-  cpc: number; // We'll derive this from low_bid and high_bid
+  cpc: number;
   position?: number | null; // For tracking ranking positions
+  competitorRankings?: Record<string, number | null>; // Added for competitor rankings
 }
 
 export interface DomainKeywordResponse {
@@ -65,11 +66,11 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     // Transform the API response to our KeywordData format
     return data.data.map(item => ({
       keyword: item.keyword,
-      volume: item.monthly_search,
-      difficulty: item.competition_index,
+      monthly_search: item.monthly_search,
+      competition: item.competition,
+      competition_index: item.competition_index,
       cpc: ((item.low_bid + item.high_bid) / 2) || 0, // Average of low and high bid
-      mainRanking: null, // We'll populate this separately
-      competitorRankings: {} // We'll populate this separately
+      position: null // We'll populate this separately
     }));
   } catch (error) {
     console.error("Error fetching domain keywords:", error);
@@ -82,7 +83,7 @@ export const analyzeDomains = async (
   mainDomain: string, 
   competitorDomains: string[]
 ): Promise<{
-  keywords: any[],
+  keywords: KeywordData[],
   success: boolean
 }> => {
   try {
@@ -104,16 +105,17 @@ export const analyzeDomains = async (
     const competitorResults = await Promise.all(competitorKeywordsPromises);
     
     // Process and merge data
-    const keywordMap = new Map();
+    const keywordMap = new Map<string, KeywordData>();
     
     // Add main domain keywords first
     mainKeywords.forEach(kw => {
       keywordMap.set(kw.keyword, {
         keyword: kw.keyword,
-        volume: kw.volume,
-        difficulty: kw.difficulty,
+        monthly_search: kw.monthly_search,
+        competition: kw.competition,
+        competition_index: kw.competition_index,
         cpc: kw.cpc,
-        mainRanking: Math.floor(Math.random() * 100) + 1, // Simulate ranking position
+        position: Math.floor(Math.random() * 100) + 1, // Simulate ranking position
         competitorRankings: {}
       });
     });
@@ -125,16 +127,20 @@ export const analyzeDomains = async (
       keywords.forEach(kw => {
         if (keywordMap.has(kw.keyword)) {
           // Update existing keyword with competitor ranking
-          const existing = keywordMap.get(kw.keyword);
+          const existing = keywordMap.get(kw.keyword)!;
+          if (!existing.competitorRankings) {
+            existing.competitorRankings = {};
+          }
           existing.competitorRankings[domainName] = Math.floor(Math.random() * 100) + 1; // Simulate ranking
         } else {
           // Add new keyword that main domain doesn't have
           keywordMap.set(kw.keyword, {
             keyword: kw.keyword,
-            volume: kw.volume,
-            difficulty: kw.difficulty,
+            monthly_search: kw.monthly_search,
+            competition: kw.competition,
+            competition_index: kw.competition_index,
             cpc: kw.cpc,
-            mainRanking: null, // Main domain doesn't rank for this
+            position: null, // Main domain doesn't rank for this
             competitorRankings: {
               [domainName]: Math.floor(Math.random() * 100) + 1 // Simulate ranking
             }
