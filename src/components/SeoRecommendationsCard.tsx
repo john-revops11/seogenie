@@ -2,15 +2,18 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2 } from "lucide-react";
+import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SeoRecommendation, generateSeoRecommendations } from "@/services/keywordService";
 
 // Create a cache to store SEO recommendations
 export const recommendationsCache = {
   data: null as {
-    onPage: SeoRecommendation[];
     technical: SeoRecommendation[];
+    onPage: SeoRecommendation[];
+    offPage: SeoRecommendation[];
     content: SeoRecommendation[];
+    summary: SeoRecommendation[];
   } | null,
   domain: "",
   keywordsLength: 0
@@ -24,11 +27,15 @@ interface SeoRecommendationsCardProps {
 
 export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecommendationsCardProps) {
   const [recommendations, setRecommendations] = useState<{
-    onPage: SeoRecommendation[];
     technical: SeoRecommendation[];
+    onPage: SeoRecommendation[];
+    offPage: SeoRecommendation[];
     content: SeoRecommendation[];
+    summary: SeoRecommendation[];
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("summary");
+  const [expandedRecs, setExpandedRecs] = useState<Record<string, boolean>>({});
 
   // Generate SEO recommendations based on keyword data
   useEffect(() => {
@@ -85,30 +92,88 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeLabel = (type: string) => {
     switch (type) {
-      case "technical": return "🔧";
-      case "content": return "📝";
-      case "onPage": return "📄";
-      default: return "📊";
+      case "technical": return "Technical SEO";
+      case "onPage": return "On-Page SEO";
+      case "offPage": return "Off-Page SEO";
+      case "content": return "Content Strategy";
+      case "summary": return "Action Plan";
+      default: return type;
     }
   };
 
-  // Flatten recommendations for display
-  const getAllRecommendations = () => {
-    if (!recommendations) return [];
-    const allRecs = [
-      ...(recommendations.onPage || []),
-      ...(recommendations.technical || []),
-      ...(recommendations.content || [])
-    ];
-    
-    // Sort by priority (high first)
-    return allRecs.sort((a, b) => {
-      const priorityOrder = { high: 0, medium: 1, low: 2 };
-      return priorityOrder[a.priority as keyof typeof priorityOrder] - 
-             priorityOrder[b.priority as keyof typeof priorityOrder];
-    });
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "technical": return "🔧";
+      case "onPage": return "📄";
+      case "offPage": return "🔗";
+      case "content": return "📝";
+      case "summary": return "📊";
+      default: return "📌";
+    }
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedRecs(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const renderRecommendations = (recs: SeoRecommendation[]) => {
+    if (!recs || recs.length === 0) {
+      return (
+        <div className="text-center py-4 text-muted-foreground">
+          No recommendations available for this category.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {recs.map((rec, index) => {
+          const recId = `${rec.type}-${index}`;
+          const isExpanded = expandedRecs[recId] || false;
+          
+          return (
+            <div key={recId} className="space-y-2 transition-all">
+              <div 
+                className="flex items-start justify-between cursor-pointer hover:bg-muted/20 p-2 rounded-md transition-all"
+                onClick={() => toggleExpand(recId)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{getTypeIcon(rec.type)}</span>
+                  <h3 className="font-semibold">{rec.recommendation}</h3>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge className={`${getPriorityColor(rec.priority)}`}>
+                    {rec.priority}
+                  </Badge>
+                  {rec.implementationDifficulty && (
+                    <Badge className={`${getDifficultyColor(rec.implementationDifficulty)}`}>
+                      {rec.implementationDifficulty}
+                    </Badge>
+                  )}
+                  {isExpanded ? 
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  }
+                </div>
+              </div>
+              
+              {isExpanded && rec.details && (
+                <div className="ml-7 text-sm text-muted-foreground bg-muted/10 p-2 rounded-md border-l-2 border-revology/30 animate-fade-in">
+                  {rec.details}
+                </div>
+              )}
+              
+              {index < recs.length - 1 && <div className="pt-1 pb-1 border-b border-border/40" />}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -119,7 +184,7 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardTitle>
         <CardDescription>
-          Priority actions to improve your rankings
+          Comprehensive SEO strategy for {domain}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -128,30 +193,45 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : recommendations ? (
-          <div className="space-y-4">
-            {getAllRecommendations().map((rec, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{getTypeIcon(rec.type)}</span>
-                    <h3 className="font-semibold">{rec.recommendation}</h3>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Badge className={`${getPriorityColor(rec.priority)}`}>
-                      {rec.priority} priority
-                    </Badge>
-                    {rec.implementationDifficulty && (
-                      <Badge className={`${getDifficultyColor(rec.implementationDifficulty)}`}>
-                        {rec.implementationDifficulty}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                {rec.details && <p className="text-sm text-muted-foreground ml-7">{rec.details}</p>}
-                {index < getAllRecommendations().length - 1 && <div className="pt-1 pb-1 border-b border-border/40" />}
-              </div>
-            ))}
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="w-full grid grid-cols-5">
+              <TabsTrigger value="summary" className="text-xs">
+                {getTypeIcon("summary")} Action Plan
+              </TabsTrigger>
+              <TabsTrigger value="technical" className="text-xs">
+                {getTypeIcon("technical")} Technical
+              </TabsTrigger>
+              <TabsTrigger value="onPage" className="text-xs">
+                {getTypeIcon("onPage")} On-Page
+              </TabsTrigger>
+              <TabsTrigger value="offPage" className="text-xs">
+                {getTypeIcon("offPage")} Off-Page
+              </TabsTrigger>
+              <TabsTrigger value="content" className="text-xs">
+                {getTypeIcon("content")} Content
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="summary">
+              {renderRecommendations(recommendations.summary)}
+            </TabsContent>
+            
+            <TabsContent value="technical">
+              {renderRecommendations(recommendations.technical)}
+            </TabsContent>
+            
+            <TabsContent value="onPage">
+              {renderRecommendations(recommendations.onPage)}
+            </TabsContent>
+            
+            <TabsContent value="offPage">
+              {renderRecommendations(recommendations.offPage)}
+            </TabsContent>
+            
+            <TabsContent value="content">
+              {renderRecommendations(recommendations.content)}
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             No recommendations available. Run a keyword analysis first.
@@ -160,7 +240,7 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
 
         {recommendations && (
           <div className="text-xs text-muted-foreground mt-6 text-center">
-            These AI-generated recommendations are tailored based on your domain and keyword analysis
+            These AI-generated recommendations are tailored based on your domain and keyword analysis. Click on any recommendation to see details.
           </div>
         )}
       </CardContent>
