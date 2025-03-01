@@ -66,7 +66,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     
     if (!data.success) {
       console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
-      throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason}`);
+      throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
     }
 
     // Get domain's base URL for forming ranking URLs
