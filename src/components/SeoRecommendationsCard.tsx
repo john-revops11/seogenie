@@ -112,7 +112,7 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
   };
 
   return (
-    <Card className="animate-fade-in">
+    <Card className="animate-fade-in w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           SEO Recommendations
