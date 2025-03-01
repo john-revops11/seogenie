@@ -14,7 +14,9 @@ export interface KeywordData {
   competition_index: number;
   cpc: number;
   position?: number | null; // For tracking ranking positions
-  competitorRankings?: Record<string, number | null>; // Added for competitor rankings
+  rankingUrl?: string | null; // Added to store the URL where keyword ranks
+  competitorRankings?: Record<string, number | null>; // For competitor rankings
+  competitorUrls?: Record<string, string | null>; // Added to store competitor URLs where keywords rank
 }
 
 export interface DomainKeywordResponse {
@@ -68,6 +70,9 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
     }
 
+    // Get domain's base URL for forming ranking URLs
+    const baseUrl = new URL(domainUrl).origin;
+
     // Transform the API response to our KeywordData format
     return data.data.map(item => ({
       keyword: item.keyword,
@@ -75,13 +80,35 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       competition: item.competition,
       competition_index: item.competition_index,
       cpc: ((item.low_bid + item.high_bid) / 2) || 0, // Average of low and high bid
-      position: null // We'll populate this separately
+      position: null, // We'll populate this separately
+      rankingUrl: null, // We'll simulate this for now
     }));
   } catch (error) {
     console.error(`Error fetching domain keywords for ${domainUrl}:`, error);
     toast.error(`Failed to fetch keywords for ${domainUrl}: ${(error as Error).message}`);
     return [];
   }
+};
+
+// In a real implementation, we would need to extend the API call to get actual ranking URLs
+// Here we'll simulate it with some common page types
+const generateSampleUrl = (domain: string, keyword: string): string => {
+  // Remove protocol and trailing slashes to get clean domain
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  
+  // Convert keyword to URL-friendly slug
+  const slug = keyword.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  
+  // Randomly select a common URL pattern
+  const patterns = [
+    `https://${cleanDomain}/${slug}/`,
+    `https://${cleanDomain}/blog/${slug}/`,
+    `https://${cleanDomain}/services/${slug}/`,
+    `https://${cleanDomain}/product/${slug}/`,
+    `https://${cleanDomain}/resources/${slug}/`,
+  ];
+  
+  return patterns[Math.floor(Math.random() * patterns.length)];
 };
 
 export const analyzeDomains = async (
@@ -134,14 +161,20 @@ export const analyzeDomains = async (
     
     // Add main domain keywords first
     mainKeywords.forEach(kw => {
+      // Simulate a ranking position and URL for the main domain
+      const position = Math.floor(Math.random() * 100) + 1;
+      const rankingUrl = generateSampleUrl(formattedMainDomain, kw.keyword);
+      
       keywordMap.set(kw.keyword, {
         keyword: kw.keyword,
         monthly_search: kw.monthly_search,
         competition: kw.competition,
         competition_index: kw.competition_index,
         cpc: kw.cpc,
-        position: Math.floor(Math.random() * 100) + 1, // Simulate ranking position
-        competitorRankings: {}
+        position: position, // Simulate ranking position
+        rankingUrl: rankingUrl, // Add ranking URL
+        competitorRankings: {},
+        competitorUrls: {}
       });
     });
     
@@ -156,9 +189,21 @@ export const analyzeDomains = async (
           if (!existing.competitorRankings) {
             existing.competitorRankings = {};
           }
-          existing.competitorRankings[domainName] = Math.floor(Math.random() * 100) + 1; // Simulate ranking
+          if (!existing.competitorUrls) {
+            existing.competitorUrls = {};
+          }
+          
+          // Simulate a ranking position and URL for this competitor
+          const position = Math.floor(Math.random() * 100) + 1;
+          const rankingUrl = generateSampleUrl(domain, kw.keyword);
+          
+          existing.competitorRankings[domainName] = position;
+          existing.competitorUrls[domainName] = rankingUrl;
         } else {
           // Add new keyword that main domain doesn't have
+          const position = Math.floor(Math.random() * 100) + 1;
+          const rankingUrl = generateSampleUrl(domain, kw.keyword);
+          
           keywordMap.set(kw.keyword, {
             keyword: kw.keyword,
             monthly_search: kw.monthly_search,
@@ -166,8 +211,12 @@ export const analyzeDomains = async (
             competition_index: kw.competition_index,
             cpc: kw.cpc,
             position: null, // Main domain doesn't rank for this
+            rankingUrl: null,
             competitorRankings: {
-              [domainName]: Math.floor(Math.random() * 100) + 1 // Simulate ranking
+              [domainName]: position
+            },
+            competitorUrls: {
+              [domainName]: rankingUrl
             }
           });
         }

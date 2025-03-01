@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, Search, Download, ArrowUpDown, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronUp, ChevronDown, Search, Download, ArrowUpDown, Loader2, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface KeywordTableProps {
   domain: string;
@@ -146,21 +147,21 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
   const exportToCsv = () => {
     if (keywords.length === 0) return;
     
-    // Create CSV header
+    // Create CSV header with URL columns
     let csvContent = "Keyword,Volume,Difficulty,CPC,$,";
-    csvContent += `${domain},`;
+    csvContent += `${domain},${domain} URL,`;
     competitorDomains.forEach(comp => {
-      csvContent += `${comp},`;
+      csvContent += `${comp},${comp} URL,`;
     });
     csvContent += "\n";
     
     // Add data rows
     keywords.forEach(item => {
       csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},`;
-      csvContent += `${item.position || "-"},`;
+      csvContent += `${item.position || "-"},${item.rankingUrl || "-"},`;
       competitorDomains.forEach(comp => {
         const domainName = extractDomainName(comp);
-        csvContent += `${item.competitorRankings?.[domainName] || "-"},`;
+        csvContent += `${item.competitorRankings?.[domainName] || "-"},${item.competitorUrls?.[domainName] || "-"},`;
       });
       csvContent += "\n";
     });
@@ -174,6 +175,33 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Clickable link component for ranking URLs
+  const RankingLink = ({ url, position }: { url: string | null | undefined, position: number | null | undefined }) => {
+    if (!url || !position) return <Badge variant="outline">-</Badge>;
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center gap-1"
+            >
+              <Badge className={`${getRankingBadgeColor(position)}`}>
+                {position} <ExternalLink className="ml-1 h-3 w-3" />
+              </Badge>
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs truncate max-w-56">{url}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   return (
@@ -279,25 +307,16 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                       </TableCell>
                       <TableCell>${item.cpc.toFixed(2)}</TableCell>
                       <TableCell>
-                        {item.position ? (
-                          <Badge className={`${getRankingBadgeColor(item.position)}`}>
-                            {item.position}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">-</Badge>
-                        )}
+                        <RankingLink url={item.rankingUrl} position={item.position} />
                       </TableCell>
                       {competitorDomains.map((competitor, idx) => {
                         const domainName = extractDomainName(competitor);
                         return (
                           <TableCell key={idx}>
-                            {item.competitorRankings?.[domainName] ? (
-                              <Badge className={`${getRankingBadgeColor(item.competitorRankings[domainName])}`}>
-                                {item.competitorRankings[domainName]}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">-</Badge>
-                            )}
+                            <RankingLink 
+                              url={item.competitorUrls?.[domainName]} 
+                              position={item.competitorRankings?.[domainName]} 
+                            />
                           </TableCell>
                         );
                       })}
