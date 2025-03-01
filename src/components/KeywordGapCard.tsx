@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,24 +16,37 @@ interface KeywordGapCardProps {
 const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: KeywordGapCardProps) => {
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[]>([]);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const validateDomains = () => {
-    if (!domain.trim()) return false;
+    if (!domain || !domain.trim()) return false;
     
-    const validCompetitors = competitorDomains.filter(d => d.trim().length > 0);
+    // Make sure competitorDomains is an array and has at least one valid domain
+    if (!Array.isArray(competitorDomains)) return false;
+    const validCompetitors = competitorDomains.filter(d => d && d.trim().length > 0);
     return validCompetitors.length > 0;
   };
   
   useEffect(() => {
     const fetchGaps = async () => {
+      setError(null);
+      
+      // Ensure keywords is an array and has items before proceeding
+      if (!Array.isArray(keywords)) {
+        console.error("Keywords is not an array:", keywords);
+        setKeywordGaps([]);
+        return;
+      }
+      
       if (keywords.length > 0 && !isLoading && validateDomains()) {
         setIsLoadingGaps(true);
         
         try {
           const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
-          setKeywordGaps(gaps);
+          setKeywordGaps(Array.isArray(gaps) ? gaps : []);
         } catch (error) {
           console.error("Error fetching keyword gaps:", error);
+          setError("Failed to load keyword gaps");
           setKeywordGaps([]);
         } finally {
           setIsLoadingGaps(false);
@@ -71,9 +85,13 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
                 <p className="text-sm text-muted-foreground">Analyzing keyword gaps...</p>
               </div>
             </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-[300px]">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
           ) : (
             <div className="space-y-4">
-              {keywordGaps.length > 0 ? (
+              {Array.isArray(keywordGaps) && keywordGaps.length > 0 ? (
                 keywordGaps.map((gap, index) => (
                   <div key={index} className="p-4 rounded-lg border bg-background/50 transition-all hover:bg-background">
                     <div className="flex items-start justify-between">

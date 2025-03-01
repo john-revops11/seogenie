@@ -39,18 +39,27 @@ const Index = () => {
   const [progress, setProgress] = useState(0);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [keywordData, setKeywordData] = useState<any[]>([]);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  
+  // Reset error when changing tabs
+  useEffect(() => {
+    setAnalysisError(null);
+  }, [activeTab]);
   
   const addCompetitorDomain = () => {
+    if (isAnalyzing) return;
     setCompetitorDomains([...competitorDomains, ""]);
   };
 
   const removeCompetitorDomain = (index: number) => {
+    if (isAnalyzing) return;
     const newDomains = [...competitorDomains];
     newDomains.splice(index, 1);
     setCompetitorDomains(newDomains);
   };
 
   const updateCompetitorDomain = (index: number, value: string) => {
+    if (isAnalyzing) return;
     const newDomains = [...competitorDomains];
     newDomains[index] = value;
     setCompetitorDomains(newDomains);
@@ -84,6 +93,9 @@ const Index = () => {
   };
 
   const handleAnalyze = async () => {
+    // Reset error state
+    setAnalysisError(null);
+    
     // Form validation
     if (!mainDomain || !validateUrl(mainDomain)) {
       toast.error("Please enter a valid main domain");
@@ -92,6 +104,11 @@ const Index = () => {
     
     // Filter out empty domains first
     const validCompetitorDomains = competitorDomains.filter(domain => domain.trim() !== "");
+    
+    if (validCompetitorDomains.length === 0) {
+      toast.error("Please add at least one competitor domain");
+      return;
+    }
     
     if (validCompetitorDomains.some(domain => !validateUrl(domain))) {
       toast.error("Please enter valid competitor domains");
@@ -106,6 +123,10 @@ const Index = () => {
     setIsAnalyzing(true);
     setProgress(0);
     setKeywordData([]);
+    setAnalysisComplete(false);
+    
+    // Log what we're analyzing for debugging
+    console.info("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     
     // Mock progress updates while we do the real API call
     const interval = setInterval(() => {
@@ -124,20 +145,26 @@ const Index = () => {
       const result = await analyzeDomains(formattedMainDomain, formattedCompetitorDomains);
       
       if (result.success) {
-        setKeywordData(result.keywords);
+        // Ensure we have valid data
+        const keywords = Array.isArray(result.keywords) ? result.keywords : [];
+        setKeywordData(keywords);
         setProgress(100);
+        
         setTimeout(() => {
           setIsAnalyzing(false);
           setAnalysisComplete(true);
           toast.success("Analysis complete! View your results in the dashboard.");
         }, 500);
       } else {
-        throw new Error("Analysis failed");
+        throw new Error(result.message || "Analysis failed");
       }
     } catch (error) {
       clearInterval(interval);
       setIsAnalyzing(false);
-      toast.error(`Analysis failed: ${(error as Error).message}`);
+      
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setAnalysisError(errorMessage);
+      toast.error(`Analysis failed: ${errorMessage}`);
       setProgress(0);
     }
   };
@@ -151,10 +178,17 @@ const Index = () => {
   };
 
   // Get an array of just the keyword strings for content generation
-  const keywordStrings = keywordData.map(kw => kw.keyword);
+  const keywordStrings = Array.isArray(keywordData) ? keywordData.map(kw => kw.keyword) : [];
 
   // Filter out empty domains before passing to components
-  const validCompetitorDomains = competitorDomains.filter(domain => domain.trim() !== "");
+  const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
+
+  // If we're in an error state, provide a way to restart
+  const handleReset = () => {
+    setAnalysisError(null);
+    setProgress(0);
+    setIsAnalyzing(false);
+  };
 
   return (
     <Layout>
@@ -189,7 +223,18 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-6">
-            {!analysisComplete ? (
+            {analysisError ? (
+              <Card className="border-destructive/50">
+                <CardHeader>
+                  <CardTitle className="text-destructive">Analysis Error</CardTitle>
+                  <CardDescription>There was a problem analyzing the domains</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm">{analysisError}</p>
+                  <Button onClick={handleReset} variant="outline">Try Again</Button>
+                </CardContent>
+              </Card>
+            ) : !analysisComplete ? (
               <Card className="glass-panel transition-all duration-300 hover:shadow-xl border-revology/10">
                 <CardHeader>
                   <CardTitle>Domain Analysis</CardTitle>
@@ -284,7 +329,7 @@ const Index = () => {
                   <KeywordTable 
                     domain={mainDomain} 
                     competitorDomains={validCompetitorDomains} 
-                    keywords={keywordData}
+                    keywords={keywordData || []}
                     isLoading={isAnalyzing}
                   />
                 </div>
@@ -292,14 +337,14 @@ const Index = () => {
                 <KeywordGapCard 
                   domain={mainDomain} 
                   competitorDomains={validCompetitorDomains} 
-                  keywords={keywordData}
+                  keywords={keywordData || []}
                   isLoading={isAnalyzing}
                 />
                 
                 <div className="md:col-span-1 lg:col-span-2">
                   <SeoRecommendationsCard 
                     domain={mainDomain} 
-                    keywords={keywordData}
+                    keywords={keywordData || []}
                     isLoading={isAnalyzing}
                   />
                 </div>
