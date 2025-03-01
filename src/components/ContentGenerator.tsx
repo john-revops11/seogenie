@@ -1,4 +1,4 @@
-
+<lov-code>
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ const analyzeDomainNiche = (domain: string, keywords: string[] = []): string[] =
   return relevantTerms;
 };
 
-// Improved SEO-focused topic suggestion function
+// Updated more natural SEO-focused topic suggestion function
 const generateTopicSuggestions = (
   domain: string,
   keywordGaps: any[] = [],
@@ -104,10 +104,6 @@ const generateTopicSuggestions = (
   const questionKeywords = keywordsToUse
     .filter(keyword => /^(how|what|why|when|where|which|who|is|can|does|do|will|should)/.test(keyword.toLowerCase()));
   
-  // Domain information for branding
-  const domainName = domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0];
-  const formattedDomainName = domainName.charAt(0).toUpperCase() + domainName.slice(1);
-  
   // Industry/niche detection based on keywords
   const nicheTerms = analyzeDomainNiche(domain, keywordsToUse);
   console.log("Niche terms for topic generation:", nicheTerms);
@@ -131,9 +127,9 @@ const generateTopicSuggestions = (
     // Format with proper capitalization
     const formattedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
     
-    // Generate topic with multiple formats
+    // Generate more natural topic titles
     topicIdeas.push({
-      topic: `${formattedKeyword}: A Complete Guide for ${formattedDomainName} Professionals`,
+      topic: `${formattedKeyword}: A Complete Guide`,
       primaryKeywords: [keyword, baseKeyword],
       searchIntent: 'informational',
       contentType: 'how-to guide',
@@ -156,9 +152,9 @@ const generateTopicSuggestions = (
   highValueKeywords.forEach(keyword => {
     const formattedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
     
-    // Generate list-based topic
+    // Generate list-based topic without domain reference
     topicIdeas.push({
-      topic: `Top 10 ${formattedKeyword} Strategies for ${formattedDomainName} Success`,
+      topic: `Top 10 ${formattedKeyword} Strategies That Actually Work`,
       primaryKeywords: [keyword],
       searchIntent: 'informational',
       contentType: 'listicle',
@@ -167,7 +163,7 @@ const generateTopicSuggestions = (
     
     // Add comparison format
     topicIdeas.push({
-      topic: `${formattedKeyword} vs Traditional Approaches: What ${formattedDomainName} Experts Need to Know`,
+      topic: `${formattedKeyword} vs Traditional Approaches: An Expert Comparison`,
       primaryKeywords: [keyword, `${keyword} comparison`],
       searchIntent: 'commercial investigation',
       contentType: 'comparison',
@@ -197,18 +193,18 @@ const generateTopicSuggestions = (
     .forEach(([concept, keywords]) => {
       const formattedConcept = concept.charAt(0).toUpperCase() + concept.slice(1);
       
-      // Create ultimate guide topic
+      // Create ultimate guide topic without domain reference
       topicIdeas.push({
-        topic: `The Ultimate ${formattedConcept} Guide: Everything ${formattedDomainName} Professionals Should Know`,
+        topic: `The Ultimate ${formattedConcept} Guide: Everything You Should Know`,
         primaryKeywords: [concept, ...keywords.slice(0, 3)],
         searchIntent: 'informational',
         contentType: 'comprehensive guide',
         priority: 'high'
       });
       
-      // Create industry-specific topic
+      // Create industry-specific topic with more natural framing
       topicIdeas.push({
-        topic: `${formattedConcept} in ${formattedDomainName}: Best Practices, Tips, and Strategies`,
+        topic: `${formattedConcept} Best Practices, Tips, and Strategies`,
         primaryKeywords: [concept, ...keywords.slice(0, 2)],
         searchIntent: 'informational',
         contentType: 'industry guide',
@@ -237,9 +233,9 @@ const generateTopicSuggestions = (
             const extractedTopic = match[1].trim();
             const formattedTopic = extractedTopic.charAt(0).toUpperCase() + extractedTopic.slice(1);
             
-            // Create a topic based on the recommendation
+            // Create a topic based on the recommendation without domain reference
             topicIdeas.push({
-              topic: `${formattedTopic}: A Comprehensive Guide for ${formattedDomainName}`,
+              topic: `${formattedTopic}: A Comprehensive Guide`,
               primaryKeywords: [extractedTopic],
               searchIntent: 'informational',
               contentType: 'expert guide',
@@ -259,7 +255,7 @@ const generateTopicSuggestions = (
     const formattedTerm = term.charAt(0).toUpperCase() + term.slice(1);
     
     topicIdeas.push({
-      topic: `${currentYear} ${formattedTerm} Trends Every ${formattedDomainName} Professional Should Follow`,
+      topic: `${currentYear} ${formattedTerm} Trends You Should Follow`,
       primaryKeywords: [term, `${term} trends`, `${currentYear} ${term}`],
       searchIntent: 'informational',
       contentType: 'trend analysis',
@@ -290,7 +286,7 @@ const generateTopicSuggestions = (
   return shuffledTopics.slice(0, 8); // Return top 8 topics
 };
 
-// Enhanced title suggestion function optimized for SEO
+// Enhanced title suggestion function with more natural framing
 const generateTitleSuggestions = (
   topic: string,
   keywordGaps: any[] = [],
@@ -314,10 +310,6 @@ const generateTitleSuggestions = (
   const keywordsToUse = selectedKeywords.length > 0 
     ? selectedKeywords 
     : keywordGaps?.map(gap => gap.keyword) || [];
-  
-  // Domain name for branding
-  const domainName = domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0];
-  const formattedDomainName = domainName.charAt(0).toUpperCase() + domainName.slice(1);
   
   // Store potential titles with metadata
   const titleIdeas = new Set<string>();
@@ -357,24 +349,24 @@ const generateTitleSuggestions = (
   // Generate title formats optimized for click-through rate
   
   // Format 1: Number-based listicles (high CTR)
-  titleIdeas.add(`Top 10 ${topic} Strategies for ${formattedDomainName} in ${currentYear}`);
+  titleIdeas.add(`Top 10 ${topic} Strategies for ${currentYear}`);
   titleIdeas.add(`7 Proven ${topic} Techniques That Drive Real Results`);
   
   // Format 2: How-to guides (high CTR for informational intent)
-  titleIdeas.add(`How to Master ${topic}: A Step-by-Step Guide for ${formattedDomainName} Professionals`);
+  titleIdeas.add(`How to Master ${topic}: A Step-by-Step Guide`);
   titleIdeas.add(`The Complete Guide to ${topic}: Everything You Need to Know`);
   
   // Format 3: Ultimate/Definitive guides (authoritative)
-  titleIdeas.add(`The Ultimate ${topic} Guide for ${formattedDomainName} Success`);
+  titleIdeas.add(`The Ultimate ${topic} Guide for Success`);
   titleIdeas.add(`The Definitive ${topic} Framework: A ${currentYear} Perspective`);
   
   // Format 4: Question-based titles (engage curiosity)
-  titleIdeas.add(`What Makes ${topic} Essential for ${formattedDomainName}? Expert Insights`);
-  titleIdeas.add(`Why ${topic} Matters: Key Strategies for ${formattedDomainName} Growth`);
+  titleIdeas.add(`What Makes ${topic} Essential? Expert Insights`);
+  titleIdeas.add(`Why ${topic} Matters: Key Strategies for Growth`);
   
   // Format 5: Case study/Results-oriented
-  titleIdeas.add(`${topic} Case Study: How ${formattedDomainName} Achieved Breakthrough Results`);
-  titleIdeas.add(`${topic} ROI: Measuring the Impact on ${formattedDomainName} Performance`);
+  titleIdeas.add(`${topic} Case Study: How to Achieve Breakthrough Results`);
+  titleIdeas.add(`${topic} ROI: Measuring Business Impact and Performance`);
   
   // Add titles that incorporate high-value keywords from gaps analysis
   bestKeywords.forEach(keyword => {
@@ -382,7 +374,7 @@ const generateTitleSuggestions = (
     
     // Create variations incorporating both topic and high-value keyword
     titleIdeas.add(`${topic}: The Strategic Approach to ${formattedKeyword}`);
-    titleIdeas.add(`How ${formattedDomainName} Experts Use ${topic} to Optimize ${formattedKeyword}`);
+    titleIdeas.add(`How Experts Use ${topic} to Optimize ${formattedKeyword}`);
     
     // Add data-driven titles (high CTR)
     titleIdeas.add(`${topic} Data Analysis: Unlocking the Power of ${formattedKeyword}`);
@@ -434,7 +426,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
   const [titleSuggestions, setTitleSuggestions] = useState<{[topic: string]: string[]}>({});
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isDataReady, setIsDataReady] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isGenerating);
   const [editedContent, setEditedContent] = useState("");
   const [showCustomTopicInput, setShowCustomTopicInput] = useState(false);
   const [isEditingTopic, setIsEditingTopic] = useState<string | null>(null);
@@ -880,292 +872,3 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                         {topics.map((topic, index) => (
                           <div 
                             key={index}
-                            className={`p-2 rounded hover:bg-accent/50 transition-colors cursor-pointer relative group ${selectedTopic === topic ? 'bg-accent' : ''}`}
-                            onClick={() => isEditingTopic !== topic && handleSelectTopic(topic)}
-                          >
-                            {isEditingTopic === topic ? (
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  value={editedTopicText}
-                                  onChange={e => setEditedTopicText(e.target.value)}
-                                  className="flex-1 text-sm"
-                                  autoFocus
-                                />
-                                <Button 
-                                  size="xs" 
-                                  onClick={handleSaveEditedTopic}
-                                  className="h-7 py-0 px-2 text-xs bg-revology hover:bg-revology-dark"
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="text-sm font-medium">{topic}</span>
-                                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button 
-                                    size="xs" 
-                                    variant="ghost" 
-                                    className="h-6 w-6 p-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleStartEditingTopic(topic);
-                                    }}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button 
-                                    size="xs" 
-                                    variant="ghost" 
-                                    className="h-6 w-6 p-0 text-destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTopic(topic);
-                                    }}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  ) : keywordGapsCache.selectedKeywords?.length > 0 && (
-                    <div className="flex justify-center items-center p-6 rounded-md border">
-                      <div className="text-center">
-                        <RefreshCw className="h-10 w-10 text-muted-foreground/50 mx-auto mb-4" />
-                        <h4 className="text-sm font-medium">Generate Topics</h4>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Use the button above to generate SEO-optimized topics based on your selected keywords.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Title selection when a topic is selected */}
-                  {selectedTopic && (
-                    <div className="mt-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-revology-dark">Suggested Titles</h3>
-                        <Badge variant="outline" className="text-xs">
-                          Based on "{selectedTopic}"
-                        </Badge>
-                      </div>
-                      
-                      <ScrollArea className="h-[150px] rounded-md border p-4">
-                        <div className="space-y-2">
-                          {titleSuggestions[selectedTopic]?.map((suggestion, index) => (
-                            <div 
-                              key={index}
-                              className={`p-2 rounded hover:bg-accent/50 transition-colors cursor-pointer ${title === suggestion ? 'bg-accent' : ''}`}
-                              onClick={() => handleSelectTitle(suggestion)}
-                            >
-                              <span className="text-sm">{suggestion}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="custom-title">Custom Title</Label>
-                        <Input 
-                          id="custom-title" 
-                          value={title} 
-                          onChange={e => setTitle(e.target.value)}
-                          placeholder="Enter a custom title..."
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Content generation configuration */}
-                  {selectedTopic && (
-                    <div className="mt-6 space-y-4">
-                      <Separator />
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="content-type">Content Type</Label>
-                          <Select value={contentType} onValueChange={setContentType}>
-                            <SelectTrigger id="content-type">
-                              <SelectValue placeholder="Select content type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="blog">Blog Post</SelectItem>
-                              <SelectItem value="article">Article</SelectItem>
-                              <SelectItem value="guide">Comprehensive Guide</SelectItem>
-                              <SelectItem value="tutorial">Tutorial</SelectItem>
-                              <SelectItem value="case-study">Case Study</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="creativity">AI Creativity</Label>
-                            <span className="text-xs text-muted-foreground">{creativity}%</span>
-                          </div>
-                          <Slider
-                            id="creativity"
-                            min={10}
-                            max={90}
-                            step={10}
-                            value={[creativity]}
-                            onValueChange={(value) => setCreativity(value[0])}
-                            className="cursor-pointer"
-                          />
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Factual</span>
-                            <span>Creative</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        onClick={handleGenerateContent}
-                        className="w-full mt-6 bg-revology hover:bg-revology-dark"
-                        disabled={isGenerating}
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating Content...
-                          </>
-                        ) : (
-                          <>
-                            Generate SEO-Optimized Content
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="preview" className="space-y-6">
-            {generatedContent ? (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold">{generatedContent.title}</h2>
-                  <p className="text-muted-foreground italic">{generatedContent.metaDescription}</p>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Content Outline</h3>
-                  <div className="rounded-md border p-4 bg-accent/10">
-                    <ul className="list-disc list-inside space-y-1">
-                      {generatedContent.outline.map((item, index) => (
-                        <li key={index} className="text-sm">{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Content</h3>
-                    <div className="flex items-center gap-2">
-                      {isEditing ? (
-                        <>
-                          <Button size="sm" onClick={handleSaveEdits} className="bg-green-600 hover:bg-green-700">
-                            <Check className="mr-1 h-4 w-4" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button size="sm" variant="outline" onClick={handleEditContent}>
-                            <Edit className="mr-1 h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={handleCopy}>
-                            <Copy className="mr-1 h-4 w-4" />
-                            Copy
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={handleDownload}>
-                            <Download className="mr-1 h-4 w-4" />
-                            Download
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {isEditing ? (
-                    <Textarea
-                      value={editedContent}
-                      onChange={e => setEditedContent(e.target.value)}
-                      className="min-h-[400px] font-mono text-sm"
-                    />
-                  ) : (
-                    <div className="rounded-md border p-6 max-h-[500px] overflow-y-auto">
-                      <div className="prose prose-sm max-w-none">
-                        {generatedContent.content.split("\n").map((paragraph, index) => {
-                          if (paragraph.startsWith("# ")) {
-                            return <h1 key={index} className="text-xl font-bold mt-6 mb-4">{paragraph.replace("# ", "")}</h1>;
-                          } else if (paragraph.startsWith("## ")) {
-                            return <h2 key={index} className="text-lg font-bold mt-6 mb-3">{paragraph.replace("## ", "")}</h2>;
-                          } else if (paragraph.startsWith("### ")) {
-                            return <h3 key={index} className="text-md font-bold mt-5 mb-2">{paragraph.replace("### ", "")}</h3>;
-                          } else if (paragraph.startsWith("- ")) {
-                            return <li key={index} className="ml-6">{paragraph.replace("- ", "")}</li>;
-                          } else if (paragraph.trim() === "") {
-                            return <br key={index} />;
-                          } else {
-                            return <p key={index} className="mb-3">{paragraph}</p>;
-                          }
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex justify-center mt-6">
-                  <Button 
-                    onClick={handleRegenerateContent}
-                    className="bg-revology hover:bg-revology-dark"
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Regenerating...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Regenerate Content
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FileEdit className="w-12 h-12 text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-semibold">No content generated yet</h3>
-                <p className="mt-2 text-muted-foreground max-w-md">
-                  Generate content from the "Generate" tab to preview it here.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default ContentGenerator;
