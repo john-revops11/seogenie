@@ -1,656 +1,730 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, RefreshCw, FileEdit, Copy, Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Copy, Code, FileText, PenLine, RefreshCw, Sparkles, Edit, Save } from "lucide-react";
 import { generateContent } from "@/services/keywordService";
+import { keywordGapsCache } from "@/components/KeywordGapCard";
+import { recommendationsCache } from "@/components/SeoRecommendationsCard";
 
 interface ContentGeneratorProps {
   domain: string;
-  allKeywords?: string[]; // Optional prop for keyword suggestions
+  allKeywords: string[];
 }
 
-const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) => {
+const generateTopicSuggestions = (
+  domain: string,
+  keywordGaps: any[] = [],
+  seoRecommendations: any[] = []
+): string[] => {
+  if ((!keywordGaps || keywordGaps.length === 0) && 
+      (!seoRecommendations || seoRecommendations.length === 0)) {
+    return [
+      "Pricing Strategy Optimization",
+      "Revenue Growth Management",
+      "Dynamic Pricing Models",
+      "Value-Based Pricing",
+      "Pricing Analytics Frameworks"
+    ];
+  }
+  
+  const gapKeywords = keywordGaps?.map(gap => gap.keyword) || [];
+  
+  const contentRecs = seoRecommendations?.filter(rec => rec.type === "content") || [];
+  
+  const topics = new Set<string>();
+  
+  if (gapKeywords.length > 0) {
+    const keywordGroups: Record<string, string[]> = {};
+    
+    gapKeywords.forEach(keyword => {
+      const mainTerm = keyword.split(' ').slice(0, 2).join(' ');
+      if (!keywordGroups[mainTerm]) {
+        keywordGroups[mainTerm] = [];
+      }
+      keywordGroups[mainTerm].push(keyword);
+    });
+    
+    Object.entries(keywordGroups).forEach(([mainTerm, keywords]) => {
+      if (keywords.length >= 2) {
+        const topicName = mainTerm.charAt(0).toUpperCase() + mainTerm.slice(1);
+        
+        const pricingTopics = [
+          `${topicName} Pricing Strategies`,
+          `${topicName} for Revenue Growth`,
+          `${topicName} Analytics Framework`
+        ];
+        
+        pricingTopics.forEach(topic => topics.add(topic));
+      }
+    });
+  }
+  
+  contentRecs.forEach(rec => {
+    const recommendation = rec.recommendation.toLowerCase();
+    
+    if (recommendation.includes('pricing') || 
+        recommendation.includes('revenue') || 
+        recommendation.includes('strategy')) {
+      
+      const topicWords = recommendation.split(' ').slice(0, 4);
+      const topicName = topicWords
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      topics.add(topicName);
+    }
+  });
+  
+  const defaultTopics = [
+    "Pricing Strategy Optimization",
+    "Revenue Growth Management",
+    "Dynamic Pricing Models",
+    "Value-Based Pricing",
+    "Pricing Analytics Frameworks",
+    "Competitive Pricing Analysis",
+    "Subscription Revenue Optimization"
+  ];
+  
+  defaultTopics.forEach(topic => {
+    if (topics.size < 5) {
+      topics.add(topic);
+    }
+  });
+  
+  return Array.from(topics).slice(0, 8);
+};
+
+const generateTitleSuggestions = (
+  topic: string,
+  keywordGaps: any[] = [],
+  seoRecommendations: any[] = []
+): string[] => {
+  if ((!keywordGaps || keywordGaps.length === 0) && 
+      (!seoRecommendations || seoRecommendations.length === 0)) {
+    return [
+      `Ultimate Guide to ${topic} for Business Growth`,
+      `How ${topic} Drives Revenue: Proven Strategies`,
+      `${topic}: Benchmarks and Best Practices for 2023`
+    ];
+  }
+  
+  const titles = new Set<string>();
+  
+  const relatedKeywords = keywordGaps?.filter(gap => {
+    const keyword = gap.keyword.toLowerCase();
+    const topicWords = topic.toLowerCase().split(' ');
+    return topicWords.some(word => keyword.includes(word)) || 
+           keyword.includes('pricing') || 
+           keyword.includes('revenue');
+  }) || [];
+  
+  relatedKeywords.forEach(gap => {
+    const keyword = gap.keyword;
+    titles.add(`${topic}: Optimizing for ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
+    titles.add(`The Ultimate Guide to ${topic} and ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
+  });
+  
+  const contentRecs = seoRecommendations?.filter(rec => rec.type === "content") || [];
+  contentRecs.forEach(rec => {
+    const recommendation = rec.recommendation;
+    if (recommendation.toLowerCase().includes(topic.toLowerCase().split(' ')[0])) {
+      titles.add(`${topic}: ${recommendation.split(':').pop()?.trim() || 'Best Practices and Strategies'}`);
+    }
+  });
+  
+  const defaultTitles = [
+    `Ultimate Guide to ${topic} for Revenue Growth`,
+    `How ${topic} Drives Profitability: Proven Strategies`,
+    `${topic}: Benchmarks and Best Practices for 2023`,
+    `Implementing ${topic} to Maximize Customer Lifetime Value`,
+    `${topic}: Analytics-Driven Approach for Business Success`
+  ];
+  
+  defaultTitles.forEach(title => {
+    if (titles.size < 3) {
+      titles.add(title);
+    }
+  });
+  
+  return Array.from(titles).slice(0, 3);
+};
+
+const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [contentType, setContentType] = useState("blog");
-  const [keywords, setKeywords] = useState<string[]>(["pricing strategy", "revenue management"]);
+  const [creativity, setCreativity] = useState(50);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<{
     title: string;
     metaDescription: string;
     outline: string[];
     content: string;
-    formattedContent?: string; // Added for storing formatted HTML content
   } | null>(null);
-  const [activeTab, setActiveTab] = useState("editor");
-  const [creativity, setCreativity] = useState([50]);
   
-  // State variables for topics and title suggestions
-  const [selectedTopic, setSelectedTopic] = useState("");
   const [topics, setTopics] = useState<string[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState("");
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
-  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
-  const [isEditingContent, setIsEditingContent] = useState(false);
-  const [editableContent, setEditableContent] = useState("");
+  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
+  const [isDataReady, setIsDataReady] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState("");
   
   useEffect(() => {
-    if (allKeywords.length > 0) {
-      const topKeywords = allKeywords.slice(0, 5).map(k => k.toLowerCase());
-      if (topKeywords.length > 0) {
-        setKeywords(topKeywords);
+    const checkDataReadiness = () => {
+      const hasKeywordGaps = keywordGapsCache.data && keywordGapsCache.data.length > 0;
+      const hasRecommendations = recommendationsCache.data && 
+                                (recommendationsCache.data.onPage.length > 0 || 
+                                 recommendationsCache.data.technical.length > 0 || 
+                                 recommendationsCache.data.content.length > 0);
+      
+      setIsDataReady(hasKeywordGaps && hasRecommendations);
+      
+      if (hasKeywordGaps && hasRecommendations) {
+        generateInitialTopics();
       }
-    }
-  }, [allKeywords]);
+    };
+    
+    checkDataReadiness();
+  }, [domain, allKeywords]);
   
-  // Generate topics based on keywords when component mounts or keywords change
-  useEffect(() => {
-    if (keywords.length > 0) {
-      generateTopics();
-    }
-  }, [keywords]);
-  
-  // Generate new title suggestions when topic changes
-  useEffect(() => {
-    if (selectedTopic) {
-      generateTitleSuggestions(selectedTopic);
-    }
-  }, [selectedTopic]);
-  
-  const contentTypeOptions = [
-    { value: "blog", label: "Blog Post" },
-    { value: "case_study", label: "Case Study" },
-    { value: "whitepaper", label: "Whitepaper" },
-    { value: "newsletter", label: "Email Newsletter" },
-  ];
-  
-  const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const keywordArray = e.target.value.split(",").map(k => k.trim()).filter(k => k);
-    setKeywords(keywordArray);
-  };
-  
-  const generateTopics = () => {
+  const generateInitialTopics = () => {
     setIsLoadingTopics(true);
     
-    // Generate topics based on pricing and revenue management keywords
-    const keywordBased = keywords.slice(0, 3).map(keyword => {
-      return `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} Strategies`;
-    });
-    
-    // Add predefined topics related to pricing and revenue management
-    const pricingTopics = [
-      "Value-Based Pricing",
-      "Dynamic Pricing Models",
-      "Revenue Growth Management",
-      "Pricing Analytics",
-      "Subscription Revenue Optimization",
-      "Price Elasticity Analysis",
-      "Competitive Price Intelligence",
-      "Customer Segmentation for Pricing",
-      "Promotional Effectiveness"
-    ];
-    
-    // Simulate API delay
-    setTimeout(() => {
-      // Combine topics and ensure we have at least 5
-      let combinedTopics = [...new Set([...keywordBased, ...pricingTopics])];
-      combinedTopics = combinedTopics.slice(0, Math.max(5, keywordBased.length + 2));
+    try {
+      const gaps = keywordGapsCache.data || [];
       
-      setTopics(combinedTopics);
+      const allRecommendations = [
+        ...(recommendationsCache.data?.onPage || []),
+        ...(recommendationsCache.data?.technical || []),
+        ...(recommendationsCache.data?.content || [])
+      ];
+      
+      const generatedTopics = generateTopicSuggestions(domain, gaps, allRecommendations);
+      setTopics(generatedTopics);
+      
+      setSelectedTopic("");
+      setTitleSuggestions([]);
+      setTitle("");
+    } catch (error) {
+      console.error("Error generating topics:", error);
+      toast.error("Failed to generate topic suggestions");
+    } finally {
       setIsLoadingTopics(false);
-      
-      // Set default selected topic if none is selected
-      if (!selectedTopic && combinedTopics.length > 0) {
-        setSelectedTopic(combinedTopics[0]);
-      }
-      
-      toast.success("Generated new topic suggestions");
-    }, 800);
+    }
   };
   
-  const generateTitleSuggestions = (topic: string) => {
+  const handleTopicChange = (topic: string) => {
+    setSelectedTopic(topic);
     setIsLoadingTitles(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Generate title suggestions based on selected topic and pricing/revenue keywords
-      const suggestions = [];
-      const topKeywords = keywords.slice(0, 3);
-      const currentYear = new Date().getFullYear();
+    try {
+      const gaps = keywordGapsCache.data || [];
       
-      // Generate titles with different formats focused on pricing and revenue
-      suggestions.push(`${topic}: A Strategic Framework for Maximizing Revenue Growth`);
+      const allRecommendations = [
+        ...(recommendationsCache.data?.onPage || []),
+        ...(recommendationsCache.data?.technical || []),
+        ...(recommendationsCache.data?.content || [])
+      ];
       
-      if (topKeywords.length > 0) {
-        suggestions.push(`How to Optimize ${topic} with Advanced Analytics for Better Profitability`);
+      const titles = generateTitleSuggestions(topic, gaps, allRecommendations);
+      setTitleSuggestions(titles);
+      
+      if (titles.length > 0) {
+        setTitle(titles[0]);
       }
-      
-      suggestions.push(`${Math.floor(Math.random() * 5) + 5} ${topic} Best Practices That Drive Bottom-Line Impact`);
-      
-      // Add more variations if we need them
-      if (suggestions.length < 3) {
-        suggestions.push(`${topic} in ${currentYear}: Emerging Trends and Strategic Insights`);
-        suggestions.push(`Transforming Your ${topic} Approach: Data-Driven Methods for Success`);
-      }
-      
-      setTitleSuggestions(suggestions.slice(0, 3));
+    } catch (error) {
+      console.error("Error generating titles:", error);
+      toast.error("Failed to generate title suggestions");
+    } finally {
       setIsLoadingTitles(false);
+    }
+  };
+  
+  const handleTitleSelect = (selectedTitle: string) => {
+    setTitle(selectedTitle);
+  };
+  
+  const handleRegenerateTopics = () => {
+    setIsLoadingTopics(true);
+    
+    try {
+      const gaps = keywordGapsCache.data || [];
+      
+      const allRecommendations = [
+        ...(recommendationsCache.data?.onPage || []),
+        ...(recommendationsCache.data?.technical || []),
+        ...(recommendationsCache.data?.content || [])
+      ];
+      
+      const randomSeed = Math.random().toString();
+      console.log("Regenerating topics with seed:", randomSeed);
+      
+      const existingTopics = new Set(topics);
+      let newTopics = [];
+      
+      for (let i = 0; i < 3; i++) {
+        const candidateTopics = generateTopicSuggestions(domain, gaps, allRecommendations);
+        newTopics = candidateTopics.filter(topic => !existingTopics.has(topic));
+        
+        if (newTopics.length >= 5) break;
+      }
+      
+      if (newTopics.length < 5) {
+        newTopics = generateTopicSuggestions(domain, gaps, allRecommendations);
+      }
+      
+      setTopics(newTopics);
+      toast.success("Generated new topic suggestions");
+      
+      setSelectedTopic("");
+      setTitleSuggestions([]);
+      setTitle("");
+    } catch (error) {
+      console.error("Error regenerating topics:", error);
+      toast.error("Failed to regenerate topic suggestions");
+    } finally {
+      setIsLoadingTopics(false);
+    }
+  };
+  
+  const handleRegenerateTitles = () => {
+    if (!selectedTopic) {
+      toast.error("Please select a topic first");
+      return;
+    }
+    
+    setIsLoadingTitles(true);
+    
+    try {
+      const gaps = keywordGapsCache.data || [];
+      
+      const allRecommendations = [
+        ...(recommendationsCache.data?.onPage || []),
+        ...(recommendationsCache.data?.technical || []),
+        ...(recommendationsCache.data?.content || [])
+      ];
+      
+      const randomSeed = Math.random().toString();
+      console.log("Regenerating titles with seed:", randomSeed);
+      
+      const existingTitles = new Set(titleSuggestions);
+      let newTitles = [];
+      
+      for (let i = 0; i < 3; i++) {
+        const candidateTitles = generateTitleSuggestions(selectedTopic, gaps, allRecommendations);
+        newTitles = candidateTitles.filter(title => !existingTitles.has(title));
+        
+        if (newTitles.length >= 3) break;
+      }
+      
+      if (newTitles.length < 3) {
+        newTitles = generateTitleSuggestions(selectedTopic, gaps, allRecommendations);
+      }
+      
+      setTitleSuggestions(newTitles);
+      
+      if (newTitles.length > 0) {
+        setTitle(newTitles[0]);
+      }
       
       toast.success("Generated new title suggestions");
-    }, 800); // Simulate loading delay
+    } catch (error) {
+      console.error("Error regenerating titles:", error);
+      toast.error("Failed to regenerate title suggestions");
+    } finally {
+      setIsLoadingTitles(false);
+    }
   };
   
-  const handleTopicChange = (value: string) => {
-    setSelectedTopic(value);
+  const handleTagClick = (keyword: string) => {
+    if (selectedKeywords.includes(keyword)) {
+      setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
+    } else {
+      setSelectedKeywords([...selectedKeywords, keyword]);
+    }
   };
   
-  const handleTitleSelect = (value: string) => {
-    setTitle(value);
-  };
-  
-  const formatContentWithHtml = (content: string): string => {
-    // Replace Markdown headings with HTML headings
-    let formatted = content
-      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-5 mb-3">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-medium mt-4 mb-2">$1</h3>')
-      // Replace bullet points with styled lists
-      .replace(/^[\*\-] (.*)$/gm, '<li class="ml-6 list-disc mb-1">$1</li>')
-      // Wrap bullet point lists in ul tags
-      .replace(/((?:<li.*?>.*?<\/li>\n?)+)/gs, '<ul class="my-3 space-y-1">$1</ul>')
-      // Replace numbered lists
-      .replace(/^\d+\. (.*)$/gm, '<li class="ml-6 list-decimal mb-1">$1</li>')
-      // Wrap numbered lists in ol tags
-      .replace(/((?:<li class="ml-6 list-decimal.*?>.*?<\/li>\n?)+)/gs, '<ol class="my-3 space-y-1">$1</ol>')
-      // Replace bold text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Replace italic text
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      // Replace paragraphs (any line that's not a heading, list item, or blank)
-      .replace(/^(?!<h|<li|\s*$)(.+)$/gm, '<p class="my-3">$1</p>');
-    
-    return formatted;
-  };
-  
-  const handleGenerate = async () => {
+  const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please enter a title for your content");
       return;
     }
     
+    if (selectedKeywords.length === 0) {
+      toast.error("Please select at least one keyword");
+      return;
+    }
+    
     setIsGenerating(true);
+    setGeneratedContent(null);
     
     try {
       const content = await generateContent(
         domain,
         title,
-        keywords,
+        selectedKeywords,
         contentType,
-        creativity[0]
+        creativity
       );
       
-      // Format the content with HTML
-      const formattedContent = formatContentWithHtml(content.content);
-      
-      setGeneratedContent({
-        ...content,
-        formattedContent
-      });
-      
-      setActiveTab("preview");
-      toast.success("Content successfully generated!");
+      setGeneratedContent(content);
+      setEditedContent(content.content);
+      setIsEditing(false);
     } catch (error) {
       console.error("Error generating content:", error);
-      toast.error("Failed to generate content. Please try again.");
+      toast.error(`Failed to generate content: ${(error as Error).message}`);
     } finally {
       setIsGenerating(false);
     }
   };
   
   const handleRegenerateContent = async () => {
-    if (!title) {
-      toast.error("Please enter a title to regenerate content");
-      return;
-    }
-    
-    setIsGenerating(true);
-    toast.info("Regenerating content...");
-    
-    try {
-      // Add a slight randomness to creativity to ensure different results
-      const adjustedCreativity = Math.min(100, Math.max(1, creativity[0] + (Math.random() * 10 - 5)));
-      
-      const content = await generateContent(
-        domain,
-        title,
-        keywords,
-        contentType,
-        adjustedCreativity
-      );
-      
-      // Format the content with HTML
-      const formattedContent = formatContentWithHtml(content.content);
-      
+    handleGenerateContent();
+  };
+  
+  const handleEditContent = () => {
+    setIsEditing(true);
+  };
+  
+  const handleSaveEdits = () => {
+    if (generatedContent) {
       setGeneratedContent({
-        ...content,
-        formattedContent
+        ...generatedContent,
+        content: editedContent
       });
-      
-      setActiveTab("preview");
-      toast.success("Content successfully regenerated!");
-    } catch (error) {
-      console.error("Error regenerating content:", error);
-      toast.error("Failed to regenerate content. Please try again.");
-    } finally {
-      setIsGenerating(false);
+      setIsEditing(false);
+      toast.success("Content updated successfully");
     }
   };
   
-  const handleCopyContent = () => {
+  const handleCopy = () => {
     if (generatedContent) {
       navigator.clipboard.writeText(generatedContent.content);
       toast.success("Content copied to clipboard");
     }
   };
   
-  const handleEditContent = () => {
+  const handleDownload = () => {
     if (generatedContent) {
-      setEditableContent(generatedContent.content);
-      setIsEditingContent(true);
+      const blob = new Blob([generatedContent.content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${generatedContent.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Content downloaded as Markdown file");
     }
   };
-  
-  const handleSaveEditedContent = () => {
-    if (generatedContent && editableContent) {
-      // Format the edited content
-      const formattedContent = formatContentWithHtml(editableContent);
-      
-      setGeneratedContent({
-        ...generatedContent,
-        content: editableContent,
-        formattedContent
-      });
-      
-      setIsEditingContent(false);
-      toast.success("Content updated successfully");
-    }
-  };
-  
-  const addKeyword = (keyword: string) => {
-    if (!keywords.includes(keyword)) {
-      setKeywords([...keywords, keyword]);
-    }
-  };
-  
-  const removeKeyword = (index: number) => {
-    const newKeywords = [...keywords];
-    newKeywords.splice(index, 1);
-    setKeywords(newKeywords);
-  };
-  
-  // Suggested keywords for pricing and revenue management
-  const suggestedKeywords = allKeywords.length > 0 
-    ? [...new Set(allKeywords.slice(0, 15))]
-        .filter(kw => !keywords.includes(kw))
-        .slice(0, 6)
-    : [
-        "value-based pricing", "revenue optimization", "pricing strategy", 
-        "dynamic pricing", "customer segmentation", "competitive analysis",
-        "price elasticity", "revenue growth management", "subscription pricing"
-      ];
 
-  return (
-    <div className="space-y-6 animate-fade-in">
+  if (!isDataReady) {
+    return (
       <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
         <CardHeader>
-          <CardTitle>AI Content Generator</CardTitle>
-          <CardDescription>Create expert pricing and revenue management content for Revology Analytics</CardDescription>
+          <CardTitle>Content Generation</CardTitle>
+          <CardDescription>Analysis data required for intelligent content generation</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid grid-cols-2 w-full max-w-md">
-              <TabsTrigger value="editor" className="flex items-center gap-2">
-                <PenLine className="w-4 h-4" /> Editor
-              </TabsTrigger>
-              <TabsTrigger value="preview" className="flex items-center gap-2" disabled={!generatedContent}>
-                <FileText className="w-4 h-4" /> Preview
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="editor" className="space-y-6">
-              <div className="space-y-4">
-                {/* Topic Selection Dropdown */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="topic">Content Topic</Label>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={generateTopics}
-                      disabled={isLoadingTopics}
-                      className="h-8"
-                    >
-                      {isLoadingTopics ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      )}
-                      Regenerate
-                    </Button>
-                  </div>
-                  <Select value={selectedTopic} onValueChange={handleTopicChange}>
-                    <SelectTrigger className="transition-all">
-                      <SelectValue placeholder="Select a topic" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {topics.map((topic) => (
-                        <SelectItem key={topic} value={topic}>
-                          {topic}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {isLoadingTopics ? (
-                    <p className="text-xs text-muted-foreground flex items-center">
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Generating topic suggestions...
-                    </p>
-                  ) : selectedTopic ? (
-                    <p className="text-xs text-muted-foreground">
-                      Selected topic: <span className="font-medium text-foreground">{selectedTopic}</span>
-                    </p>
-                  ) : null}
-                </div>
-                
-                {/* Title Selection Dropdown */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="title-suggestions">Suggested Titles</Label>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => selectedTopic && generateTitleSuggestions(selectedTopic)}
-                      disabled={isLoadingTitles || !selectedTopic}
-                      className="h-8"
-                    >
-                      {isLoadingTitles ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      )}
-                      Regenerate
-                    </Button>
-                  </div>
-                  {titleSuggestions.length > 0 ? (
-                    <Select onValueChange={handleTitleSelect}>
-                      <SelectTrigger className="transition-all">
-                        <SelectValue placeholder="Choose a title or create your own" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {titleSuggestions.map((suggestion, index) => (
-                          <SelectItem key={index} value={suggestion}>
-                            {suggestion}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">
-                      {isLoadingTitles ? "Generating title suggestions..." : "Select a topic to get title suggestions"}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="title">Content Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter a title for your content"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="transition-all focus:ring-2 focus:ring-primary/20"
-                  />
-                  {title && (
-                    <p className="text-xs text-muted-foreground">
-                      You can edit this title or use one of the suggestions above.
-                    </p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="content-type">Content Type</Label>
-                  <Select value={contentType} onValueChange={setContentType}>
-                    <SelectTrigger className="transition-all">
-                      <SelectValue placeholder="Select content type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contentTypeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Target Keywords</Label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {keywords.map((keyword, index) => (
-                      <Badge 
-                        key={index} 
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        {keyword}
-                        <button 
-                          className="ml-1 text-xs opacity-70 hover:opacity-100"
-                          onClick={() => removeKeyword(index)}
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Textarea
-                    placeholder="Enter keywords separated by commas"
-                    onChange={handleKeywordsChange}
-                    value={keywords.join(", ")}
-                    className="transition-all focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Suggested Keywords</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedKeywords.map((keyword) => (
-                      <Badge 
-                        key={keyword} 
-                        variant="outline" 
-                        className="cursor-pointer hover:bg-secondary transition-all"
-                        onClick={() => addKeyword(keyword)}
-                      >
-                        + {keyword}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Creativity Level</Label>
-                    <span className="text-sm text-muted-foreground">{creativity[0]}%</span>
-                  </div>
-                  <Slider
-                    defaultValue={creativity}
-                    max={100}
-                    step={1}
-                    onValueChange={setCreativity}
-                    className="transition-all"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Data-Driven</span>
-                    <span>Creative</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label>Advanced Options</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="meta" defaultChecked />
-                      <label htmlFor="meta" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Generate meta description
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="outline" defaultChecked />
-                      <label htmlFor="outline" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Include content outline
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="markdown" defaultChecked />
-                      <label htmlFor="markdown" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Format with Markdown
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="w-full mt-4 transition-all"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating Expert Content...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Pricing & Analytics Content
-                    </>
-                  )}
-                </Button>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="preview" className="space-y-6">
-              {generatedContent && !isEditingContent && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">{generatedContent.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Pricing & Analytics content for {domain}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={handleCopyContent}>
-                        <Copy className="w-4 h-4 mr-1" /> Copy
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleEditContent}>
-                        <Edit className="w-4 h-4 mr-1" /> Edit
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-md border bg-muted/30">
-                      <h4 className="text-sm font-medium mb-2">Meta Description</h4>
-                      <p className="text-sm text-muted-foreground">{generatedContent.metaDescription}</p>
-                    </div>
-                    
-                    <div className="p-4 rounded-md border bg-muted/30">
-                      <h4 className="text-sm font-medium mb-2">Content Outline</h4>
-                      <ul className="space-y-1">
-                        {generatedContent.outline.map((item, index) => (
-                          <li key={index} className="text-sm text-muted-foreground">• {item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    <div className="relative">
-                      <div className="absolute right-3 top-3">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyContent}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="p-4 rounded-md border bg-background shadow-sm prose prose-sm max-w-none dark:prose-invert">
-                        {generatedContent.formattedContent ? (
-                          <div 
-                            className="text-sm text-foreground overflow-auto max-h-[500px]"
-                            dangerouslySetInnerHTML={{ __html: generatedContent.formattedContent }}
-                          />
-                        ) : (
-                          <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground overflow-auto max-h-[500px]">
-                            {generatedContent.content}
-                          </pre>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                      <Button variant="outline" className="transition-all" onClick={handleRegenerateContent} disabled={isGenerating}>
-                        {isGenerating ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <RefreshCw className="w-4 h-4 mr-2" /> 
-                        )}
-                        Regenerate
-                      </Button>
-                      <Button className="transition-all">
-                        <FileText className="w-4 h-4 mr-2" /> Save Content
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Content editing mode */}
-              {generatedContent && isEditingContent && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Edit Content</h3>
-                    <Button variant="default" size="sm" onClick={handleSaveEditedContent}>
-                      <Save className="w-4 h-4 mr-1" /> Save Changes
-                    </Button>
-                  </div>
-                  
-                  <Textarea
-                    value={editableContent}
-                    onChange={(e) => setEditableContent(e.target.value)}
-                    className="min-h-[500px] font-mono text-sm"
-                    placeholder="Edit your content here..."
-                  />
-                  
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsEditingContent(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveEditedContent}>
-                      <Save className="w-4 h-4 mr-2" /> Save Changes
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Loader2 className="w-12 h-12 text-primary/50 animate-spin mb-4" />
+            <h3 className="text-lg font-semibold">Waiting for analysis data</h3>
+            <p className="mt-2 text-muted-foreground max-w-md">
+              Please complete the keyword analysis first. This data is required to generate optimized content that aligns with your SEO strategy.
+            </p>
+          </div>
         </CardContent>
       </Card>
-    </div>
+    );
+  }
+
+  return (
+    <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
+      <CardHeader>
+        <CardTitle>AI Content Generator</CardTitle>
+        <CardDescription>Create expert pricing and revenue management content for Revology Analytics</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="generate" className="space-y-6">
+          <TabsList className="grid grid-cols-2 w-full max-w-sm mx-auto">
+            <TabsTrigger value="generate">Generate</TabsTrigger>
+            <TabsTrigger value="preview" disabled={!generatedContent}>Preview</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="generate" className="space-y-6 pt-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Topic</Label>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex items-center gap-1 h-7 px-2 text-xs"
+                    onClick={handleRegenerateTopics}
+                    disabled={isLoadingTopics}
+                  >
+                    {isLoadingTopics ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                    Regenerate
+                  </Button>
+                </div>
+                
+                <Select 
+                  value={selectedTopic} 
+                  onValueChange={handleTopicChange}
+                  disabled={isLoadingTopics}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a topic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topics.map((topic, index) => (
+                      <SelectItem key={index} value={topic}>
+                        {topic}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Title</Label>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex items-center gap-1 h-7 px-2 text-xs"
+                    onClick={handleRegenerateTitles}
+                    disabled={isLoadingTitles || !selectedTopic}
+                  >
+                    {isLoadingTitles ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                    Regenerate
+                  </Button>
+                </div>
+                
+                {selectedTopic && (
+                  <>
+                    {titleSuggestions.length > 0 ? (
+                      <Select 
+                        value={title} 
+                        onValueChange={handleTitleSelect}
+                        disabled={isLoadingTitles}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a title" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {titleSuggestions.map((suggestion, index) => (
+                            <SelectItem key={index} value={suggestion}>
+                              {suggestion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input 
+                        placeholder="Custom title" 
+                        value={title} 
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Content Type</Label>
+                <Select value={contentType} onValueChange={setContentType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select content type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="blog">Blog Post</SelectItem>
+                    <SelectItem value="article">Article</SelectItem>
+                    <SelectItem value="whitepaper">White Paper</SelectItem>
+                    <SelectItem value="casestudy">Case Study</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label>Creativity</Label>
+                  <span className="text-xs text-muted-foreground">{creativity}%</span>
+                </div>
+                <Slider
+                  value={[creativity]}
+                  min={0}
+                  max={100}
+                  step={10}
+                  onValueChange={(value) => setCreativity(value[0])}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground pt-1">
+                  <span>Factual</span>
+                  <span>Creative</span>
+                </div>
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <Label>Target Keywords</Label>
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-md">
+                  {allKeywords.slice(0, 30).map((keyword, index) => (
+                    <Badge
+                      key={index}
+                      variant={selectedKeywords.includes(keyword) ? "default" : "outline"}
+                      className="cursor-pointer transition-all hover:shadow"
+                      onClick={() => handleTagClick(keyword)}
+                    >
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <Button 
+                className="w-full mt-6 bg-revology hover:bg-revology-dark" 
+                onClick={handleGenerateContent}
+                disabled={isGenerating || !title || selectedKeywords.length === 0}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Content"
+                )}
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="preview" className="space-y-6">
+            {generatedContent && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-semibold">{generatedContent.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {generatedContent.metaDescription}
+                    </p>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1"
+                      onClick={handleCopy}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1"
+                      onClick={handleDownload}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <Textarea 
+                      className="min-h-[400px] font-mono text-sm"
+                      value={editedContent}
+                      onChange={(e) => setEditedContent(e.target.value)}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsEditing(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleSaveEdits}
+                      >
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <ScrollArea className="h-[500px] pr-4">
+                      <div className="space-y-4 article-content" dangerouslySetInnerHTML={{
+                        __html: generatedContent.content
+                          .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-6 mb-4">$1</h1>')
+                          .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-semibold mt-5 mb-3">$1</h2>')
+                          .replace(/^### (.*$)/gim, '<h3 class="text-xl font-medium mt-4 mb-2">$1</h3>')
+                          .replace(/^#### (.*$)/gim, '<h4 class="text-lg font-medium mt-3 mb-2">$1</h4>')
+                          .replace(/^\* (.*$)/gim, '<li class="ml-6 list-disc">$1</li>')
+                          .replace(/^- (.*$)/gim, '<li class="ml-6 list-disc">$1</li>')
+                          .replace(/^(\d+\. )(.*$)/gim, '<li class="ml-6 list-decimal">$2</li>')
+                          .replace(/<\/li>\n<li/g, '</li><li')
+                          .replace(/^\n\n/gim, '</p><p class="my-3">')
+                          .replace(/\n\n/gim, '</p><p class="my-3">')
+                          .replace(/\n/gim, '<br>')
+                          .replace(/<\/p><p/g, '</p>\n<p')
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      }} />
+                    </ScrollArea>
+                    
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex items-center gap-1" 
+                        onClick={handleEditContent}
+                      >
+                        <FileEdit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                      <Button 
+                        className="flex items-center gap-1" 
+                        onClick={handleRegenerateContent}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Regenerate
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
