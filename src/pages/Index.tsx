@@ -20,7 +20,9 @@ import {
   FileText, 
   Settings, 
   Loader2, 
-  Zap
+  Zap,
+  LineChart,
+  BarChart
 } from "lucide-react";
 import KeywordTable from "@/components/KeywordTable";
 import KeywordGapCard from "@/components/KeywordGapCard";
@@ -152,13 +154,17 @@ const Index = () => {
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Badge className="mb-2 bg-primary/10 text-primary hover:bg-primary/20 transition-all">SEO Analysis Tool</Badge>
-            <h1 className="text-4xl font-bold tracking-tight">SeoGenie</h1>
+            <Badge className="mb-2 bg-revology-light text-revology hover:bg-revology-light/80 transition-all">SEO Analysis Tool</Badge>
+            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
+              <span className="text-revology">Revology Analytics</span>
+              <span className="text-2xl font-normal text-muted-foreground">|</span>
+              <span>SeoGenie</span>
+            </h1>
             <p className="mt-2 text-muted-foreground">Keyword analysis and AI-driven content generation</p>
           </div>
-          <Avatar className="w-12 h-12">
+          <Avatar className="w-12 h-12 border-2 border-revology">
             <AvatarImage src="https://ui.shadcn.com/avatars/01.png" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarFallback className="bg-revology-light text-revology">RA</AvatarFallback>
           </Avatar>
         </div>
 
@@ -177,7 +183,7 @@ const Index = () => {
           
           <TabsContent value="dashboard" className="space-y-6">
             {!analysisComplete ? (
-              <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
+              <Card className="glass-panel transition-all duration-300 hover:shadow-xl border-revology/10">
                 <CardHeader>
                   <CardTitle>Domain Analysis</CardTitle>
                   <CardDescription>Enter your main domain and competitor domains to analyze</CardDescription>
@@ -191,7 +197,7 @@ const Index = () => {
                         placeholder="example.com"
                         value={mainDomain}
                         onChange={(e) => setMainDomain(e.target.value)}
-                        className="transition-all focus:ring-2 focus:ring-primary/20"
+                        className="transition-all focus:ring-2 focus:ring-revology/20"
                         disabled={isAnalyzing}
                       />
                     </div>
@@ -203,7 +209,7 @@ const Index = () => {
                           variant="outline" 
                           size="sm" 
                           onClick={addCompetitorDomain}
-                          className="text-xs transition-all"
+                          className="text-xs transition-all border-revology/30 text-revology hover:text-revology hover:bg-revology-light/50"
                           disabled={isAnalyzing}
                         >
                           <Plus className="w-3 h-3 mr-1" />
@@ -217,7 +223,7 @@ const Index = () => {
                             placeholder={`competitor${index + 1}.com`}
                             value={domain}
                             onChange={(e) => updateCompetitorDomain(index, e.target.value)}
-                            className="transition-all focus:ring-2 focus:ring-primary/20"
+                            className="transition-all focus:ring-2 focus:ring-revology/20"
                             disabled={isAnalyzing}
                           />
                           {competitorDomains.length > 1 && (
@@ -225,7 +231,7 @@ const Index = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => removeCompetitorDomain(index)}
-                              className="h-8 w-8"
+                              className="h-8 w-8 hover:text-revology hover:bg-revology-light/50"
                               disabled={isAnalyzing}
                             >
                               <X className="w-4 h-4" />
@@ -239,7 +245,7 @@ const Index = () => {
                   <Button
                     onClick={handleAnalyze}
                     disabled={isAnalyzing}
-                    className="w-full mt-4 transition-all"
+                    className="w-full mt-4 transition-all bg-revology hover:bg-revology-dark"
                   >
                     {isAnalyzing ? (
                       <>
@@ -260,7 +266,7 @@ const Index = () => {
                         <span>{renderProgressStatus()}</span>
                         <span>{Math.round(progress)}%</span>
                       </div>
-                      <Progress value={progress} className="h-2 transition-all progress-bar-animated" />
+                      <Progress value={progress} className="h-2 transition-all progress-bar-animated bg-muted" />
                     </div>
                   )}
                 </CardContent>
@@ -294,7 +300,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center py-10">
                   <div className="text-center">
-                    <Zap className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <Zap className="w-12 h-12 mx-auto mb-4 text-revology opacity-50" />
                     <h3 className="text-lg font-medium">No keyword data available</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Please complete a keyword analysis first to enable AI-driven content generation
@@ -303,7 +309,7 @@ const Index = () => {
                       onClick={() => {
                         setActiveTab("dashboard");
                       }}
-                      className="mt-6"
+                      className="mt-6 bg-revology hover:bg-revology-dark"
                     >
                       Go to Analysis <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
@@ -317,11 +323,16 @@ const Index = () => {
           
           <TabsContent value="settings" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Settings</CardTitle>
-                <CardDescription>Configure your analysis preferences</CardDescription>
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center gap-2">
+                  <div className="size-10 bg-revology rounded-full flex items-center justify-center text-white font-bold">RA</div>
+                  <div>
+                    <CardTitle>Revology Analytics Settings</CardTitle>
+                    <CardDescription>Configure your analysis preferences</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
                 <div className="space-y-3">
                   <Label htmlFor="api-key">API Key</Label>
                   <Input id="api-key" type="password" value="b84198e677msh416f3b6bc96f2b3p1a60f3jsnaadb78e898c9" readOnly className="transition-all bg-muted/30" />
@@ -338,22 +349,22 @@ const Index = () => {
                 <div className="space-y-3">
                   <Label>Content Preferences</Label>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="cursor-pointer hover:bg-secondary transition-all">
+                    <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
                       Include meta descriptions
                     </Badge>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-secondary transition-all">
+                    <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
                       Focus on H1/H2 tags
                     </Badge>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-secondary transition-all">
+                    <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
                       Use bullet points
                     </Badge>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-secondary transition-all">
+                    <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
                       Add internal links
                     </Badge>
                   </div>
                 </div>
                 
-                <Button className="transition-all">Save Settings</Button>
+                <Button className="transition-all bg-revology hover:bg-revology-dark">Save Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>

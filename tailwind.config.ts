@@ -62,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				revology: {
+					DEFAULT: '#5C842B',
+					light: '#F2FCE2',
+					dark: '#3A5318',
+					muted: '#7EA154',
+					accent: '#A9C36B'
 				}
 			},
 			borderRadius: {
