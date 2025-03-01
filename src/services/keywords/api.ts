@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { 
   KeywordData, 
@@ -57,28 +56,48 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
 
     const data = await response.json();
     
-    if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result || data.tasks[0].result.length === 0) {
-      console.warn(`DataForSEO API returned no results for ${domainUrl}`);
-      throw new Error("API returned no keywords");
-    }
-
-    // Transform the DataForSEO response to our KeywordData format
-    const keywordsData = data.tasks[0].result[0].keywords || [];
+    // Debug the actual response structure
+    console.log("DataForSEO response:", JSON.stringify(data).substring(0, 500) + "...");
     
-    if (keywordsData.length === 0) {
-      console.warn(`DataForSEO API returned no keywords for ${domainUrl}`);
-      throw new Error("API returned no keywords");
+    // Check if we have a valid response with tasks
+    if (!data.tasks || data.tasks.length === 0) {
+      console.warn(`DataForSEO API returned no tasks for ${domainUrl}`);
+      throw new Error("API returned no tasks");
     }
     
-    return keywordsData.map(item => ({
-      keyword: item.keyword,
-      monthly_search: item.search_volume || 0,
-      competition: getCompetitionLabel(item.competition_index || 50),
-      competition_index: item.competition_index || 50,
-      cpc: item.cpc || 0,
-      position: null,
-      rankingUrl: null,
-    }));
+    const task = data.tasks[0];
+    
+    // Check if the task has result data
+    if (!task.result || task.result.length === 0) {
+      console.warn(`DataForSEO API task has no results for ${domainUrl}`);
+      throw new Error("API task has no results");
+    }
+    
+    // The actual results are in task.result, not task.result[0].keywords
+    const keywords = [];
+    
+    // Process all keywords in the results
+    for (const item of task.result) {
+      if (item.keyword) {
+        keywords.push({
+          keyword: item.keyword,
+          monthly_search: item.search_volume || 0,
+          competition: getCompetitionLabel(item.competition_index || 50),
+          competition_index: item.competition_index || 50,
+          cpc: item.cpc || 0,
+          position: null,
+          rankingUrl: null,
+        });
+      }
+    }
+    
+    if (keywords.length === 0) {
+      console.warn(`DataForSEO API returned no valid keywords for ${domainUrl}`);
+      throw new Error("API returned no valid keywords");
+    }
+    
+    console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
+    return keywords;
   } catch (error) {
     console.error(`Error fetching DataForSEO keywords for ${domainUrl}:`, error);
     throw error;
