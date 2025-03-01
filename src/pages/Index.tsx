@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +40,6 @@ const Index = () => {
   const [keywordData, setKeywordData] = useState<any[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   
-  // Reset error when changing tabs
   useEffect(() => {
     setAnalysisError(null);
   }, [activeTab]);
@@ -68,7 +66,6 @@ const Index = () => {
   const validateUrl = (url: string) => {
     if (!url) return false;
     
-    // Add https:// prefix if not present
     let processedUrl = url;
     if (!/^https?:\/\//i.test(url)) {
       processedUrl = 'https://' + url;
@@ -85,7 +82,6 @@ const Index = () => {
   const formatUrl = (url: string) => {
     if (!url) return "";
     
-    // Add https:// prefix if not present
     if (!/^https?:\/\//i.test(url)) {
       return 'https://' + url;
     }
@@ -93,16 +89,13 @@ const Index = () => {
   };
 
   const handleAnalyze = async () => {
-    // Reset error state
     setAnalysisError(null);
     
-    // Form validation
     if (!mainDomain || !validateUrl(mainDomain)) {
       toast.error("Please enter a valid main domain");
       return;
     }
     
-    // Filter out empty domains first
     const validCompetitorDomains = competitorDomains.filter(domain => domain.trim() !== "");
     
     if (validCompetitorDomains.length === 0) {
@@ -115,37 +108,31 @@ const Index = () => {
       return;
     }
     
-    // Prepare URLs with proper format
     const formattedMainDomain = formatUrl(mainDomain);
     const formattedCompetitorDomains = validCompetitorDomains.map(formatUrl);
     
-    // Start the analysis process
     setIsAnalyzing(true);
     setProgress(0);
     setKeywordData([]);
     setAnalysisComplete(false);
     
-    // Log what we're analyzing for debugging
     console.info("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     
-    // Mock progress updates while we do the real API call
     const interval = setInterval(() => {
       setProgress(prev => {
         const newProgress = prev + Math.random() * 15;
         if (newProgress >= 95) {
           clearInterval(interval);
-          return 95; // Hold at 95% until API call completes
+          return 95;
         }
         return newProgress;
       });
     }, 800);
     
     try {
-      // Perform the real API call
       const result = await analyzeDomains(formattedMainDomain, formattedCompetitorDomains);
       
       if (result.success) {
-        // Ensure we have valid data
         const keywords = Array.isArray(result.keywords) ? result.keywords : [];
         setKeywordData(keywords);
         setProgress(100);
@@ -156,7 +143,7 @@ const Index = () => {
           toast.success("Analysis complete! View your results in the dashboard.");
         }, 500);
       } else {
-        throw new Error(result.message || "Analysis failed");
+        throw new Error("Analysis failed");
       }
     } catch (error) {
       clearInterval(interval);
@@ -177,13 +164,10 @@ const Index = () => {
     return "Finalizing results...";
   };
 
-  // Get an array of just the keyword strings for content generation
   const keywordStrings = Array.isArray(keywordData) ? keywordData.map(kw => kw.keyword) : [];
 
-  // Filter out empty domains before passing to components
   const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
 
-  // If we're in an error state, provide a way to restart
   const handleReset = () => {
     setAnalysisError(null);
     setProgress(0);
