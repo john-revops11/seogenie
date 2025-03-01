@@ -45,6 +45,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       scan_type: "url"
     });
 
+    console.log(`Fetching keywords for domain: ${domainUrl}`);
+    
     const response = await fetch(`${API_URL}?${queryParams}`, {
       method: "GET",
       headers: {
@@ -60,7 +62,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     const data: DomainKeywordResponse = await response.json();
     
     if (!data.success) {
-      throw new Error("API returned unsuccessful response");
+      console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
+      throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
     }
 
     // Transform the API response to our KeywordData format
@@ -73,8 +76,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       position: null // We'll populate this separately
     }));
   } catch (error) {
-    console.error("Error fetching domain keywords:", error);
-    toast.error(`Failed to fetch keywords: ${(error as Error).message}`);
+    console.error(`Error fetching domain keywords for ${domainUrl}:`, error);
+    toast.error(`Failed to fetch keywords for ${domainUrl}: ${(error as Error).message}`);
     return [];
   }
 };
@@ -102,14 +105,27 @@ export const analyzeDomains = async (
       throw new Error(`No keywords found for ${formattedMainDomain}`);
     }
     
-    // Get competitor keywords
-    const competitorKeywordsPromises = formattedCompetitorDomains
-      .map(async (domain) => {
-        const keywords = await fetchDomainKeywords(domain);
-        return { domain, keywords };
-      });
+    // Process competitor domains one by one with better error handling
+    const competitorResults = [];
     
-    const competitorResults = await Promise.all(competitorKeywordsPromises);
+    for (const domain of formattedCompetitorDomains) {
+      try {
+        toast.info(`Analyzing competitor: ${domain}`);
+        const keywords = await fetchDomainKeywords(domain);
+        
+        if (keywords.length > 0) {
+          competitorResults.push({ domain, keywords });
+          toast.success(`Found ${keywords.length} keywords for ${domain}`);
+        } else {
+          console.warn(`No keywords found for ${domain}`);
+          toast.warning(`No keywords found for ${domain}`);
+        }
+      } catch (error) {
+        console.error(`Error analyzing competitor ${domain}:`, error);
+        toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
+        // Continue with other competitors even if one fails
+      }
+    }
     
     // Process and merge data
     const keywordMap = new Map<string, KeywordData>();
@@ -227,7 +243,93 @@ export const findKeywordGaps = async (
     const competitorDomainNames = competitorDomains.map(extractDomain);
     
     console.log(`Finding keyword gaps for ${mainDomainName} vs ${competitorDomainNames.join(', ')}`);
-    console.log(`Target gap count: ${targetGapCount}, Keywords sample:`, keywords.slice(0, 3));
+    
+    // Filter keywords to find ones where competitors rank but the main domain doesn't or ranks poorly
+    const potentialGaps = keywords.filter(kw => {
+      // Check if the main domain doesn't rank for this keyword or ranks poorly (position > 30)
+      const mainDoesntRank = kw.position === null || kw.position > 30;
+      
+      // Check if at least one competitor ranks for this keyword
+      const anyCompetitorRanks = kw.competitorRankings && 
+        Object.keys(kw.competitorRankings).some(comp => 
+          competitorDomainNames.includes(comp) && 
+          kw.competitorRankings[comp] !== null && 
+          kw.competitorRankings[comp]! <= 30
+        );
+      
+      return mainDoesntRank && anyCompetitorRanks;
+    });
+    
+    console.log(`Found ${potentialGaps.length} potential keyword gaps before AI analysis`);
+    
+    // If we have enough gaps from the data, use them directly without AI
+    if (potentialGaps.length >= targetGapCount) {
+      console.log("Using directly identified gaps without AI processing");
+      
+      // Convert to KeywordGap format
+      const directGaps: KeywordGap[] = [];
+      
+      for (const kw of potentialGaps) {
+        // Find the best-ranking competitor for this keyword
+        let bestCompetitor = '';
+        let bestPosition = 100;
+        
+        if (kw.competitorRankings) {
+          for (const [competitor, position] of Object.entries(kw.competitorRankings)) {
+            if (position !== null && position < bestPosition && competitorDomainNames.includes(competitor)) {
+              bestPosition = position;
+              bestCompetitor = competitor;
+            }
+          }
+        }
+        
+        // Skip if we couldn't find a relevant competitor
+        if (!bestCompetitor) continue;
+        
+        // Calculate opportunity based on search volume and competition
+        let opportunity: 'high' | 'medium' | 'low' = 'medium';
+        
+        // High opportunity: High volume, low competition
+        if (kw.monthly_search > 500 && kw.competition_index < 30) {
+          opportunity = 'high';
+        } 
+        // Low opportunity: Low volume, high competition
+        else if (kw.monthly_search < 100 && kw.competition_index > 60) {
+          opportunity = 'low';
+        }
+        
+        directGaps.push({
+          keyword: kw.keyword,
+          volume: kw.monthly_search,
+          difficulty: kw.competition_index,
+          opportunity: opportunity,
+          competitor: bestCompetitor
+        });
+        
+        // Stop once we have enough gaps
+        if (directGaps.length >= targetGapCount) break;
+      }
+      
+      // Check if we have enough gaps for each competitor
+      const gapsByCompetitor = new Map<string, number>();
+      directGaps.forEach(gap => {
+        const competitor = gap.competitor || "unknown";
+        gapsByCompetitor.set(competitor, (gapsByCompetitor.get(competitor) || 0) + 1);
+      });
+      
+      // If we have enough, return them
+      const hasEnoughPerCompetitor = competitorDomainNames.every(comp => 
+        (gapsByCompetitor.get(comp) || 0) >= 10
+      );
+      
+      if (hasEnoughPerCompetitor || directGaps.length >= targetGapCount) {
+        console.log("Returning directly identified gaps:", directGaps.length);
+        return directGaps;
+      }
+    }
+    
+    // Fall back to OpenAI for analysis if we don't have enough direct gaps
+    console.log("Using OpenAI to analyze keyword gaps");
     
     // Ensure we're requesting at least 10 gaps per competitor
     const minGapsPerCompetitor = Math.ceil(targetGapCount / competitorDomains.length);
@@ -253,15 +355,34 @@ export const findKeywordGaps = async (
             
             I need at least ${minGapsPerCompetitor} keyword gaps for EACH competitor domain (${adjustedGapCount} total gaps).
             
-            Keyword data sample (${keywords.length} keywords total): 
-            ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 20)))}
+            Keyword data: ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 50)))}
             
-            Return ONLY a JSON array of keyword gaps with these properties:
+            For each keyword gap, include these properties:
             - keyword: string (the keyword)
             - volume: number (estimated monthly search volume, 100-10000)
             - difficulty: number (1-100 scale where higher is more difficult)
             - opportunity: string (high, medium, or low based on potential value)
             - competitor: string (the competitor domain that ranks for this keyword)
+            
+            Format your response EXACTLY like this JSON example:
+            {
+              "keywordGaps": [
+                {
+                  "keyword": "example keyword 1",
+                  "volume": 1200,
+                  "difficulty": 45,
+                  "opportunity": "high",
+                  "competitor": "competitor1.com"
+                },
+                {
+                  "keyword": "example keyword 2",
+                  "volume": 800,
+                  "difficulty": 30,
+                  "opportunity": "medium",
+                  "competitor": "competitor2.com"
+                }
+              ]
+            }
             
             IMPORTANT: You must include the competitor property for each gap to identify which competitor ranks for each keyword.
             You must return at least ${minGapsPerCompetitor} keywords for each competitor.`
@@ -281,32 +402,29 @@ export const findKeywordGaps = async (
     const data = await response.json();
     console.log("Received OpenAI response for keyword gaps");
     
-    const gaps = JSON.parse(data.choices[0].message.content).keywordGaps;
-    
-    if (!Array.isArray(gaps) || gaps.length === 0) {
-      console.error("OpenAI returned invalid or empty gaps array:", data.choices[0].message.content);
-      throw new Error("Invalid response format from OpenAI");
+    try {
+      const parsedContent = JSON.parse(data.choices[0].message.content);
+      const gaps = parsedContent.keywordGaps;
+      
+      if (!Array.isArray(gaps) || gaps.length === 0) {
+        console.error("OpenAI returned invalid or empty gaps array:", data.choices[0].message.content);
+        throw new Error("Invalid response format from OpenAI");
+      }
+      
+      // Verify we have at least some gaps for each competitor
+      const gapsByCompetitor = new Map<string, number>();
+      gaps.forEach(gap => {
+        const competitor = gap.competitor || "unknown";
+        gapsByCompetitor.set(competitor, (gapsByCompetitor.get(competitor) || 0) + 1);
+      });
+      
+      console.log("Gaps distribution by competitor:", Object.fromEntries(gapsByCompetitor));
+      
+      return gaps;
+    } catch (error) {
+      console.error("Error parsing OpenAI response:", error, data.choices[0].message.content);
+      throw new Error("Failed to parse OpenAI response");
     }
-    
-    // Verify we have at least some gaps for each competitor
-    const gapsByCompetitor = new Map<string, number>();
-    gaps.forEach(gap => {
-      const competitor = gap.competitor || "unknown";
-      gapsByCompetitor.set(competitor, (gapsByCompetitor.get(competitor) || 0) + 1);
-    });
-    
-    console.log("Gaps distribution by competitor:", Object.fromEntries(gapsByCompetitor));
-    
-    // Check if any competitors are missing from the results
-    const missingCompetitors = competitorDomainNames.filter(
-      comp => !Array.from(gapsByCompetitor.keys()).some(k => k.includes(comp))
-    );
-    
-    if (missingCompetitors.length > 0) {
-      console.warn(`Missing gaps for competitors: ${missingCompetitors.join(', ')}`);
-    }
-    
-    return gaps;
   } catch (error) {
     console.error("Error finding keyword gaps:", error);
     toast.error(`Failed to find keyword gaps: ${(error as Error).message}`);

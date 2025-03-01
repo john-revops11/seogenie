@@ -46,15 +46,37 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
         
         try {
           // Request at least 10 gaps per competitor
-          const minGapsPerCompetitor = 10;
-          const targetGapCount = minGapsPerCompetitor * competitorDomains.length;
+          const gapsPerCompetitor = 12; // Aim slightly higher to ensure we get at least 10
+          const targetGapCount = gapsPerCompetitor * competitorDomains.length;
+          
+          console.log(`Requesting ${targetGapCount} keyword gaps (${gapsPerCompetitor} per competitor)`);
           
           // Pass the number of gaps we want to the function
           const gaps = await findKeywordGaps(domain, competitorDomains, keywords, targetGapCount);
           
           if (Array.isArray(gaps) && gaps.length > 0) {
             setKeywordGaps(gaps);
-            toast.success(`Found ${gaps.length} keyword gaps to target`);
+            
+            // Count gaps per competitor for logging
+            const gapsByCompetitor = new Map<string, number>();
+            gaps.forEach(gap => {
+              const competitor = gap.competitor || "unknown";
+              gapsByCompetitor.set(competitor, (gapsByCompetitor.get(competitor) || 0) + 1);
+            });
+            
+            console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
+            
+            // Check if we have enough gaps for each competitor
+            const allCompetitorsHaveEnough = competitorDomains.every(comp => {
+              const domainName = extractDomainName(comp);
+              return (gapsByCompetitor.get(domainName) || 0) >= 10;
+            });
+            
+            if (allCompetitorsHaveEnough) {
+              toast.success(`Found ${gaps.length} keyword gaps to target`);
+            } else {
+              toast.info(`Found ${gaps.length} keyword gaps, but some competitors have fewer than 10 gaps`);
+            }
           } else {
             setKeywordGaps([]);
             setError("No keyword gaps found. Try adjusting your analysis parameters.");
@@ -71,6 +93,29 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
     
     fetchGaps();
   }, [domain, competitorDomains, keywords, isLoading]);
+  
+  // Extract domain name from URL string
+  const extractDomainName = (url: string): string => {
+    try {
+      // If it's already a valid URL, extract the hostname
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const urlObj = new URL(url);
+        return urlObj.hostname.replace(/^www\./, '');
+      }
+      
+      // Try with https:// prefix
+      try {
+        const urlObj = new URL(`https://${url}`);
+        return urlObj.hostname.replace(/^www\./, '');
+      } catch (e) {
+        // If that fails, just return the original string
+        return url.replace(/^www\./, '');
+      }
+    } catch (error) {
+      console.warn(`Failed to extract domain from: ${url}`, error);
+      return url; // Return original string if all parsing fails
+    }
+  };
   
   const getOpportunityColor = (opportunity: string) => {
     switch (opportunity) {
@@ -95,6 +140,13 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
     keywordGaps.map(gap => gap.competitor || "unknown")
   ))];
 
+  // Count gaps per competitor for display
+  const gapCounts = new Map<string, number>();
+  keywordGaps.forEach(gap => {
+    const competitor = gap.competitor || "unknown";
+    gapCounts.set(competitor, (gapCounts.get(competitor) || 0) + 1);
+  });
+
   return (
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
       <CardHeader>
@@ -116,7 +168,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
                   className="cursor-pointer"
                   onClick={() => setSelectedCompetitor(competitor)}
                 >
-                  {competitor === "all" ? "All Competitors" : competitor}
+                  {competitor === "all" ? "All Competitors" : `${competitor} (${gapCounts.get(competitor) || 0})`}
                 </Badge>
               ))}
             </div>
@@ -161,7 +213,9 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
                           </Badge>
                         </TableCell>
                         {selectedCompetitor === "all" && (
-                          <TableCell className="text-xs">{gap.competitor || "unknown"}</TableCell>
+                          <TableCell className="text-xs">
+                            {gap.competitor ? extractDomainName(gap.competitor) : "unknown"}
+                          </TableCell>
                         )}
                       </TableRow>
                     ))}
@@ -169,7 +223,11 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
                 </Table>
               ) : (
                 <div className="text-center p-8">
-                  <p className="text-muted-foreground">No keyword gaps found for the selected competitor. Try analyzing more domains or selecting a different filter.</p>
+                  <p className="text-muted-foreground">
+                    {keywordGaps.length > 0 
+                      ? "No keyword gaps found for the selected competitor. Try selecting a different competitor." 
+                      : "No keyword gaps found. Try analyzing more domains."}
+                  </p>
                 </div>
               )}
             </>
