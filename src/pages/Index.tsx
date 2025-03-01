@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,13 +21,14 @@ import {
   Settings, 
   Loader2, 
   Zap,
+  RotateCcw
 } from "lucide-react";
-import KeywordTable from "@/components/KeywordTable";
-import KeywordGapCard from "@/components/KeywordGapCard";
-import SeoRecommendationsCard from "@/components/SeoRecommendationsCard";
+import { KeywordGapCard } from "@/components/KeywordGapCard";
+import { SeoRecommendationsCard } from "@/components/SeoRecommendationsCard";
 import ContentGenerator from "@/components/ContentGenerator";
 import Layout from "@/components/Layout";
 import { analyzeDomains } from "@/services/keywordService";
+import KeywordTable from "@/components/KeywordTable";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -123,6 +125,25 @@ const Index = () => {
     return url;
   };
 
+  const handleReset = () => {
+    // Clear the analysis data
+    setAnalysisError(null);
+    setProgress(0);
+    setIsAnalyzing(false);
+    setAnalysisComplete(false);
+    setKeywordData([]);
+    setMainDomain("");
+    setCompetitorDomains([""]);
+    
+    // Clear localStorage
+    localStorage.removeItem('seoAnalysisData');
+    
+    // Switch to dashboard tab
+    setActiveTab("dashboard");
+    
+    toast.success("Analysis data has been reset");
+  };
+
   const handleAnalyze = async () => {
     setAnalysisError(null);
     
@@ -203,12 +224,6 @@ const Index = () => {
 
   const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
 
-  const handleReset = () => {
-    setAnalysisError(null);
-    setProgress(0);
-    setIsAnalyzing(false);
-  };
-
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
@@ -222,10 +237,22 @@ const Index = () => {
             </h1>
             <p className="mt-2 text-muted-foreground">Keyword analysis and AI-driven content generation</p>
           </div>
-          <Avatar className="w-12 h-12 border-2 border-revology">
-            <AvatarImage src="https://ui.shadcn.com/avatars/01.png" />
-            <AvatarFallback className="bg-revology-light text-revology">RA</AvatarFallback>
-          </Avatar>
+          <div className="flex items-center gap-3">
+            {analysisComplete && (
+              <Button 
+                variant="outline" 
+                onClick={handleReset} 
+                className="flex items-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset Data
+              </Button>
+            )}
+            <Avatar className="w-12 h-12 border-2 border-revology">
+              <AvatarImage src="https://ui.shadcn.com/avatars/01.png" />
+              <AvatarFallback className="bg-revology-light text-revology">RA</AvatarFallback>
+            </Avatar>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

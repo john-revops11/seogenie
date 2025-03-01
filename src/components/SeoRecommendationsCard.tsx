@@ -2,33 +2,25 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { SeoRecommendation } from "@/services/keywordService";
 
-// Create a cache to store recommendations
+// Create a cache to store SEO recommendations
 export const recommendationsCache = {
-  data: null as {
-    onPage: SeoRecommendation[];
-    technical: SeoRecommendation[];
-    content: SeoRecommendation[];
-  } | null,
+  data: null as SeoRecommendation[] | null,
   domain: "",
   keywordsLength: 0
 };
 
-export default function SeoRecommendationsCard({ domain, keywords, isLoading }: {
+interface SeoRecommendationsCardProps {
   domain: string;
   keywords: any[];
   isLoading: boolean;
-}) {
-  const [recommendations, setRecommendations] = useState<{
-    onPage: SeoRecommendation[];
-    technical: SeoRecommendation[];
-    content: SeoRecommendation[];
-  } | null>(null);
+}
+
+export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecommendationsCardProps) {
+  const [recommendations, setRecommendations] = useState<SeoRecommendation[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("on-page");
 
   // Generate SEO recommendations based on keyword data
   useEffect(() => {
@@ -48,84 +40,90 @@ export default function SeoRecommendationsCard({ domain, keywords, isLoading }: 
       setLoading(true);
       
       try {
-        // On-page recommendations
-        const onPageRecs: SeoRecommendation[] = [
+        // Generate SEO recommendations based on keyword data
+        const seoRecommendations: SeoRecommendation[] = [
           {
-            title: "Optimize Meta Titles",
-            description: "Include top keywords in your page titles to improve CTR and rankings",
-            impact: "high",
-            action: `Ensure titles include high-volume keywords like ${getTopKeywords(keywords, 2).join(', ')}`
+            type: "technical",
+            recommendation: "Improve page load speed",
+            details: "Fast-loading pages rank better. Optimize images, use browser caching, and minimize JavaScript.",
+            priority: "high",
+            implementationDifficulty: "medium"
           },
           {
-            title: "Improve Meta Descriptions",
-            description: "Create compelling meta descriptions that include target keywords",
-            impact: "medium",
-            action: "Write unique meta descriptions for each page that include primary and secondary keywords"
+            type: "content",
+            recommendation: "Add more comprehensive content around your top keywords",
+            details: "Create in-depth content (2000+ words) that covers all aspects of your top-ranking keywords.",
+            priority: "high",
+            implementationDifficulty: "medium"
           },
           {
-            title: "Optimize Header Tags",
-            description: "Structure your content with proper H1, H2, and H3 tags",
-            impact: "medium",
-            action: "Use a single H1 per page and organize subtopics with H2s and H3s"
+            type: "technical",
+            recommendation: "Ensure mobile-friendliness",
+            details: "Google primarily uses mobile-first indexing. Test your site on various mobile devices.",
+            priority: "high",
+            implementationDifficulty: "medium"
+          },
+          
+          // For high-volume keywords
+          {
+            type: "keyword",
+            recommendation: "Focus on high-volume, medium-difficulty keywords",
+            details: `Target keywords with higher search volumes (>1000) and moderate difficulty scores (<50).`,
+            priority: "high",
+            implementationDifficulty: "hard"
+          },
+          {
+            type: "content",
+            recommendation: "Create a content calendar for keyword gaps",
+            details: "Plan content to target the keyword gaps identified in the analysis.",
+            priority: "medium",
+            implementationDifficulty: "easy"
+          },
+          {
+            type: "technical",
+            recommendation: "Optimize internal linking structure",
+            details: "Link between related content to distribute page authority and help users navigate.",
+            priority: "medium",
+            implementationDifficulty: "medium"
+          },
+          
+          // For on-page optimization
+          {
+            type: "on-page",
+            recommendation: "Optimize meta titles and descriptions",
+            details: "Include main keywords in meta titles and write compelling meta descriptions.",
+            priority: "high",
+            implementationDifficulty: "easy"
+          },
+          {
+            type: "on-page",
+            recommendation: "Use schema markup",
+            details: "Implement structured data to help search engines understand your content better.",
+            priority: "medium", 
+            implementationDifficulty: "hard"
+          },
+          {
+            type: "backlink",
+            recommendation: "Build quality backlinks",
+            details: "Create shareable content and reach out to industry websites for backlinks.",
+            priority: "high",
+            implementationDifficulty: "hard"
           }
         ];
         
-        // Technical recommendations
-        const technicalRecs: SeoRecommendation[] = [
-          {
-            title: "Improve Page Speed",
-            description: "Fast-loading pages improve user experience and rankings",
-            impact: "high",
-            action: "Optimize images, use browser caching, and minimize render-blocking resources"
-          },
-          {
-            title: "Ensure Mobile Responsiveness",
-            description: "Your site must work perfectly on all devices",
-            impact: "high",
-            action: "Test your site on various devices and fix any usability issues"
-          },
-          {
-            title: "Fix Broken Links",
-            description: "Broken links negatively impact user experience and crawl budget",
-            impact: "medium",
-            action: "Regularly audit your site for 404 errors and fix or redirect broken links"
-          }
-        ];
-        
-        // Content recommendations
-        const contentRecs: SeoRecommendation[] = [
-          {
-            title: "Create Content for Keyword Gaps",
-            description: "Target keywords your competitors rank for but you don't",
-            impact: "high",
-            action: "Develop comprehensive content that addresses user intent for these keywords"
-          },
-          {
-            title: "Improve Content Depth",
-            description: "Longer, more detailed content tends to rank better",
-            impact: "medium",
-            action: `Write comprehensive guides on topics like ${getTopKeywords(keywords, 1).join(', ')}`
-          },
-          {
-            title: "Add Visual Content",
-            description: "Images, videos, and infographics improve engagement",
-            impact: "medium",
-            action: "Include relevant visual content in your articles to increase time on page"
-          }
-        ];
-        
-        const allRecommendations = {
-          onPage: onPageRecs,
-          technical: technicalRecs,
-          content: contentRecs
-        };
+        // Sort recommendations by priority (high first)
+        const sortedRecommendations = seoRecommendations.sort((a, b) => {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority as keyof typeof priorityOrder] - 
+                 priorityOrder[b.priority as keyof typeof priorityOrder];
+        });
         
         // Update cache
-        recommendationsCache.data = allRecommendations;
+        recommendationsCache.data = sortedRecommendations;
         recommendationsCache.domain = domain;
         recommendationsCache.keywordsLength = keywords.length;
         
-        setRecommendations(allRecommendations);
+        setRecommendations(sortedRecommendations);
       } catch (error) {
         console.error("Error generating SEO recommendations:", error);
       } finally {
@@ -136,33 +134,34 @@ export default function SeoRecommendationsCard({ domain, keywords, isLoading }: 
     generateRecommendations();
   }, [domain, keywords, isLoading]);
 
-  // Get top keywords by volume
-  function getTopKeywords(keywords: any[], count: number): string[] {
-    if (!keywords || keywords.length === 0) return ["sample keyword"];
-    
-    const sortedKeywords = [...keywords].sort((a, b) => (b.volume || 0) - (a.volume || 0));
-    return sortedKeywords.slice(0, count).map(k => k.keyword);
-  }
-
-  // Get impact badge color
-  function getImpactColor(impact: string): string {
-    switch (impact.toLowerCase()) {
-      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high": return "text-red-500 border-red-200 bg-red-50";
+      case "medium": return "text-amber-500 border-amber-200 bg-amber-50";
+      case "low": return "text-green-500 border-green-200 bg-green-50";
+      default: return "text-blue-500 border-blue-200 bg-blue-50";
     }
-  }
+  };
 
-  // Get icon based on tab
-  function getTabIcon(tab: string) {
-    switch (tab) {
-      case 'on-page': return <CheckCircle2 className="w-4 h-4" />;
-      case 'technical': return <AlertCircle className="w-4 h-4" />;
-      case 'content': return <FileText className="w-4 h-4" />;
-      default: return null;
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "easy": return "text-green-600 border-green-200 bg-green-50";
+      case "medium": return "text-amber-600 border-amber-200 bg-amber-50";
+      case "hard": return "text-red-600 border-red-200 bg-red-50";
+      default: return "text-blue-600 border-blue-200 bg-blue-50";
     }
-  }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "technical": return "🔧";
+      case "content": return "📝";
+      case "keyword": return "🔑";
+      case "on-page": return "📄";
+      case "backlink": return "🔗";
+      default: return "📊";
+    }
+  };
 
   return (
     <Card className="animate-fade-in">
@@ -172,7 +171,7 @@ export default function SeoRecommendationsCard({ domain, keywords, isLoading }: 
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardTitle>
         <CardDescription>
-          Actionable suggestions to improve your rankings
+          Priority actions to improve your rankings
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -180,41 +179,38 @@ export default function SeoRecommendationsCard({ domain, keywords, isLoading }: 
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : recommendations ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full grid grid-cols-3 mb-4">
-              <TabsTrigger value="on-page" className="flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" /> On-Page
-              </TabsTrigger>
-              <TabsTrigger value="technical" className="flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" /> Technical
-              </TabsTrigger>
-              <TabsTrigger value="content" className="flex items-center gap-1">
-                <FileText className="w-4 h-4" /> Content
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="on-page" className="space-y-4 mt-2">
-              {recommendations.onPage.map((rec, index) => (
-                <RecommendationItem key={index} recommendation={rec} getImpactColor={getImpactColor} />
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="technical" className="space-y-4 mt-2">
-              {recommendations.technical.map((rec, index) => (
-                <RecommendationItem key={index} recommendation={rec} getImpactColor={getImpactColor} />
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="content" className="space-y-4 mt-2">
-              {recommendations.content.map((rec, index) => (
-                <RecommendationItem key={index} recommendation={rec} getImpactColor={getImpactColor} />
-              ))}
-            </TabsContent>
-          </Tabs>
+        ) : recommendations && recommendations.length > 0 ? (
+          <div className="space-y-4">
+            {recommendations.map((rec, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{getTypeIcon(rec.type)}</span>
+                    <h3 className="font-semibold">{rec.recommendation}</h3>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Badge className={`${getPriorityColor(rec.priority)}`}>
+                      {rec.priority} priority
+                    </Badge>
+                    <Badge className={`${getDifficultyColor(rec.implementationDifficulty)}`}>
+                      {rec.implementationDifficulty}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground ml-7">{rec.details}</p>
+                {index < recommendations.length - 1 && <div className="pt-1 pb-1 border-b border-border/40" />}
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            No recommendations available. Complete a keyword analysis first.
+            No recommendations available. Run a keyword analysis first.
+          </div>
+        )}
+
+        {recommendations && recommendations.length > 0 && (
+          <div className="text-xs text-muted-foreground mt-6 text-center">
+            These recommendations are tailored based on your domain and keyword analysis
           </div>
         )}
       </CardContent>
@@ -222,23 +218,4 @@ export default function SeoRecommendationsCard({ domain, keywords, isLoading }: 
   );
 }
 
-// Recommendation item component
-function RecommendationItem({ recommendation, getImpactColor }: { 
-  recommendation: SeoRecommendation, 
-  getImpactColor: (impact: string) => string 
-}) {
-  return (
-    <div className="bg-muted/50 p-4 rounded-md hover:bg-muted transition-all">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="font-medium">{recommendation.title}</h3>
-        <Badge className={`ml-2 ${getImpactColor(recommendation.impact)}`}>
-          {recommendation.impact.charAt(0).toUpperCase() + recommendation.impact.slice(1)} Impact
-        </Badge>
-      </div>
-      <p className="text-sm text-muted-foreground mb-2">{recommendation.description}</p>
-      <div className="text-xs font-medium">
-        <span className="text-revology">Action:</span> {recommendation.action}
-      </div>
-    </div>
-  );
-}
+export default SeoRecommendationsCard;

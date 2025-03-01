@@ -13,12 +13,14 @@ export const keywordGapsCache = {
   keywordsLength: 0
 };
 
-export default function KeywordGapCard({ domain, competitorDomains, keywords, isLoading }: {
+interface KeywordGapCardProps {
   domain: string;
   competitorDomains: string[];
   keywords: any[];
   isLoading: boolean;
-}) {
+}
+
+export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading }: KeywordGapCardProps) {
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,10 +63,11 @@ export default function KeywordGapCard({ domain, competitorDomains, keywords, is
             )
             .map(kw => ({
               keyword: kw.keyword,
-              competitorRank: kw.ranks[competitor],
+              competitor: competitor,
+              rank: kw.ranks[competitor],
               volume: kw.volume || 0,
               difficulty: kw.difficulty || 0,
-              competitor
+              opportunity: 100 - (kw.difficulty || 0)
             }));
           
           competitorKeywordGaps.push(...competitorKeywords);
@@ -116,7 +119,7 @@ export default function KeywordGapCard({ domain, competitorDomains, keywords, is
                 <div>
                   <div className="font-medium">{gap.keyword}</div>
                   <div className="text-xs text-muted-foreground">
-                    <span className="text-amber-500 font-medium">Rank {gap.competitorRank}</span> on {gap.competitor}
+                    <span className="text-amber-500 font-medium">Rank {gap.rank}</span> on {gap.competitor}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -146,3 +149,5 @@ function getDifficultyColor(difficulty: number): string {
   if (difficulty < 60) return "text-amber-500";
   return "text-red-500";
 }
+
+export default KeywordGapCard;
