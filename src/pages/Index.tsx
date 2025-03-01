@@ -39,7 +39,10 @@ const Index = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [keywordData, setKeywordData] = useState<any[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  
+  const [showApiForm, setShowApiForm] = useState(false);
+  const [newApiName, setNewApiName] = useState("");
+  const [newApiKey, setNewApiKey] = useState("");
+
   useEffect(() => {
     setAnalysisError(null);
   }, [activeTab]);
@@ -249,6 +252,19 @@ const Index = () => {
     window.dispatchEvent(event);
     
     toast.success(`Switched to content generator with "${keyword}"`);
+  };
+
+  const handleAddNewApi = () => {
+    if (!newApiName.trim() || !newApiKey.trim()) {
+      toast.error("Please provide both API name and key");
+      return;
+    }
+    
+    toast.success(`Added new API integration: ${newApiName}`);
+    
+    setNewApiName("");
+    setNewApiKey("");
+    setShowApiForm(false);
   };
 
   return (
@@ -530,10 +546,51 @@ const Index = () => {
                     </Card>
                   </div>
                   
-                  <Button variant="outline" className="mt-2 w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New API Integration
-                  </Button>
+                  {showApiForm ? (
+                    <div className="space-y-3 p-4 border rounded-lg border-revology/20 bg-muted/10 mt-4">
+                      <h3 className="font-medium">Add New API Integration</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="new-api-name">API Name</Label>
+                          <Input 
+                            id="new-api-name" 
+                            placeholder="e.g., Ahrefs, SEMrush" 
+                            value={newApiName}
+                            onChange={(e) => setNewApiName(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new-api-key">API Key</Label>
+                          <Input 
+                            id="new-api-key" 
+                            type="password"
+                            placeholder="Enter your API key" 
+                            value={newApiKey}
+                            onChange={(e) => setNewApiKey(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={handleAddNewApi} className="bg-revology hover:bg-revology-dark">
+                            Add API
+                          </Button>
+                          <Button variant="outline" onClick={() => setShowApiForm(false)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="mt-2 w-full"
+                      onClick={() => setShowApiForm(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New API Integration
+                    </Button>
+                  )}
                 </div>
                 
                 <Separator />

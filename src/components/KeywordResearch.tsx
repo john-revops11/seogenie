@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { OPENAI_API_KEY } from "@/services/keywords/apiConfig";
+import { generateTopicSuggestions } from "@/utils/topicGenerator";
 
 interface KeywordResearchProps {
   domain: string;
@@ -184,8 +185,14 @@ const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) =>
   };
 
   const handleGenerateContent = (keyword: string, relatedKeywords: string[]) => {
+    // Generate initial topic suggestion based on the selected keyword
+    const initialTopics = generateTopicSuggestions(domain, [], null, [keyword, ...relatedKeywords]);
+    
+    // Call the parent component's handler with keyword data
     onGenerateContent(keyword, relatedKeywords);
-    toast.success(`Preparing to generate content for "${keyword}"`);
+    
+    // Show success toast with more specific message
+    toast.success(`Preparing to generate content for "${keyword}" - switched to Content tab`);
   };
 
   const getDifficultyColor = (difficulty: number) => {
