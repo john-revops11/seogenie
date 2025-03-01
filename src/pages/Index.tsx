@@ -90,16 +90,17 @@ const Index = () => {
       return;
     }
     
-    if (competitorDomains.some(domain => domain && !validateUrl(domain))) {
+    // Filter out empty domains first
+    const validCompetitorDomains = competitorDomains.filter(domain => domain.trim() !== "");
+    
+    if (validCompetitorDomains.some(domain => !validateUrl(domain))) {
       toast.error("Please enter valid competitor domains");
       return;
     }
     
     // Prepare URLs with proper format
     const formattedMainDomain = formatUrl(mainDomain);
-    const formattedCompetitorDomains = competitorDomains
-      .filter(Boolean)
-      .map(formatUrl);
+    const formattedCompetitorDomains = validCompetitorDomains.map(formatUrl);
     
     // Start the analysis process
     setIsAnalyzing(true);
@@ -151,6 +152,9 @@ const Index = () => {
 
   // Get an array of just the keyword strings for content generation
   const keywordStrings = keywordData.map(kw => kw.keyword);
+
+  // Filter out empty domains before passing to components
+  const validCompetitorDomains = competitorDomains.filter(domain => domain.trim() !== "");
 
   return (
     <Layout>
@@ -279,7 +283,7 @@ const Index = () => {
                 <div className="md:col-span-2 lg:col-span-3">
                   <KeywordTable 
                     domain={mainDomain} 
-                    competitorDomains={competitorDomains.filter(Boolean)} 
+                    competitorDomains={validCompetitorDomains} 
                     keywords={keywordData}
                     isLoading={isAnalyzing}
                   />
@@ -287,7 +291,7 @@ const Index = () => {
                 
                 <KeywordGapCard 
                   domain={mainDomain} 
-                  competitorDomains={competitorDomains.filter(Boolean)} 
+                  competitorDomains={validCompetitorDomains} 
                   keywords={keywordData}
                   isLoading={isAnalyzing}
                 />

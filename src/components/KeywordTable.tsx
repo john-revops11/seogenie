@@ -119,6 +119,29 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     return "text-red-600";
   };
 
+  // Safely extract domain name from URL string
+  const extractDomainName = (url: string): string => {
+    try {
+      // If it's already a valid URL, extract the hostname
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const urlObj = new URL(url);
+        return urlObj.hostname.replace(/^www\./, '');
+      }
+      
+      // Try with https:// prefix
+      try {
+        const urlObj = new URL(`https://${url}`);
+        return urlObj.hostname.replace(/^www\./, '');
+      } catch (e) {
+        // If that fails, just return the original string
+        return url.replace(/^www\./, '');
+      }
+    } catch (error) {
+      console.warn(`Failed to extract domain from: ${url}`, error);
+      return url; // Return original string if all parsing fails
+    }
+  };
+
   // Handle CSV export
   const exportToCsv = () => {
     if (keywords.length === 0) return;
@@ -136,7 +159,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
       csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},`;
       csvContent += `${item.position || "-"},`;
       competitorDomains.forEach(comp => {
-        const domainName = new URL(comp).hostname.replace(/^www\./, '');
+        const domainName = extractDomainName(comp);
         csvContent += `${item.competitorRankings?.[domainName] || "-"},`;
       });
       csvContent += "\n";
@@ -231,7 +254,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                   </TableHead>
                   {competitorDomains.map((competitor, index) => (
                     <TableHead key={index}>
-                      {new URL(competitor).hostname.replace(/^www\./, '')}
+                      {extractDomainName(competitor)}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -265,7 +288,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                         )}
                       </TableCell>
                       {competitorDomains.map((competitor, idx) => {
-                        const domainName = new URL(competitor).hostname.replace(/^www\./, '');
+                        const domainName = extractDomainName(competitor);
                         return (
                           <TableCell key={idx}>
                             {item.competitorRankings?.[domainName] ? (

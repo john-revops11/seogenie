@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +16,16 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[]>([]);
   const [isLoadingGaps, setIsLoadingGaps] = useState(false);
   
+  const validateDomains = () => {
+    if (!domain.trim()) return false;
+    
+    const validCompetitors = competitorDomains.filter(d => d.trim().length > 0);
+    return validCompetitors.length > 0;
+  };
+  
   useEffect(() => {
     const fetchGaps = async () => {
-      if (keywords.length > 0 && !isLoading) {
+      if (keywords.length > 0 && !isLoading && validateDomains()) {
         setIsLoadingGaps(true);
         
         try {
@@ -27,6 +33,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
           setKeywordGaps(gaps);
         } catch (error) {
           console.error("Error fetching keyword gaps:", error);
+          setKeywordGaps([]);
         } finally {
           setIsLoadingGaps(false);
         }
