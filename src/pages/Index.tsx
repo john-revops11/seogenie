@@ -70,12 +70,12 @@ const Index = () => {
   };
   
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-revology to-revology-dark bg-clip-text text-transparent">SEO Keyword Analysis & Content Generator</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">SEO Keyword Analysis & Content Generator</h1>
       
-      <Card className="mb-8 glass-panel shadow-lg border-revology/20">
-        <CardContent className="grid gap-6 md:grid-cols-2 p-6">
-          <div className="space-y-3">
+      <Card className="mb-6 glass-panel">
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
             <label htmlFor="domain" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
               Main Domain
             </label>
@@ -86,25 +86,24 @@ const Index = () => {
                 value={domain}
                 onChange={handleDomainChange}
                 disabled={isLoading}
-                className="pl-10 focus:border-revology focus:ring-revology"
+                className="pl-10"
               />
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
               Competitor Domains
             </label>
             {competitorDomains.map((competitor, index) => (
-              <div key={index} className="flex items-center space-x-2 mb-2">
+              <div key={index} className="flex items-center space-x-2 mb-1">
                 <Input
                   type="url"
                   placeholder="Enter competitor domain"
                   value={competitor}
                   onChange={(e) => handleCompetitorChange(index, e.target.value)}
                   disabled={isLoading}
-                  className="focus:border-revology focus:ring-revology"
                 />
                 {competitorDomains.length > 1 ? (
                   <Button 
@@ -113,7 +112,6 @@ const Index = () => {
                     size="icon"
                     onClick={() => removeCompetitorField(index)}
                     disabled={isLoading}
-                    className="hover:bg-red-50 hover:text-red-500 hover:border-red-200"
                   >
                     -
                   </Button>
@@ -125,7 +123,6 @@ const Index = () => {
               variant="secondary" 
               onClick={addCompetitorField}
               disabled={isLoading}
-              className="w-full mt-2"
             >
               Add Competitor
             </Button>
@@ -134,7 +131,7 @@ const Index = () => {
           <Button 
             onClick={handleAnalyze} 
             disabled={isLoading || !domain}
-            className="w-full md:col-span-2 bg-revology hover:bg-revology-dark text-white py-2 font-medium transition-colors duration-300 shadow-md hover:shadow-lg"
+            className="w-full bg-revology hover:bg-revology-dark mt-4 md:mt-0"
           >
             {isLoading ? "Analyzing..." : "Analyze Domain"}
           </Button>
@@ -142,7 +139,7 @@ const Index = () => {
       </Card>
       
       {keywords.length > 0 && (
-        <div className="grid gap-8 mb-8 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <ContentIdeasGenerator 
             domain={domain} 
             competitorDomains={competitorDomains} 
@@ -159,14 +156,14 @@ const Index = () => {
       )}
       
       {keywords.length > 0 && (
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <KeywordTable 
             domain={domain}
             competitorDomains={competitorDomains}
             keywords={keywords}
             isLoading={isLoading}
           />
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6">
             <KeywordGapCard 
               domain={domain}
               competitorDomains={competitorDomains}
