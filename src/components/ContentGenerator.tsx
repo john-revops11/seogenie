@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, RefreshCw, FileEdit, Copy, Download, Plus, CheckCircle, Edit, Check } from "lucide-react";
+import { Loader2, RefreshCw, FileEdit, Copy, Download, Plus, CheckCircle, Edit, Check, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
@@ -131,7 +131,14 @@ const generateTopicSuggestions = (
     });
   }
   
-  return Array.from(topics).slice(0, 8);
+  // Getting a clean array of topics
+  const uniqueTopics = Array.from(topics);
+  
+  // Generate some randomness to ensure new topics on regeneration
+  const randomSeed = Math.random();
+  const shuffledTopics = [...uniqueTopics].sort(() => randomSeed - 0.5);
+  
+  return shuffledTopics.slice(0, 8);
 };
 
 // Title suggestion helper function
@@ -209,7 +216,11 @@ const generateTitleSuggestions = (
     }
   });
   
-  return Array.from(titles).slice(0, 3);
+  // Generate some randomness to ensure new titles on regeneration
+  const randomSeed = Math.random();
+  const shuffledTitles = Array.from(titles).sort(() => randomSeed - 0.5);
+  
+  return shuffledTitles.slice(0, 3);
 };
 
 const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
@@ -373,6 +384,27 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     toast.success("Topic updated");
   };
   
+  // Delete a topic
+  const handleDeleteTopic = (topicToDelete: string) => {
+    // Update topics list
+    setTopics(prev => prev.filter(topic => topic !== topicToDelete));
+    
+    // Remove title suggestions for the deleted topic
+    setTitleSuggestions(prev => {
+      const newTitleSuggestions = { ...prev };
+      delete newTitleSuggestions[topicToDelete];
+      return newTitleSuggestions;
+    });
+    
+    // Reset selected topic if it was deleted
+    if (selectedTopic === topicToDelete) {
+      setSelectedTopic("");
+      setTitle("");
+    }
+    
+    toast.success("Topic removed");
+  };
+  
   // Regenerate topic suggestions
   const handleRegenerateTopics = () => {
     setIsLoadingTopics(true);
@@ -382,32 +414,37 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const recommendations = recommendationsCache.data;
       const selectedKeywords = keywordGapsCache.selectedKeywords || [];
       
-      const randomSeed = Math.random().toString();
+      const randomSeed = Math.random();
       console.log("Regenerating topics with seed:", randomSeed);
       
-      const existingTopics = new Set(topics);
-      let newTopics = [];
+      const newTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       
-      for (let i = 0; i < 3; i++) {
-        const candidateTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
-        newTopics = candidateTopics.filter(topic => !existingTopics.has(topic));
+      // Ensure we get different topics than what we currently have
+      if (JSON.stringify(newTopics.sort()) === JSON.stringify([...topics].sort())) {
+        // If topics are the same, try again with a different seed
+        console.log("Generated same topics, trying again with new seed");
+        const alternativeTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
+        setTopics(alternativeTopics);
         
-        if (newTopics.length >= 5) break;
+        // Generate titles for each new topic
+        const titlesMap: {[topic: string]: string[]} = {};
+        alternativeTopics.forEach(topic => {
+          titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+        });
+        
+        setTitleSuggestions(titlesMap);
+      } else {
+        setTopics(newTopics);
+        
+        // Generate titles for each new topic
+        const titlesMap: {[topic: string]: string[]} = {};
+        newTopics.forEach(topic => {
+          titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+        });
+        
+        setTitleSuggestions(titlesMap);
       }
       
-      if (newTopics.length < 5) {
-        newTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
-      }
-      
-      setTopics(newTopics);
-      
-      // Generate titles for each new topic
-      const titlesMap: {[topic: string]: string[]} = {};
-      newTopics.forEach(topic => {
-        titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
-      });
-      
-      setTitleSuggestions(titlesMap);
       setSelectedTopic("");
       setTitle("");
       
@@ -564,9 +601,9 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
               
               <Separator />
               
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-lg font-medium">Topics</Label>
+                  <h3 className="text-lg font-semibold text-revology-dark">Content Topics</h3>
                   <div className="flex items-center gap-2">
                     <Button 
                       size="sm" 
@@ -631,7 +668,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                         key={topicIndex} 
                         className={`overflow-hidden transition-all ${selectedTopic === topic ? 'border-revology/50 shadow-md' : ''}`}
                       >
-                        <CardHeader className="py-3 px-4">
+                        <CardHeader className="py-3 px-4 bg-gradient-to-r from-revology-light/20 to-transparent">
                           {isEditingTopic === topic ? (
                             <div className="flex items-center gap-2">
                               <Input 
@@ -650,22 +687,32 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                             </div>
                           ) : (
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-base">
+                              <CardTitle className="text-base font-bold text-revology-dark">
                                 {topic}
                               </CardTitle>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0"
-                                onClick={() => handleStartEditingTopic(topic)}
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleStartEditingTopic(topic)}
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteTopic(topic)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </CardHeader>
                         <CardContent className="pb-4 px-4">
-                          <div className="space-y-2">
+                          <div className="space-y-2 mt-2">
                             {titleSuggestions[topic] ? (
                               titleSuggestions[topic].map((topicTitle, titleIndex) => (
                                 <div 
