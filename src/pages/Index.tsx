@@ -281,10 +281,19 @@ const Index = () => {
                   />
                 </div>
                 
-                <KeywordGapCard domain={mainDomain} />
+                <KeywordGapCard 
+                  domain={mainDomain} 
+                  competitorDomains={competitorDomains.filter(Boolean)} 
+                  keywords={keywordData}
+                  isLoading={isAnalyzing}
+                />
                 
                 <div className="md:col-span-1 lg:col-span-2">
-                  <SeoRecommendationsCard domain={mainDomain} />
+                  <SeoRecommendationsCard 
+                    domain={mainDomain} 
+                    keywords={keywordData}
+                    isLoading={isAnalyzing}
+                  />
                 </div>
               </div>
             )}
