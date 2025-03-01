@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, RefreshCw, FileEdit, Copy, Download } from "lucide-react";
+import { Loader2, RefreshCw, FileEdit, Copy, Download, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
@@ -15,12 +16,14 @@ import { toast } from "sonner";
 import { generateContent, SeoRecommendation } from "@/services/keywordService";
 import { keywordGapsCache } from "@/components/KeywordGapCard";
 import { recommendationsCache } from "@/components/SeoRecommendationsCard";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ContentGeneratorProps {
   domain: string;
   allKeywords: string[];
 }
 
+// Topic suggestion helper function
 const generateTopicSuggestions = (
   domain: string,
   keywordGaps: any[] = [],
@@ -41,53 +44,101 @@ const generateTopicSuggestions = (
   }
   
   const gapKeywords = keywordGaps?.map(gap => gap.keyword) || [];
-  
   const contentRecs = seoRecommendations?.content || [];
   
+  // Use a Set to avoid duplicate topics
   const topics = new Set<string>();
   
+  // Extract topics from keyword gaps
   if (gapKeywords.length > 0) {
+    // Group keywords by common terms to identify themes
     const keywordGroups: Record<string, string[]> = {};
     
     gapKeywords.forEach(keyword => {
-      const mainTerm = keyword.split(' ').slice(0, 2).join(' ');
-      if (!keywordGroups[mainTerm]) {
-        keywordGroups[mainTerm] = [];
+      // Extract potential main terms from each keyword (usually first 2-3 words)
+      const words = keyword.split(' ');
+      if (words.length >= 2) {
+        // Try different combinations of words for potential topics
+        const mainTermOptions = [
+          words.slice(0, 2).join(' '), // First two words
+          words.length >= 3 ? words.slice(0, 3).join(' ') : null, // First three words
+          words[0] // Just the first word for broader topics
+        ].filter(Boolean) as string[];
+        
+        mainTermOptions.forEach(mainTerm => {
+          if (!keywordGroups[mainTerm]) {
+            keywordGroups[mainTerm] = [];
+          }
+          keywordGroups[mainTerm].push(keyword);
+        });
+      } else if (words.length === 1) {
+        // Single word keyword
+        const mainTerm = words[0];
+        if (!keywordGroups[mainTerm]) {
+          keywordGroups[mainTerm] = [];
+        }
+        keywordGroups[mainTerm].push(keyword);
       }
-      keywordGroups[mainTerm].push(keyword);
     });
     
-    Object.entries(keywordGroups).forEach(([mainTerm, keywords]) => {
-      if (keywords.length >= 2) {
+    // Filter groups that have at least 2 related keywords
+    Object.entries(keywordGroups)
+      .filter(([_, keywords]) => keywords.length >= 2)
+      .slice(0, 8) // Limit to avoid too many topics
+      .forEach(([mainTerm, keywords]) => {
+        // Create topic variations based on the keyword group
         const topicName = mainTerm.charAt(0).toUpperCase() + mainTerm.slice(1);
         
-        const pricingTopics = [
-          `${topicName} Pricing Strategies`,
-          `${topicName} for Revenue Growth`,
-          `${topicName} Analytics Framework`
+        // Generate multiple topic formats based on the main term
+        const topicVariations = [
+          `${topicName} Strategies for Revenue Growth`,
+          `${topicName} Optimization Guide`,
+          `${topicName} Analytics Framework`,
+          `Advanced ${topicName} Tactics`
         ];
         
-        pricingTopics.forEach(topic => topics.add(topic));
+        // Add a few variations to the topics set
+        topicVariations.slice(0, 2).forEach(topic => topics.add(topic));
+      });
+  }
+  
+  // Extract topics from SEO content recommendations
+  if (contentRecs.length > 0) {
+    contentRecs.forEach(rec => {
+      const recommendation = rec.recommendation.toLowerCase();
+      
+      // Look for high-priority content recommendations related to pricing
+      if ((recommendation.includes('pricing') || 
+          recommendation.includes('revenue') || 
+          recommendation.includes('strategy') || 
+          recommendation.includes('analytics')) && 
+          rec.priority === 'high') {
+        
+        // Format the recommendation as a topic
+        let topicName = '';
+        
+        if (recommendation.includes('create content about')) {
+          // Extract the topic from "Create content about X" format
+          const match = recommendation.match(/create content about ["'](.+?)["']/i);
+          if (match && match[1]) {
+            topicName = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+          }
+        } else {
+          // Extract first part of the recommendation
+          const topicWords = recommendation.split(' ').slice(0, 4);
+          topicName = topicWords
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        }
+        
+        if (topicName && topicName.length > 5) {
+          topics.add(topicName);
+        }
       }
     });
   }
   
-  contentRecs.forEach(rec => {
-    const recommendation = rec.recommendation.toLowerCase();
-    
-    if (recommendation.includes('pricing') || 
-        recommendation.includes('revenue') || 
-        recommendation.includes('strategy')) {
-      
-      const topicWords = recommendation.split(' ').slice(0, 4);
-      const topicName = topicWords
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      
-      topics.add(topicName);
-    }
-  });
-  
+  // Default topics to fill in if we don't have enough
   const defaultTopics = [
     "Pricing Strategy Optimization",
     "Revenue Growth Management",
@@ -95,11 +146,13 @@ const generateTopicSuggestions = (
     "Value-Based Pricing",
     "Pricing Analytics Frameworks",
     "Competitive Pricing Analysis",
-    "Subscription Revenue Optimization"
+    "Subscription Revenue Optimization",
+    "Pricing Psychology Research"
   ];
   
+  // Add default topics if we need more
   defaultTopics.forEach(topic => {
-    if (topics.size < 5) {
+    if (topics.size < 8) {
       topics.add(topic);
     }
   });
@@ -107,6 +160,7 @@ const generateTopicSuggestions = (
   return Array.from(topics).slice(0, 8);
 };
 
+// Title suggestion helper function
 const generateTitleSuggestions = (
   topic: string,
   keywordGaps: any[] = [],
@@ -124,30 +178,48 @@ const generateTitleSuggestions = (
     ];
   }
   
+  // Use a Set to avoid duplicate titles
   const titles = new Set<string>();
   
+  // Find keywords related to the selected topic
   const relatedKeywords = keywordGaps?.filter(gap => {
     const keyword = gap.keyword.toLowerCase();
     const topicWords = topic.toLowerCase().split(' ');
-    return topicWords.some(word => keyword.includes(word)) || 
+    return topicWords.some(word => keyword.includes(word) && word.length > 3) || 
            keyword.includes('pricing') || 
-           keyword.includes('revenue');
+           keyword.includes('revenue') ||
+           keyword.includes('strategy');
   }) || [];
   
-  relatedKeywords.forEach(gap => {
+  // Generate titles from related keywords
+  relatedKeywords.slice(0, 5).forEach(gap => {
     const keyword = gap.keyword;
-    titles.add(`${topic}: Optimizing for ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
-    titles.add(`The Ultimate Guide to ${topic} and ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
+    // Create variations of titles incorporating the keyword
+    titles.add(`${topic}: Complete Guide to ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
+    titles.add(`How ${topic} Powers ${keyword.charAt(0).toUpperCase() + keyword.slice(1)} Growth`);
   });
   
+  // Use SEO content recommendations for title inspiration
   const contentRecs = seoRecommendations?.content || [];
   contentRecs.forEach(rec => {
     const recommendation = rec.recommendation;
-    if (recommendation.toLowerCase().includes(topic.toLowerCase().split(' ')[0])) {
-      titles.add(`${topic}: ${recommendation.split(':').pop()?.trim() || 'Best Practices and Strategies'}`);
+    // Match recommendations to topic
+    const topicWords = topic.toLowerCase().split(' ').filter(w => w.length > 3);
+    const containsTopicWord = topicWords.some(word => 
+      recommendation.toLowerCase().includes(word)
+    );
+    
+    if (containsTopicWord) {
+      // Extract useful phrases from recommendation
+      let titlePhrase = recommendation.split(':').pop()?.trim() || 'Best Practices and Strategies';
+      titlePhrase = titlePhrase.replace(/^["']|["']$/g, ''); // Remove quotes if present
+      
+      // Create a title using the topic and the phrase
+      titles.add(`${topic}: ${titlePhrase.charAt(0).toUpperCase() + titlePhrase.slice(1)}`);
     }
   });
   
+  // Default title formats if we need more
   const defaultTitles = [
     `Ultimate Guide to ${topic} for Revenue Growth`,
     `How ${topic} Drives Profitability: Proven Strategies`,
@@ -156,6 +228,7 @@ const generateTitleSuggestions = (
     `${topic}: Analytics-Driven Approach for Business Success`
   ];
   
+  // Add default titles if needed
   defaultTitles.forEach(title => {
     if (titles.size < 3) {
       titles.add(title);
@@ -180,13 +253,16 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
   
   const [topics, setTopics] = useState<string[]>([]);
   const [selectedTopic, setSelectedTopic] = useState("");
+  const [customTopic, setCustomTopic] = useState("");
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isLoadingTitles, setIsLoadingTitles] = useState(false);
   const [isDataReady, setIsDataReady] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
+  const [showCustomTopicInput, setShowCustomTopicInput] = useState(false);
   
+  // Check if data is ready for content generation
   useEffect(() => {
     const checkDataReadiness = () => {
       const hasKeywordGaps = keywordGapsCache.data && keywordGapsCache.data.length > 0;
@@ -205,6 +281,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     checkDataReadiness();
   }, [domain, allKeywords]);
   
+  // Generate initial topic suggestions
   const generateInitialTopics = () => {
     setIsLoadingTopics(true);
     
@@ -226,8 +303,41 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Handle topic selection or custom topic creation
   const handleTopicChange = (topic: string) => {
+    if (topic === "custom") {
+      setShowCustomTopicInput(true);
+      return;
+    }
+    
     setSelectedTopic(topic);
+    setShowCustomTopicInput(false);
+    generateTitlesForTopic(topic);
+  };
+  
+  // Handle custom topic submission
+  const handleCustomTopicSubmit = () => {
+    if (!customTopic.trim()) {
+      toast.error("Please enter a custom topic");
+      return;
+    }
+    
+    // Add the custom topic to the list
+    setTopics(prev => [customTopic, ...prev.filter(t => t !== "custom").slice(0, 7)]);
+    setSelectedTopic(customTopic);
+    
+    // Generate titles for the custom topic
+    generateTitlesForTopic(customTopic);
+    
+    // Reset the input
+    setCustomTopic("");
+    setShowCustomTopicInput(false);
+    
+    toast.success("Custom topic created");
+  };
+  
+  // Generate titles for a topic
+  const generateTitlesForTopic = (topic: string) => {
     setIsLoadingTitles(true);
     
     try {
@@ -248,10 +358,12 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Handle title selection
   const handleTitleSelect = (selectedTitle: string) => {
     setTitle(selectedTitle);
   };
   
+  // Regenerate topic suggestions
   const handleRegenerateTopics = () => {
     setIsLoadingTopics(true);
     
@@ -290,6 +402,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Regenerate title suggestions
   const handleRegenerateTitles = () => {
     if (!selectedTopic) {
       toast.error("Please select a topic first");
@@ -334,6 +447,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Handle keyword tag clicks
   const handleTagClick = (keyword: string) => {
     if (selectedKeywords.includes(keyword)) {
       setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
@@ -342,6 +456,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Generate content
   const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please enter a title for your content");
@@ -376,14 +491,17 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Regenerate content
   const handleRegenerateContent = async () => {
     handleGenerateContent();
   };
   
+  // Handle content editing
   const handleEditContent = () => {
     setIsEditing(true);
   };
   
+  // Save edited content
   const handleSaveEdits = () => {
     if (generatedContent) {
       setGeneratedContent({
@@ -395,6 +513,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Copy content to clipboard
   const handleCopy = () => {
     if (generatedContent) {
       navigator.clipboard.writeText(generatedContent.content);
@@ -402,6 +521,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
+  // Download content as markdown file
   const handleDownload = () => {
     if (generatedContent) {
       const blob = new Blob([generatedContent.content], { type: "text/markdown" });
@@ -417,6 +537,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
 
+  // If data isn't ready, show loading state
   if (!isDataReady) {
     return (
       <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
@@ -471,22 +592,46 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                   </Button>
                 </div>
                 
-                <Select 
-                  value={selectedTopic} 
-                  onValueChange={handleTopicChange}
-                  disabled={isLoadingTopics}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a topic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {topics.map((topic, index) => (
-                      <SelectItem key={index} value={topic}>
-                        {topic}
+                {showCustomTopicInput ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={customTopic}
+                      onChange={(e) => setCustomTopic(e.target.value)}
+                      placeholder="Enter custom topic"
+                      className="flex-1"
+                    />
+                    <Button 
+                      size="sm"
+                      onClick={handleCustomTopicSubmit}
+                      disabled={!customTopic.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                ) : (
+                  <Select 
+                    value={selectedTopic} 
+                    onValueChange={handleTopicChange}
+                    disabled={isLoadingTopics}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a topic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {topics.map((topic, index) => (
+                        <SelectItem key={index} value={topic}>
+                          {topic}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">
+                        <div className="flex items-center gap-1 text-primary">
+                          <Plus className="h-3 w-3" />
+                          Add custom topic
+                        </div>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               
               <div className="space-y-2">
