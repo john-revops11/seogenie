@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,13 @@ const useKeywordGaps = () => {
   
   return {
     keywordGaps: keywordGapsCache.data || [],
-    seoRecommendations: [], // Default empty array
+    seoRecommendations: {
+      onPage: [],
+      technical: [],
+      content: [],
+      offPage: [],
+      summary: []
+    }, // Initialize with proper structure
     selectedKeywords,
     handleSelectKeywords
   };
