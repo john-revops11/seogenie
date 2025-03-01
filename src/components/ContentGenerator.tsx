@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ interface ContentGeneratorProps {
   allKeywords: string[];
 }
 
-// Topic suggestion helper function
+// Topic suggestion helper function - Enhanced for niche relevance
 const generateTopicSuggestions = (
   domain: string,
   keywordGaps: any[] = [],
@@ -37,6 +36,10 @@ const generateTopicSuggestions = (
     return [];
   }
   
+  // Extract the domain niche based on the domain name and keywords
+  const domainName = domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0];
+  const domainWords = domainName.split(/[^a-zA-Z0-9]/).filter(word => word.length > 3);
+  
   // Prioritize selected keywords when available
   const keywordsToUse = selectedKeywords.length > 0 
     ? selectedKeywords 
@@ -47,13 +50,41 @@ const generateTopicSuggestions = (
   // Use a Set to avoid duplicate topics
   const topics = new Set<string>();
   
-  // Extract topics from keyword gaps
+  // Extract common themes/terms from keywords to identify the domain niche
+  const allWords = keywordsToUse.flatMap(keyword => 
+    keyword.toLowerCase().split(/\s+/)
+  );
+  
+  // Count word frequencies to identify niche-related terms
+  const wordFrequency: Record<string, number> = {};
+  allWords.forEach(word => {
+    if (word.length > 3) { // Only consider meaningful words
+      wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+    }
+  });
+  
+  // Sort words by frequency to find common niche terms
+  const nicheTerms = Object.entries(wordFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([term]) => term);
+  
+  // Combine domain words with niche terms
+  const relevantTerms = [...new Set([...domainWords, ...nicheTerms])];
+  console.log("Detected niche terms:", relevantTerms);
+  
+  // Extract topics from keyword gaps with improved niche relevance
   if (keywordsToUse.length > 0) {
     // Group keywords by common terms to identify themes
     const keywordGroups: Record<string, string[]> = {};
     
     keywordsToUse.forEach(keyword => {
-      // Extract potential main terms from each keyword (usually first 2-3 words)
+      // Check if keyword contains any relevant niche terms
+      const containsNicheTerm = relevantTerms.some(term => 
+        keyword.toLowerCase().includes(term.toLowerCase())
+      );
+      
+      // Extract potential main terms from each keyword
       const words = keyword.split(' ');
       if (words.length >= 2) {
         // Try different combinations of words for potential topics
@@ -63,7 +94,19 @@ const generateTopicSuggestions = (
           words[0] // Just the first word for broader topics
         ].filter(Boolean) as string[];
         
-        mainTermOptions.forEach(mainTerm => {
+        // Prioritize terms that contain niche-relevant words
+        const termsToPrioritize = containsNicheTerm 
+          ? mainTermOptions 
+          : mainTermOptions.filter(term => 
+              relevantTerms.some(nicheTerm => 
+                term.toLowerCase().includes(nicheTerm.toLowerCase())
+              )
+            );
+        
+        // If we have niche-relevant terms, use those, otherwise use all terms
+        const termsToUse = termsToPrioritize.length > 0 ? termsToPrioritize : mainTermOptions;
+        
+        termsToUse.forEach(mainTerm => {
           if (!keywordGroups[mainTerm]) {
             keywordGroups[mainTerm] = [];
           }
@@ -79,20 +122,28 @@ const generateTopicSuggestions = (
       }
     });
     
-    // Filter groups that have at least 2 related keywords
+    // Filter groups that have at least 2 related keywords or contain niche terms
     Object.entries(keywordGroups)
-      .filter(([_, keywords]) => keywords.length >= 2)
+      .filter(([term, keywords]) => {
+        // Keep if it has multiple keywords OR contains a niche term
+        return keywords.length >= 2 || 
+               relevantTerms.some(nicheTerm => 
+                 term.toLowerCase().includes(nicheTerm.toLowerCase())
+               );
+      })
       .slice(0, 8) // Limit to avoid too many topics
       .forEach(([mainTerm, keywords]) => {
         // Create topic variations based on the keyword group
         const topicName = mainTerm.charAt(0).toUpperCase() + mainTerm.slice(1);
         
-        // Generate multiple topic formats based on the main term
+        // Generate multiple topic formats based on the main term and niche
         const topicVariations = [
           `${topicName} Strategies for Growth`,
           `${topicName} Optimization Guide`,
           `${topicName} Framework`,
-          `Advanced ${topicName} Tactics`
+          `Advanced ${topicName} Tactics`,
+          `${topicName} Best Practices`,
+          `Complete ${topicName} Guide`
         ];
         
         // Add a few variations to the topics set
@@ -100,13 +151,18 @@ const generateTopicSuggestions = (
       });
   }
   
-  // Extract topics from SEO content recommendations
+  // Extract topics from SEO content recommendations with niche focus
   if (contentRecs.length > 0) {
     contentRecs.forEach(rec => {
       const recommendation = rec.recommendation.toLowerCase();
       
-      // Look for high-priority content recommendations
-      if (rec.priority === 'high') {
+      // Look for content recommendations that match the niche
+      const matchesNiche = relevantTerms.some(term => 
+        recommendation.includes(term.toLowerCase())
+      );
+      
+      // Prioritize high-priority or niche-relevant recommendations
+      if (rec.priority === 'high' || matchesNiche) {
         // Format the recommendation as a topic
         let topicName = '';
         
@@ -125,10 +181,27 @@ const generateTopicSuggestions = (
         }
         
         if (topicName && topicName.length > 5) {
-          topics.add(topicName);
+          // Check if the topic is related to the niche
+          if (matchesNiche || 
+              relevantTerms.some(term => topicName.toLowerCase().includes(term.toLowerCase()))) {
+            topics.add(topicName);
+          }
         }
       }
     });
+  }
+  
+  // If we don't have enough topics yet, generate some based on the niche terms
+  if (topics.size < 5 && relevantTerms.length > 0) {
+    const nicheBasedTopics = [
+      `${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Optimization Guide`,
+      `Best Practices for ${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)}`,
+      `${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Strategy Framework`,
+      `How to Improve Your ${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Performance`,
+      `${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Trends and Insights`
+    ];
+    
+    nicheBasedTopics.forEach(topic => topics.add(topic));
   }
   
   // Getting a clean array of topics
@@ -141,7 +214,7 @@ const generateTopicSuggestions = (
   return shuffledTopics.slice(0, 8);
 };
 
-// Title suggestion helper function
+// Title suggestion helper function - Enhanced for SEO relevance
 const generateTitleSuggestions = (
   topic: string,
   keywordGaps: any[] = [],
@@ -175,11 +248,35 @@ const generateTitleSuggestions = (
     return topicWords.some(word => keywordLower.includes(word) && word.length > 3);
   });
   
-  // Generate titles from related keywords
-  relatedKeywords.slice(0, 5).forEach(keyword => {
+  // Find the most relevant keywords based on search volume or opportunity
+  const prioritizedKeywords = relatedKeywords
+    .map(keyword => {
+      const relatedGap = keywordGaps.find(gap => gap.keyword === keyword);
+      return {
+        keyword,
+        volume: relatedGap?.volume || 0,
+        opportunity: relatedGap?.opportunity === 'high' ? 3 : 
+                    relatedGap?.opportunity === 'medium' ? 2 : 1
+      };
+    })
+    .sort((a, b) => {
+      // First sort by opportunity (high to low)
+      if (a.opportunity !== b.opportunity) {
+        return b.opportunity - a.opportunity;
+      }
+      // Then by volume (high to low)
+      return b.volume - a.volume;
+    })
+    .slice(0, 5)
+    .map(item => item.keyword);
+  
+  // Generate titles from the most relevant keywords
+  prioritizedKeywords.forEach(keyword => {
     // Create variations of titles incorporating the keyword
-    titles.add(`${topic}: Complete Guide to ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
-    titles.add(`How ${topic} Powers Growth`);
+    const keywordFormat = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+    titles.add(`${topic}: Complete Guide to ${keywordFormat}`);
+    titles.add(`How ${topic} Improves Your ${keywordFormat} Strategy`);
+    titles.add(`${keywordFormat}: The Ultimate ${topic} Approach`);
   });
   
   // Use SEO content recommendations for title inspiration
@@ -202,19 +299,18 @@ const generateTitleSuggestions = (
     }
   });
   
-  // Default title formats if we need more
-  const defaultTitles = [
-    `Ultimate Guide to ${topic}`,
-    `${topic}: Best Practices for Success`,
-    `${topic}: Complete Strategy Guide`
-  ];
-  
-  // Add default titles if needed
-  defaultTitles.forEach(title => {
-    if (titles.size < 3) {
-      titles.add(title);
-    }
-  });
+  // If we don't have enough titles yet, add some SEO-optimized formats
+  if (titles.size < 3) {
+    const seoFormats = [
+      `Ultimate Guide to ${topic} [${new Date().getFullYear()}]`,
+      `${topic}: Expert Strategies That Drive Results`,
+      `${topic} 101: Everything You Need to Know`,
+      `The Complete ${topic} Framework for Success`,
+      `${topic} Mastery: Proven Techniques and Tips`
+    ];
+    
+    seoFormats.forEach(title => titles.add(title));
+  }
   
   // Generate some randomness to ensure new titles on regeneration
   const randomSeed = Math.random();
@@ -282,6 +378,9 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const gaps = keywordGapsCache.data || [];
       const recommendations = recommendationsCache.data;
       const selectedKeywords = keywordGapsCache.selectedKeywords || [];
+      
+      console.log("Generating topics with domain:", domain);
+      console.log("Selected keywords for topic generation:", selectedKeywords);
       
       const generatedTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       setTopics(generatedTopics);
@@ -405,7 +504,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     toast.success("Topic removed");
   };
   
-  // Regenerate topic suggestions
+  // Regenerate topic suggestions with improved handling
   const handleRegenerateTopics = () => {
     setIsLoadingTopics(true);
     
@@ -414,17 +513,23 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const recommendations = recommendationsCache.data;
       const selectedKeywords = keywordGapsCache.selectedKeywords || [];
       
-      const randomSeed = Math.random();
+      // Create a different randomSeed each time
+      const randomSeed = Math.random() + new Date().getTime();
       console.log("Regenerating topics with seed:", randomSeed);
       
       const newTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       
       // Ensure we get different topics than what we currently have
-      if (JSON.stringify(newTopics.sort()) === JSON.stringify([...topics].sort())) {
-        // If topics are the same, try again with a different seed
-        console.log("Generated same topics, trying again with new seed");
-        const alternativeTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
-        setTopics(alternativeTopics);
+      const currentTopicsSet = new Set(topics);
+      const filteredNewTopics = newTopics.filter(topic => !currentTopicsSet.has(topic));
+      
+      if (filteredNewTopics.length < 3) {
+        // If we don't have enough different topics, try again with different variations
+        console.log("Not enough unique topics, generating alternatives");
+        
+        // Force some variation by changing the priority of keywords
+        const reorderedKeywords = [...selectedKeywords].reverse();
+        const alternativeTopics = generateTopicSuggestions(domain, gaps, recommendations, reorderedKeywords);
         
         // Generate titles for each new topic
         const titlesMap: {[topic: string]: string[]} = {};
@@ -432,6 +537,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
           titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
         });
         
+        setTopics(alternativeTopics);
         setTitleSuggestions(titlesMap);
       } else {
         setTopics(newTopics);
