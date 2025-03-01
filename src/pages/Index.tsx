@@ -71,7 +71,7 @@ const Index = () => {
   
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">SEO Keyword Analysis Tool</h1>
+      <h1 className="text-2xl font-bold mb-4">SEO Keyword Analysis & Content Generator</h1>
       
       <Card className="mb-6 glass-panel">
         <CardContent className="grid gap-4 md:grid-cols-2">
