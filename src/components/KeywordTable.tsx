@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ interface KeywordTableProps {
   competitorDomains: string[];
   keywords: KeywordData[];
   isLoading: boolean;
+  onAddCompetitor?: (newCompetitor: string) => void; // Added this prop to fix the build error
 }
 
 const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: KeywordTableProps) => {

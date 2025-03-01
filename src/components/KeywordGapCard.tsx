@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,7 +13,9 @@ export const keywordGapsCache = {
   domain: "",
   competitorDomains: [] as string[],
   keywordsLength: 0,
-  selectedKeywords: [] as string[]
+  selectedKeywords: [] as string[],
+  page: 1,
+  itemsPerPage: 10
 };
 
 interface KeywordGapCardProps {
@@ -23,11 +25,83 @@ interface KeywordGapCardProps {
   isLoading: boolean;
 }
 
+// Helper function to categorize keyword intent
+const categorizeKeywordIntent = (keyword: string, difficulty: number, volume: number): 'informational' | 'navigational' | 'commercial' | 'transactional' => {
+  // Informational keywords typically contain question words or phrases like "how to", "what is", etc.
+  const informationalPatterns = ['how', 'what', 'why', 'when', 'where', 'guide', 'tutorial', 'tips', 'learn', 'example', 'definition'];
+  
+  // Navigational keywords typically contain brand names or specific website names
+  const navigationalPatterns = ['login', 'signin', 'account', 'download', 'contact', 'support', 'official'];
+  
+  // Commercial keywords indicate research before purchase
+  const commercialPatterns = ['best', 'top', 'review', 'compare', 'vs', 'versus', 'comparison', 'alternative'];
+  
+  // Transactional keywords indicate purchase intent
+  const transactionalPatterns = ['buy', 'price', 'cost', 'purchase', 'cheap', 'deal', 'discount', 'order', 'shop'];
+  
+  const keywordLower = keyword.toLowerCase();
+  
+  // Check for informational intent
+  if (informationalPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'informational';
+  }
+  
+  // Check for navigational intent
+  if (navigationalPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'navigational';
+  }
+  
+  // Check for commercial intent
+  if (commercialPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'commercial';
+  }
+  
+  // Check for transactional intent
+  if (transactionalPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'transactional';
+  }
+  
+  // Default to informational for low difficulty keywords and commercial for high difficulty ones
+  return difficulty < 40 ? 'informational' : 'commercial';
+};
+
+// Function to prioritize keywords based on intent
+const prioritizeKeywords = (keywords: KeywordGap[]): KeywordGap[] => {
+  // Add intent to each keyword
+  const keywordsWithIntent = keywords.map(kw => ({
+    ...kw,
+    intent: categorizeKeywordIntent(kw.keyword, kw.difficulty, kw.volume)
+  }));
+  
+  // First priority: Informational keywords
+  const informationalKeywords = keywordsWithIntent.filter(kw => kw.intent === 'informational');
+  
+  // Second priority: Navigational keywords
+  const navigationalKeywords = keywordsWithIntent.filter(kw => kw.intent === 'navigational');
+  
+  // Third priority: Commercial keywords
+  const commercialKeywords = keywordsWithIntent.filter(kw => kw.intent === 'commercial');
+  
+  // Fourth priority: Transactional keywords
+  const transactionalKeywords = keywordsWithIntent.filter(kw => kw.intent === 'transactional');
+  
+  // Combine in priority order
+  return [
+    ...informationalKeywords,
+    ...navigationalKeywords,
+    ...commercialKeywords,
+    ...transactionalKeywords
+  ];
+};
+
 export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading }: KeywordGapCardProps) {
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
-
+  const [currentPage, setCurrentPage] = useState(keywordGapsCache.page || 1);
+  const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 10);
+  const [displayedKeywords, setDisplayedKeywords] = useState<KeywordGap[]>([]);
+  
   // Generate keyword gaps based on keyword data
   useEffect(() => {
     const generateKeywordGaps = () => {
@@ -130,21 +204,60 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           }
         });
         
-        // Sort by volume (highest first)
-        const sortedGaps = competitorKeywordGaps.sort((a, b) => b.volume - a.volume);
+        // Sort by volume (highest first) and limit to 20 per competitor
+        const keywordsByCompetitor = new Map<string, KeywordGap[]>();
         
-        // Take top 10 gaps
-        const topGaps = sortedGaps.slice(0, 10);
+        // Group keywords by competitor
+        competitorKeywordGaps.forEach(gap => {
+          if (!keywordsByCompetitor.has(gap.competitor!)) {
+            keywordsByCompetitor.set(gap.competitor!, []);
+          }
+          keywordsByCompetitor.get(gap.competitor!)!.push(gap);
+        });
         
-        console.log("Found keyword gaps:", topGaps.length);
+        // For each competitor, prioritize and limit to 20 keywords
+        let allKeywords: KeywordGap[] = [];
+        keywordsByCompetitor.forEach((gaps, competitor) => {
+          // Prioritize gaps by intent
+          const prioritizedGaps = prioritizeKeywords(gaps);
+          // Take up to 20 keywords per competitor
+          const topGaps = prioritizedGaps.slice(0, 20);
+          allKeywords = [...allKeywords, ...topGaps];
+        });
+        
+        // Final sorting by priority and volume
+        const finalSortedGaps = allKeywords.sort((a, b) => {
+          // First sort by intent priority
+          const intents = {
+            'informational': 1,
+            'navigational': 2,
+            'commercial': 3,
+            'transactional': 4
+          };
+          
+          const intentA = categorizeKeywordIntent(a.keyword, a.difficulty, a.volume);
+          const intentB = categorizeKeywordIntent(b.keyword, b.difficulty, b.volume);
+          
+          const intentPriorityA = intents[intentA] || 5;
+          const intentPriorityB = intents[intentB] || 5;
+          
+          if (intentPriorityA !== intentPriorityB) {
+            return intentPriorityA - intentPriorityB;
+          }
+          
+          // If same intent, sort by volume
+          return b.volume - a.volume;
+        });
+        
+        console.log("Found keyword gaps:", finalSortedGaps.length);
         
         // Update cache
-        keywordGapsCache.data = topGaps;
+        keywordGapsCache.data = finalSortedGaps;
         keywordGapsCache.domain = domain;
         keywordGapsCache.competitorDomains = [...competitorDomains];
         keywordGapsCache.keywordsLength = keywords.length;
         
-        setKeywordGaps(topGaps);
+        setKeywordGaps(finalSortedGaps);
       } catch (error) {
         console.error("Error generating keyword gaps:", error);
       } finally {
@@ -154,6 +267,19 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     
     generateKeywordGaps();
   }, [domain, competitorDomains, keywords, isLoading]);
+
+  // Effect for pagination
+  useEffect(() => {
+    if (!keywordGaps) return;
+    
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setDisplayedKeywords(keywordGaps.slice(startIndex, endIndex));
+    
+    // Update cache
+    keywordGapsCache.page = currentPage;
+    keywordGapsCache.itemsPerPage = itemsPerPage;
+  }, [keywordGaps, currentPage, itemsPerPage]);
 
   // Handle keyword selection
   const handleKeywordSelection = (keyword: string) => {
@@ -175,6 +301,61 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       toast.info(`Removed "${keyword}" from selection`);
     } else {
       toast.success(`Added "${keyword}" to selection`);
+    }
+  };
+  
+  // Function to load more keyword results
+  const addMoreKeywords = () => {
+    if (!keywordGaps) return;
+    
+    // Increase the items per page by 10
+    const newItemsPerPage = itemsPerPage + 10;
+    setItemsPerPage(newItemsPerPage);
+    
+    // Update displayed keywords
+    const startIndex = (currentPage - 1) * newItemsPerPage;
+    const endIndex = startIndex + newItemsPerPage;
+    setDisplayedKeywords(keywordGaps.slice(startIndex, endIndex));
+    
+    // Update cache
+    keywordGapsCache.itemsPerPage = newItemsPerPage;
+    
+    toast.success("Added more keywords to the list");
+  };
+  
+  // Pagination handlers
+  const goToNextPage = () => {
+    if (keywordGaps && currentPage < Math.ceil(keywordGaps.length / itemsPerPage)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Calculate pagination info
+  const totalKeywords = keywordGaps?.length || 0;
+  const totalPages = Math.ceil(totalKeywords / itemsPerPage);
+  const startItem = totalKeywords === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(startItem + itemsPerPage - 1, totalKeywords);
+
+  // Get intent badge color
+  const getIntentBadgeColor = (keyword: string, difficulty: number, volume: number) => {
+    const intent = categorizeKeywordIntent(keyword, difficulty, volume);
+    switch (intent) {
+      case 'informational':
+        return "bg-blue-100 text-blue-800";
+      case 'navigational':
+        return "bg-purple-100 text-purple-800";
+      case 'commercial':
+        return "bg-amber-100 text-amber-800";
+      case 'transactional':
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -199,36 +380,42 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           </div>
         ) : keywordGaps && keywordGaps.length > 0 ? (
           <div className="space-y-4">
-            {keywordGaps.map((gap, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-md hover:bg-muted transition-all">
-                <div>
-                  <div className="font-medium">{gap.keyword}</div>
-                  <div className="text-xs text-muted-foreground">
-                    <span className="text-amber-500 font-medium">Rank {gap.rank}</span> on {gap.competitor}
+            {displayedKeywords.map((gap, index) => {
+              const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty, gap.volume);
+              return (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-md hover:bg-muted transition-all">
+                  <div>
+                    <div className="font-medium">{gap.keyword}</div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="text-amber-500 font-medium">Rank {gap.rank}</span> on {gap.competitor}
+                      <Badge className={`text-xs ${getIntentBadgeColor(gap.keyword, gap.difficulty, gap.volume)}`}>
+                        {intent.charAt(0).toUpperCase() + intent.slice(1)}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {gap.volume.toLocaleString()} vol
+                    </Badge>
+                    <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty)}`}>
+                      {gap.difficulty} KD
+                    </Badge>
+                    <Button 
+                      variant={selectedKeywords.includes(gap.keyword) ? "default" : "outline"}
+                      size="sm"
+                      className={`h-7 w-7 p-0 ${selectedKeywords.includes(gap.keyword) ? 'bg-revology text-white' : ''}`}
+                      onClick={() => handleKeywordSelection(gap.keyword)}
+                    >
+                      {selectedKeywords.includes(gap.keyword) ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <span className="text-xs">+</span>
+                      )}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {gap.volume.toLocaleString()} vol
-                  </Badge>
-                  <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty)}`}>
-                    {gap.difficulty} KD
-                  </Badge>
-                  <Button 
-                    variant={selectedKeywords.includes(gap.keyword) ? "default" : "outline"}
-                    size="sm"
-                    className={`h-7 w-7 p-0 ${selectedKeywords.includes(gap.keyword) ? 'bg-revology text-white' : ''}`}
-                    onClick={() => handleKeywordSelection(gap.keyword)}
-                  >
-                    {selectedKeywords.includes(gap.keyword) ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <span className="text-xs">+</span>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
@@ -236,6 +423,43 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           </div>
         )}
       </CardContent>
+      {keywordGaps && keywordGaps.length > 0 && (
+        <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2 pb-4 px-6">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={goToPrevPage} 
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {startItem}-{endItem} of {totalKeywords}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={goToNextPage} 
+              disabled={currentPage >= totalPages}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={addMoreKeywords}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Show More Keywords
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
