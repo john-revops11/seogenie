@@ -59,7 +59,7 @@ const analyzeDomainNiche = (domain: string, keywords: string[] = []): string[] =
   return relevantTerms;
 };
 
-// Updated more natural SEO-focused topic suggestion function with business focus
+// Updated more natural SEO-focused topic suggestion function with refined writing style
 const generateTopicSuggestions = (
   domain: string,
   keywordGaps: any[] = [],
@@ -119,26 +119,26 @@ const generateTopicSuggestions = (
     priority: 'high' | 'medium' | 'low';
   }[] = [];
   
-  // Business and revenue-focused topic patterns (inspired by sample titles)
-  const businessTopicPatterns = [
-    // Topics focused on growth and profitability (based on sample titles)
-    "Driving Profitable Growth with {keyword}",
-    "{keyword}: Your Secret Weapon for Smarter Growth",
-    "Upskilling for Revenue Growth: Building Advanced {keyword} Capabilities",
-    "Using {keyword} to Maximize ROI and Business Performance",
-    "Strategic {keyword} Approaches for Revenue Optimization",
-    "The {keyword} Playbook for Increasing Profit Margins",
-    "How {keyword} Drives Sustainable Business Value",
-    "Building a {keyword} Framework for Competitive Advantage",
-    "Transforming Your {keyword} Strategy for Better Profitability",
-    "Advanced {keyword} Models That Boost Bottom-Line Results"
+  // Topic patterns with professional, authoritative tone
+  const professionalTopicPatterns = [
+    // Topics with confident, analytical tone
+    "Driving Growth Through {keyword}",
+    "{keyword}: A Strategic Advantage",
+    "Building Advanced {keyword} Capabilities",
+    "Maximizing ROI with {keyword}",
+    "Strategic {keyword} Implementation",
+    "The {keyword} Framework for Success",
+    "{keyword} Transformation in Action",
+    "Elevating {keyword} Performance",
+    "Future-Proofing Your {keyword} Strategy",
+    "Unlocking Value with {keyword}"
   ];
   
-  // Apply business patterns to high-value keywords
+  // Apply professional patterns to high-value keywords
   highValueKeywords.forEach(keyword => {
-    // Select a random pattern from the business-focused topics
-    const randomPatternIndex = Math.floor(Math.random() * businessTopicPatterns.length);
-    const pattern = businessTopicPatterns[randomPatternIndex];
+    // Select a random pattern
+    const randomPatternIndex = Math.floor(Math.random() * professionalTopicPatterns.length);
+    const pattern = professionalTopicPatterns[randomPatternIndex];
     
     // Format with proper capitalization and replace {keyword} placeholder
     const formattedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
@@ -153,9 +153,9 @@ const generateTopicSuggestions = (
       priority: 'high'
     });
     
-    // Create a more specific topic variant focusing on implementation
+    // Create a more specific topic variant with actionable focus
     topicIdeas.push({
-      topic: `Implementing ${formattedKeyword} for Maximum Business Impact`,
+      topic: `${formattedKeyword} Implementation: From Strategy to Action`,
       primaryKeywords: [keyword],
       searchIntent: 'commercial',
       contentType: 'implementation guide',
@@ -163,7 +163,7 @@ const generateTopicSuggestions = (
     });
   });
   
-  // Strategy 1: Create how-to guides based on question keywords with business focus
+  // Strategy 1: Create authoritative guides based on question keywords
   questionKeywords.forEach(keyword => {
     const baseKeyword = keyword.replace(/^(how|what|why|when|where|which|who|is|can|does|do|will|should)\s+/, '');
     
@@ -171,10 +171,10 @@ const generateTopicSuggestions = (
     const formattedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
     const formattedBase = baseKeyword.charAt(0).toUpperCase() + baseKeyword.slice(1);
     
-    // Generate more natural topic titles with business focus
+    // Generate topics with authoritative tone
     if (keyword.startsWith('how')) {
       topicIdeas.push({
-        topic: `${formattedKeyword} to Drive Revenue Growth`,
+        topic: `${formattedKeyword}: Practical Approaches`,
         primaryKeywords: [keyword, baseKeyword],
         searchIntent: 'informational',
         contentType: 'how-to guide',
@@ -182,7 +182,7 @@ const generateTopicSuggestions = (
       });
     } else if (keyword.startsWith('what') || keyword.startsWith('why')) {
       topicIdeas.push({
-        topic: `${formattedKeyword}: Unlocking Business Value and ROI`,
+        topic: `${formattedKeyword}: Critical Insights`,
         primaryKeywords: [keyword, baseKeyword],
         searchIntent: 'informational',
         contentType: 'educational',
@@ -207,38 +207,38 @@ const generateTopicSuggestions = (
     keywordGroups[mainConcept].push(keyword);
   });
   
-  // Generate comprehensive guides for each keyword group with business focus
+  // Generate comprehensive guides for each keyword group with authoritative tone
   Object.entries(keywordGroups)
     .filter(([_, group]) => group.length >= 2) // Only use groups with multiple keywords
     .forEach(([concept, keywords]) => {
       const formattedConcept = concept.charAt(0).toUpperCase() + concept.slice(1);
       
-      // Create business-focused topic without domain reference
+      // Create authoritative topic
       topicIdeas.push({
-        topic: `Strategic ${formattedConcept} Implementation: Driving Growth and Revenue`,
+        topic: `${formattedConcept} Strategy: Implementation & Optimization`,
         primaryKeywords: [concept, ...keywords.slice(0, 3)],
-        searchIntent: 'commercial',
-        contentType: 'business strategy',
-        priority: 'high'
-      });
-      
-      // Create ROI-focused topic with more natural framing
-      topicIdeas.push({
-        topic: `Maximizing ROI with ${formattedConcept}: Metrics and Optimization Strategies`,
-        primaryKeywords: [concept, ...keywords.slice(0, 2)],
         searchIntent: 'commercial',
         contentType: 'strategy guide',
         priority: 'high'
       });
+      
+      // Create performance-focused topic
+      topicIdeas.push({
+        topic: `Measuring ${formattedConcept} Performance: Metrics That Matter`,
+        primaryKeywords: [concept, ...keywords.slice(0, 2)],
+        searchIntent: 'commercial',
+        contentType: 'analytics guide',
+        priority: 'high'
+      });
     });
   
-  // Strategy 3: Use current year for trending business topics
+  // Strategy 3: Use current year for trend analysis with authoritative tone
   const currentYear = new Date().getFullYear();
   nicheTerms.slice(0, 3).forEach(term => {
     const formattedTerm = term.charAt(0).toUpperCase() + term.slice(1);
     
     topicIdeas.push({
-      topic: `${currentYear} ${formattedTerm} Trends: Strategies for Competitive Advantage`,
+      topic: `${currentYear} ${formattedTerm} Trends: Strategic Analysis`,
       primaryKeywords: [term, `${term} trends`, `${currentYear} ${term}`],
       searchIntent: 'informational',
       contentType: 'trend analysis',
@@ -251,7 +251,7 @@ const generateTopicSuggestions = (
     const formattedTerm = term.charAt(0).toUpperCase() + term.slice(1);
     
     topicIdeas.push({
-      topic: `${formattedTerm} Strategy for Industry Leaders: Proven Approaches`,
+      topic: `${formattedTerm} Excellence: Leading Practices`,
       primaryKeywords: [term],
       searchIntent: 'commercial',
       contentType: 'industry guide',
@@ -282,7 +282,7 @@ const generateTopicSuggestions = (
   return shuffledTopics.slice(0, 8); // Return top 8 topics
 };
 
-// Enhanced title suggestion function with business focus
+// Enhanced title suggestion function with authoritative tone
 const generateTitleSuggestions = (
   topic: string,
   keywordGaps: any[] = [],
@@ -295,13 +295,13 @@ const generateTitleSuggestions = (
   domain: string = ""
 ): string[] => {
   if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
-    // Provide business-focused default titles even without SEO data
+    // Provide authoritative default titles even without SEO data
     return [
-      `${topic}: Strategies for Profitable Growth`,
-      `Unlocking Revenue Potential with ${topic}`,
-      `The Strategic Value of ${topic} in Today's Market`,
-      `${topic}: Your Secret Weapon for Competitive Advantage`,
-      `Building Business Value Through Advanced ${topic} Approaches`
+      `${topic}: Strategies for Sustainable Growth`,
+      `Unlocking The Potential of ${topic}`,
+      `The Strategic Value of ${topic}`,
+      `${topic}: A Competitive Advantage`,
+      `Building Excellence in ${topic}`
     ];
   }
   
@@ -345,44 +345,44 @@ const generateTitleSuggestions = (
   // Current year for trending titles
   const currentYear = new Date().getFullYear();
   
-  // Add titles inspired by the provided sample titles
-  titleIdeas.add(`Driving Profitable Growth with ${topic} Strategies`);
-  titleIdeas.add(`${topic}: Your Secret Weapon for Smarter Business Growth`);
-  titleIdeas.add(`Upskilling for Revenue Growth: Building Advanced ${topic} Capabilities`);
+  // Add titles with confident, authoritative tone
+  titleIdeas.add(`Driving Growth Through ${topic}`);
+  titleIdeas.add(`${topic}: Your Strategic Advantage`);
+  titleIdeas.add(`Building Advanced ${topic} Capabilities`);
   
-  // Additional business and revenue-focused title formats
-  titleIdeas.add(`${topic} Optimization: Maximizing Revenue and Market Share`);
-  titleIdeas.add(`The ROI of ${topic}: Measuring Business Impact and Performance`);
-  titleIdeas.add(`Strategic ${topic} Implementation: A Framework for Sustainable Growth`);
-  titleIdeas.add(`${topic} Analytics: Data-Driven Strategies for Better Business Outcomes`);
-  titleIdeas.add(`Transforming Your Business with ${topic}: Key Success Factors`);
+  // Additional professionally-toned title formats
+  titleIdeas.add(`${topic} Optimization: A Systematic Approach`);
+  titleIdeas.add(`The Impact of ${topic}: Measurement Framework`);
+  titleIdeas.add(`Strategic ${topic} Implementation: A Practical Guide`);
+  titleIdeas.add(`${topic} Analytics: Data-Driven Decision Making`);
+  titleIdeas.add(`Transforming Your Approach to ${topic}`);
   
-  // Format 1: Growth and profitability focused titles
-  titleIdeas.add(`How ${topic} Drives Profitable Growth in Today's Market`);
-  titleIdeas.add(`${topic} as a Revenue Driver: Case Studies and Best Practices`);
+  // Format 1: Growth-focused titles with professional tone
+  titleIdeas.add(`How ${topic} Drives Sustainable Growth`);
+  titleIdeas.add(`${topic} as a Growth Engine: Case Analysis`);
   
-  // Format 2: Strategic guidance titles
-  titleIdeas.add(`The Strategic Guide to ${topic}: From Implementation to ROI`);
-  titleIdeas.add(`Building a Competitive Edge Through ${topic} Excellence`);
+  // Format 2: Strategic guidance titles with authoritative voice
+  titleIdeas.add(`The Strategic Guide to ${topic}`);
+  titleIdeas.add(`Building a Competitive Edge With ${topic}`);
   
-  // Format 3: Industry transformation titles
-  titleIdeas.add(`How Industry Leaders Use ${topic} to Outperform Competitors`);
-  titleIdeas.add(`${topic} Transformation: Strategies for Market Leaders`);
+  // Format 3: Industry leadership titles
+  titleIdeas.add(`Leading With ${topic}: Industry Best Practices`);
+  titleIdeas.add(`${topic} Transformation: The Path Forward`);
   
-  // Format 4: ROI-focused titles
-  titleIdeas.add(`Maximizing ROI with ${topic}: Metrics, Analysis, and Strategy`);
-  titleIdeas.add(`The Business Value of ${topic}: Measuring Success and Impact`);
+  // Format 4: Performance-focused titles
+  titleIdeas.add(`Measuring ${topic} Success: Key Performance Indicators`);
+  titleIdeas.add(`The Value of ${topic}: Impact Analysis`);
   
   // Format 5: Current year industry trends
-  titleIdeas.add(`${currentYear} ${topic} Trends Shaping Business Strategy`);
+  titleIdeas.add(`${currentYear} ${topic} Trends: Strategic Implications`);
   
   // Add titles that incorporate high-value keywords
   bestKeywords.forEach(keyword => {
     const formattedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
     
-    // Create business-focused variations incorporating both topic and high-value keyword
-    titleIdeas.add(`${topic}: Leveraging ${formattedKeyword} for Competitive Advantage`);
-    titleIdeas.add(`How ${topic} and ${formattedKeyword} Drive Revenue Growth`);
+    // Create professionally-toned variations
+    titleIdeas.add(`${topic}: ${formattedKeyword} Best Practices`);
+    titleIdeas.add(`Integrating ${topic} and ${formattedKeyword} for Optimal Results`);
   });
   
   // Add SEO-recommendation inspired titles
@@ -394,9 +394,9 @@ const generateTitleSuggestions = (
       titlePhrase = titlePhrase.replace(/^["']|["']$/g, ''); // Remove quotes if present
       
       if (titlePhrase.length > 10) {
-        // Create a business-focused title combining topic and recommendation
+        // Create a title combining topic and recommendation
         const formattedPhrase = titlePhrase.charAt(0).toUpperCase() + titlePhrase.slice(1);
-        titleIdeas.add(`${topic}: ${formattedPhrase} for Business Growth`);
+        titleIdeas.add(`${topic}: ${formattedPhrase}`);
       }
     }
   });
@@ -849,4 +849,19 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                     <div className="flex items-center gap-2">
                       <Input
                         placeholder="Enter a custom topic..."
-                        value={
+                        value={customTopic}
+                        onChange={(e) => setCustomTopic(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={handleAddCustomTopic} size="sm" className="bg-revology hover:bg-revology-dark">
+                        Add
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Display topics */}
+                  {topics.length > 0 ? (
+                    <ScrollArea className="rounded-md border p-2 h-[240px]">
+                      <div className="grid grid-cols-1 gap-2">
+                        {topics.map((topic, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 rounded-md hover:bg-accent hover:
