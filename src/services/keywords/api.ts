@@ -10,7 +10,10 @@ import {
   API_KEY, 
   API_URL, 
   GOOGLE_KEYWORD_API_HOST, 
-  GOOGLE_KEYWORD_API_URL 
+  GOOGLE_KEYWORD_API_URL,
+  DATAFORSEO_LOGIN,
+  DATAFORSEO_PASSWORD,
+  DATAFORSEO_API_URL
 } from './apiConfig';
 
 // Helper function to convert difficulty number to competition label
@@ -19,6 +22,68 @@ function getCompetitionLabel(difficulty: number): string {
   if (difficulty < 60) return "medium";
   return "high";
 }
+
+// New function to fetch keywords using DataForSEO API
+export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
+  try {
+    console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl}`);
+    
+    // Create authorization string
+    const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
+    const encodedCredentials = btoa(credentials);
+    
+    // Prepare the request body
+    const requestBody = JSON.stringify([
+      {
+        location_code: 2840, // US location code
+        target: domainUrl
+      }
+    ]);
+    
+    const response = await fetch(DATAFORSEO_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json"
+      },
+      body: requestBody
+    });
+
+    // Check for API errors
+    if (!response.ok) {
+      console.warn(`DataForSEO API error ${response.status} for ${domainUrl}`);
+      throw new Error(`API error ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result || data.tasks[0].result.length === 0) {
+      console.warn(`DataForSEO API returned no results for ${domainUrl}`);
+      throw new Error("API returned no keywords");
+    }
+
+    // Transform the DataForSEO response to our KeywordData format
+    const keywordsData = data.tasks[0].result[0].keywords || [];
+    
+    if (keywordsData.length === 0) {
+      console.warn(`DataForSEO API returned no keywords for ${domainUrl}`);
+      throw new Error("API returned no keywords");
+    }
+    
+    return keywordsData.map(item => ({
+      keyword: item.keyword,
+      monthly_search: item.search_volume || 0,
+      competition: getCompetitionLabel(item.competition_index || 50),
+      competition_index: item.competition_index || 50,
+      cpc: item.cpc || 0,
+      position: null,
+      rankingUrl: null,
+    }));
+  } catch (error) {
+    console.error(`Error fetching DataForSEO keywords for ${domainUrl}:`, error);
+    throw error;
+  }
+};
 
 // Function to fetch keywords using Google Keyword Insight API
 export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<KeywordData[]> => {
@@ -68,7 +133,18 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
 };
 
 export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
-  // Try the Google Keyword Insight API first
+  // Try the DataForSEO API first
+  try {
+    const dataForSEOKeywords = await fetchDataForSEOKeywords(domainUrl);
+    if (dataForSEOKeywords.length > 0) {
+      console.log(`Successfully fetched ${dataForSEOKeywords.length} keywords from DataForSEO API`);
+      return dataForSEOKeywords;
+    }
+  } catch (error) {
+    console.error("Error with DataForSEO API, falling back to alternatives:", error);
+  }
+  
+  // Try the Google Keyword Insight API next
   try {
     const googleKeywords = await fetchGoogleKeywordInsights(domainUrl);
     if (googleKeywords.length > 0) {
