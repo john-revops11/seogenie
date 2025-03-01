@@ -85,16 +85,21 @@ export const analyzeDomains = async (
       if (!mainKeywords.length) {
         console.warn(`No real keywords found for ${formattedMainDomain}, using mock data`);
         useRealData = false;
+        toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`);
       }
     } catch (error) {
       console.warn(`Error fetching real keywords for ${formattedMainDomain}, using mock data:`, error);
       useRealData = false;
+      toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`);
     }
     
     // If API failed, use mock data for demo purposes
     if (!useRealData) {
       toast.info("Using demo data for this session - all API services returned errors");
       mainKeywords = generateMockKeywords(formattedMainDomain);
+      
+      // Log the mock data we're using
+      console.log(`Generated ${mainKeywords.length} mock keywords for ${formattedMainDomain}`);
     }
     
     // Process competitor domains - use mock data if real data isn't available
@@ -111,6 +116,7 @@ export const analyzeDomains = async (
           } catch (error) {
             console.warn(`Error fetching real competitor keywords for ${domain}, using mock data:`, error);
             keywords = generateMockKeywords(domain);
+            toast.warning(`API error when fetching keywords for competitor ${domain}, using sample data`);
           }
         } else {
           keywords = generateMockKeywords(domain);
@@ -128,7 +134,11 @@ export const analyzeDomains = async (
       } catch (error) {
         console.error(`Error analyzing competitor ${domain}:`, error);
         toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
-        // Continue with other competitors even if one fails
+        
+        // Generate mock data even if analysis fails
+        const mockKeywords = generateMockKeywords(domain);
+        competitorResults.push({ domain, keywords: mockKeywords });
+        toast.success(`Generated ${mockKeywords.length} sample keywords for ${domain} (fallback)`);
       }
     }
     

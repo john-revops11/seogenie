@@ -2,9 +2,10 @@
 
 // DataForSEO API configuration
 export const DATAFORSEO_LOGIN = "john@revologyanalytics.com";
-export const DATAFORSEO_PASSWORD = "john1192";
+export const DATAFORSEO_PASSWORD = "c5a4c248785ced68"; // Updated password for domain analysis
 export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_site/live";
 export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/task_post";
+export const DATAFORSEO_KEYWORDS_PASSWORD = "john1192"; // Separate password for keyword research API
 
 // Keep old API configurations for backward compatibility and fallback
 export const API_HOST = "keyword-tool.p.rapidapi.com";

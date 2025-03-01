@@ -108,7 +108,7 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl}`);
     
-    // Create authorization string
+    // Create authorization string with the right password for domain analysis
     const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
     const encodedCredentials = btoa(credentials);
     
