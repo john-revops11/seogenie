@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, Search, Download, ArrowUpDown, Loader2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Search, Download, ArrowUpDown, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 
 interface KeywordTableProps {
@@ -23,9 +23,15 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     direction: 'desc'
   });
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+  const [paginatedKeywords, setPaginatedKeywords] = useState<KeywordData[]>([]);
+  
   // Handle incoming keyword data
   useEffect(() => {
     setFilteredKeywords(keywords);
+    setCurrentPage(1); // Reset to first page when new data arrives
   }, [keywords]);
   
   // Handle search
@@ -35,10 +41,18 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
         k.keyword.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredKeywords(filtered);
+      setCurrentPage(1); // Reset to first page when search changes
     } else {
       setFilteredKeywords(keywords);
     }
   }, [searchQuery, keywords]);
+  
+  // Handle pagination
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    setPaginatedKeywords(filteredKeywords.slice(startIndex, endIndex));
+  }, [filteredKeywords, currentPage]);
   
   // Handle sorting
   const handleSort = (column: string) => {
@@ -74,6 +88,21 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     });
     
     setFilteredKeywords(sorted);
+  };
+  
+  // Pagination controls
+  const totalPages = Math.ceil(filteredKeywords.length / rowsPerPage);
+  
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+  
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
   };
   
   const getRankingBadgeColor = (ranking: number | null) => {
@@ -217,8 +246,8 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : filteredKeywords.length > 0 ? (
-                  filteredKeywords.map((item, index) => (
+                ) : paginatedKeywords.length > 0 ? (
+                  paginatedKeywords.map((item, index) => (
                     <TableRow key={index} className="transition-all hover:bg-muted/50">
                       <TableCell className="font-medium">{item.keyword}</TableCell>
                       <TableCell>{item.monthly_search.toLocaleString()}</TableCell>
@@ -262,11 +291,38 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
             </Table>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground mt-4">
-          {keywords.length > 0 && (
-            <>Showing {filteredKeywords.length} out of {keywords.length} keywords</>
-          )}
-        </div>
+        
+        {/* Pagination Controls */}
+        {filteredKeywords.length > 0 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-xs text-muted-foreground">
+              Showing {paginatedKeywords.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {Math.min(currentPage * rowsPerPage, filteredKeywords.length)} of {filteredKeywords.length} keywords
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1 || isLoading}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-xs">
+                Page {currentPage} of {totalPages || 1}
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
