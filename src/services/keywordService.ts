@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 
 // API configuration
@@ -23,6 +24,7 @@ export interface DomainKeywordResponse {
   currency_code: string;
   period: string;
   url: string;
+  reason?: string; // Added the missing reason property
   data: Array<{
     keyword: string;
     monthly_search: number;
