@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +33,12 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   const [activeTab, setActiveTab] = useState("editor");
   const [creativity, setCreativity] = useState([50]);
   
+  // New state variables for topics and title suggestions
+  const [selectedTopic, setSelectedTopic] = useState("");
+  const [topics, setTopics] = useState<string[]>([]);
+  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
+  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
+  
   useEffect(() => {
     if (allKeywords.length > 0) {
       const topKeywords = allKeywords.slice(0, 5).map(k => k.toLowerCase());
@@ -40,6 +47,20 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
       }
     }
   }, [allKeywords]);
+  
+  // Generate topics based on keywords when component mounts or keywords change
+  useEffect(() => {
+    if (keywords.length > 0) {
+      generateTopics();
+    }
+  }, [keywords]);
+  
+  // Generate new title suggestions when topic changes
+  useEffect(() => {
+    if (selectedTopic) {
+      generateTitleSuggestions(selectedTopic);
+    }
+  }, [selectedTopic]);
   
   const contentTypeOptions = [
     { value: "blog", label: "Blog Post" },
@@ -51,6 +72,74 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const keywordArray = e.target.value.split(",").map(k => k.trim()).filter(k => k);
     setKeywords(keywordArray);
+  };
+  
+  const generateTopics = () => {
+    // Generate at least 5 topics based on keywords
+    const keywordBased = keywords.slice(0, 3).map(keyword => {
+      return `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} strategies`;
+    });
+    
+    // Add some predefined topics that are relevant to SEO
+    const seoTopics = [
+      "SEO Best Practices",
+      "Content Marketing",
+      "Link Building",
+      "Technical SEO",
+      "Local SEO",
+      "Keyword Research",
+      "Mobile Optimization",
+      "Voice Search SEO",
+      "E-commerce SEO"
+    ];
+    
+    // Combine topics and ensure we have at least 5
+    let combinedTopics = [...new Set([...keywordBased, ...seoTopics])];
+    combinedTopics = combinedTopics.slice(0, Math.max(5, keywordBased.length + 2));
+    
+    setTopics(combinedTopics);
+    
+    // Set default selected topic if none is selected
+    if (!selectedTopic && combinedTopics.length > 0) {
+      setSelectedTopic(combinedTopics[0]);
+    }
+  };
+  
+  const generateTitleSuggestions = (topic: string) => {
+    setIsLoadingTitles(true);
+    
+    // Simulate API call with timeout
+    setTimeout(() => {
+      // Generate title suggestions based on selected topic and keywords
+      const suggestions = [];
+      const topKeywords = keywords.slice(0, 3);
+      
+      // Generate titles with different formats
+      suggestions.push(`${topic}: Ultimate Guide for ${domain.split(".")[0].charAt(0).toUpperCase() + domain.split(".")[0].slice(1)}`);
+      
+      if (topKeywords.length > 0) {
+        suggestions.push(`How to Improve Your ${topic} with ${topKeywords[0].charAt(0).toUpperCase() + topKeywords[0].slice(1)}`);
+      }
+      
+      suggestions.push(`${Math.floor(Math.random() * 10) + 5} ${topic} Tips That Will Boost Your Rankings`);
+      
+      // Add more variations if we need them
+      if (suggestions.length < 3) {
+        suggestions.push(`${topic} in ${new Date().getFullYear()}: What You Need to Know`);
+        suggestions.push(`The Complete Guide to ${topic} for Beginners`);
+      }
+      
+      setTitleSuggestions(suggestions.slice(0, 3));
+      setIsLoadingTitles(false);
+    }, 800); // Simulate loading delay
+  };
+  
+  const handleTopicChange = (value: string) => {
+    setSelectedTopic(value);
+  };
+  
+  const handleTitleSelect = (value: string) => {
+    setTitle(value);
   };
   
   const handleGenerate = async () => {
@@ -129,6 +218,58 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
             
             <TabsContent value="editor" className="space-y-6">
               <div className="space-y-4">
+                {/* Topic Selection Dropdown */}
+                <div className="space-y-2">
+                  <Label htmlFor="topic">Content Topic</Label>
+                  <Select value={selectedTopic} onValueChange={handleTopicChange}>
+                    <SelectTrigger className="transition-all">
+                      <SelectValue placeholder="Select a topic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {topics.map((topic) => (
+                        <SelectItem key={topic} value={topic}>
+                          {topic}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedTopic && (
+                    <p className="text-xs text-muted-foreground">
+                      Selected topic: <span className="font-medium text-foreground">{selectedTopic}</span>
+                    </p>
+                  )}
+                </div>
+                
+                {/* Title Selection Dropdown */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="title-suggestions">Suggested Titles</Label>
+                    {isLoadingTitles && (
+                      <span className="text-xs text-muted-foreground flex items-center">
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Loading...
+                      </span>
+                    )}
+                  </div>
+                  {titleSuggestions.length > 0 ? (
+                    <Select onValueChange={handleTitleSelect}>
+                      <SelectTrigger className="transition-all">
+                        <SelectValue placeholder="Choose a title or create your own" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {titleSuggestions.map((suggestion, index) => (
+                          <SelectItem key={index} value={suggestion}>
+                            {suggestion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      {isLoadingTitles ? "Generating title suggestions..." : "Select a topic to get title suggestions"}
+                    </div>
+                  )}
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="title">Content Title</Label>
                   <Input
@@ -138,6 +279,11 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                     onChange={(e) => setTitle(e.target.value)}
                     className="transition-all focus:ring-2 focus:ring-primary/20"
                   />
+                  {title && (
+                    <p className="text-xs text-muted-foreground">
+                      You can edit this title or use one of the suggestions above.
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
