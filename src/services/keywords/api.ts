@@ -83,8 +83,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   try {
     const queryParams = new URLSearchParams({
       url: domainUrl,
-      place_id: "2360", // US
-      lang_id: "1000", // English
+      place_id: "2840", // Updated to use US location code
+      lang_id: "1", // Updated language ID for English
       scan_type: "url"
     });
 
