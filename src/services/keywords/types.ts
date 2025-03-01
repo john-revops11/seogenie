@@ -57,7 +57,7 @@ export interface KeywordGap {
 }
 
 export interface SeoRecommendation {
-  type: 'onPage' | 'technical' | 'content';
+  type: 'onPage' | 'technical' | 'content' | 'offPage' | 'summary';
   recommendation: string;
   priority: 'high' | 'medium' | 'low';
   details?: string; // Optional details about the recommendation
