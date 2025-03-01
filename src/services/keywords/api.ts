@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { 
   KeywordData, 
@@ -29,7 +28,7 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
   try {
     console.log(`Fetching related keywords from DataForSEO API for keywords:`, seedKeywords);
     
-    // Create authorization string
+    // Create authorization string with the correct password for keyword research
     const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
     const encodedCredentials = btoa(credentials);
     
