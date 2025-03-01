@@ -20,8 +20,6 @@ import {
   Settings, 
   Loader2, 
   Zap,
-  LineChart,
-  BarChart
 } from "lucide-react";
 import KeywordTable from "@/components/KeywordTable";
 import KeywordGapCard from "@/components/KeywordGapCard";
@@ -44,6 +42,43 @@ const Index = () => {
     setAnalysisError(null);
   }, [activeTab]);
   
+  // Load saved analysis data from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedAnalysis = localStorage.getItem('seoAnalysisData');
+      if (savedAnalysis) {
+        const parsedData = JSON.parse(savedAnalysis);
+        
+        if (parsedData.mainDomain) setMainDomain(parsedData.mainDomain);
+        if (Array.isArray(parsedData.competitorDomains)) setCompetitorDomains(parsedData.competitorDomains);
+        if (Array.isArray(parsedData.keywordData)) {
+          setKeywordData(parsedData.keywordData);
+          setAnalysisComplete(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading saved analysis:", error);
+    }
+  }, []);
+
+  // Save current analysis data to localStorage whenever it changes
+  useEffect(() => {
+    if (analysisComplete && keywordData.length > 0) {
+      try {
+        const dataToSave = {
+          mainDomain,
+          competitorDomains,
+          keywordData,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('seoAnalysisData', JSON.stringify(dataToSave));
+        console.log("Analysis data saved to localStorage");
+      } catch (error) {
+        console.error("Error saving analysis data:", error);
+      }
+    }
+  }, [mainDomain, competitorDomains, keywordData, analysisComplete]);
+
   const addCompetitorDomain = () => {
     if (isAnalyzing) return;
     setCompetitorDomains([...competitorDomains, ""]);
@@ -417,6 +452,13 @@ const Index = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Show persistence indicator if we have saved data */}
+        {analysisComplete && (
+          <div className="text-xs text-muted-foreground mt-6 text-center">
+            Analysis data is automatically saved locally and will persist between tabs
+          </div>
+        )}
       </div>
     </Layout>
   );

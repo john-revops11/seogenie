@@ -199,17 +199,20 @@ export interface KeywordGap {
   volume: number;
   difficulty: number;
   opportunity: 'high' | 'medium' | 'low';
-  competitor?: string; // Add competitor field to track which competitor ranks for this
+  competitor?: string; // Competitor domain that ranks for this keyword
 }
 
 export const findKeywordGaps = async (
   mainDomain: string,
   competitorDomains: string[],
   keywords: KeywordData[],
-  targetGapCount: number = 10 // Default to 10 gaps minimum
+  targetGapCount: number = 30 // Default to 30 gaps (aiming for at least 10 per competitor)
 ): Promise<KeywordGap[]> => {
   try {
-    if (!keywords.length) return [];
+    if (!keywords.length) {
+      console.error("No keywords provided to findKeywordGaps");
+      return [];
+    }
     
     // Extract domain names for better readability in the results
     const extractDomain = (url: string) => {
@@ -222,6 +225,13 @@ export const findKeywordGaps = async (
     
     const mainDomainName = extractDomain(mainDomain);
     const competitorDomainNames = competitorDomains.map(extractDomain);
+    
+    console.log(`Finding keyword gaps for ${mainDomainName} vs ${competitorDomainNames.join(', ')}`);
+    console.log(`Target gap count: ${targetGapCount}, Keywords sample:`, keywords.slice(0, 3));
+    
+    // Ensure we're requesting at least 10 gaps per competitor
+    const minGapsPerCompetitor = Math.ceil(targetGapCount / competitorDomains.length);
+    const adjustedGapCount = Math.max(targetGapCount, minGapsPerCompetitor * competitorDomains.length);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -239,18 +249,22 @@ export const findKeywordGaps = async (
           {
             role: 'user',
             content: `Analyze the keyword data for main domain "${mainDomainName}" and competitors ${competitorDomainNames.join(', ')}. 
-            Identify the top ${targetGapCount} keyword gaps (keywords competitors rank for that the main domain does not, or ranks poorly for).
+            Identify the top keyword gaps (keywords competitors rank for that the main domain does not, or ranks poorly for).
             
-            Keyword data: ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 50)))}
+            I need at least ${minGapsPerCompetitor} keyword gaps for EACH competitor domain (${adjustedGapCount} total gaps).
             
-            Return ONLY a JSON array of the top ${targetGapCount} keyword gaps with these properties per keyword:
+            Keyword data sample (${keywords.length} keywords total): 
+            ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 20)))}
+            
+            Return ONLY a JSON array of keyword gaps with these properties:
             - keyword: string (the keyword)
             - volume: number (estimated monthly search volume, 100-10000)
             - difficulty: number (1-100 scale where higher is more difficult)
             - opportunity: string (high, medium, or low based on potential value)
             - competitor: string (the competitor domain that ranks for this keyword)
             
-            Make sure to include at least ${Math.min(10, Math.ceil(targetGapCount / competitorDomains.length))} keywords per competitor domain if possible.`
+            IMPORTANT: You must include the competitor property for each gap to identify which competitor ranks for each keyword.
+            You must return at least ${minGapsPerCompetitor} keywords for each competitor.`
           }
         ],
         temperature: 0.7,
@@ -259,16 +273,45 @@ export const findKeywordGaps = async (
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI API error (${response.status}):`, errorText);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
     
     const data = await response.json();
-    return JSON.parse(data.choices[0].message.content).keywordGaps;
+    console.log("Received OpenAI response for keyword gaps");
+    
+    const gaps = JSON.parse(data.choices[0].message.content).keywordGaps;
+    
+    if (!Array.isArray(gaps) || gaps.length === 0) {
+      console.error("OpenAI returned invalid or empty gaps array:", data.choices[0].message.content);
+      throw new Error("Invalid response format from OpenAI");
+    }
+    
+    // Verify we have at least some gaps for each competitor
+    const gapsByCompetitor = new Map<string, number>();
+    gaps.forEach(gap => {
+      const competitor = gap.competitor || "unknown";
+      gapsByCompetitor.set(competitor, (gapsByCompetitor.get(competitor) || 0) + 1);
+    });
+    
+    console.log("Gaps distribution by competitor:", Object.fromEntries(gapsByCompetitor));
+    
+    // Check if any competitors are missing from the results
+    const missingCompetitors = competitorDomainNames.filter(
+      comp => !Array.from(gapsByCompetitor.keys()).some(k => k.includes(comp))
+    );
+    
+    if (missingCompetitors.length > 0) {
+      console.warn(`Missing gaps for competitors: ${missingCompetitors.join(', ')}`);
+    }
+    
+    return gaps;
   } catch (error) {
     console.error("Error finding keyword gaps:", error);
     toast.error(`Failed to find keyword gaps: ${(error as Error).message}`);
     
-    // Return mock keyword gaps if the API fails
+    // Return mock keyword gaps if the API fails, ensuring at least 10 per competitor
     const mockGaps: KeywordGap[] = [];
     
     // Extract domain names for the mock data
@@ -282,31 +325,40 @@ export const findKeywordGaps = async (
     
     const competitorDomainNames = competitorDomains.map(extractDomain);
     
-    // Create mock gaps for each competitor
+    // Base template gaps that we'll customize for each competitor
+    const baseGapTemplates = [
+      { keyword: 'seo competitor analysis', volume: 1200, difficulty: 45, opportunity: 'high' as const },
+      { keyword: 'keyword gap tool', volume: 880, difficulty: 38, opportunity: 'high' as const },
+      { keyword: 'best keyword research method', volume: 720, difficulty: 52, opportunity: 'medium' as const },
+      { keyword: 'seo tools comparison', volume: 1600, difficulty: 67, opportunity: 'medium' as const },
+      { keyword: 'free keyword position checker', volume: 1900, difficulty: 28, opportunity: 'high' as const },
+      { keyword: 'how to find competitor keywords', volume: 1300, difficulty: 42, opportunity: 'high' as const },
+      { keyword: 'seo gap analysis template', volume: 590, difficulty: 33, opportunity: 'medium' as const },
+      { keyword: 'keyword mapping strategy', volume: 650, difficulty: 47, opportunity: 'medium' as const },
+      { keyword: 'find untapped keywords', volume: 420, difficulty: 29, opportunity: 'high' as const },
+      { keyword: 'competitor keyword analysis', volume: 780, difficulty: 51, opportunity: 'medium' as const },
+      { keyword: 'long tail keyword finder', volume: 510, difficulty: 32, opportunity: 'medium' as const },
+      { keyword: 'keyword difficulty checker', volume: 920, difficulty: 43, opportunity: 'high' as const },
+      { keyword: 'seo content gap analysis', volume: 670, difficulty: 37, opportunity: 'medium' as const },
+      { keyword: 'best keywords for seo', volume: 1400, difficulty: 62, opportunity: 'high' as const },
+      { keyword: 'keyword research tips', volume: 830, difficulty: 29, opportunity: 'medium' as const },
+    ];
+    
+    // Create 10+ gaps for each competitor with variations
     competitorDomainNames.forEach((competitor) => {
-      const baseGaps = [
-        { keyword: 'seo competitor analysis', volume: 1200, difficulty: 45, opportunity: 'high' as const },
-        { keyword: 'keyword gap tool', volume: 880, difficulty: 38, opportunity: 'high' as const },
-        { keyword: 'best keyword research method', volume: 720, difficulty: 52, opportunity: 'medium' as const },
-        { keyword: 'seo tools comparison', volume: 1600, difficulty: 67, opportunity: 'medium' as const },
-        { keyword: 'free keyword position checker', volume: 1900, difficulty: 28, opportunity: 'high' as const },
-        { keyword: 'how to find competitor keywords', volume: 1300, difficulty: 42, opportunity: 'high' as const },
-        { keyword: 'seo gap analysis template', volume: 590, difficulty: 33, opportunity: 'medium' as const },
-        { keyword: 'keyword mapping strategy', volume: 650, difficulty: 47, opportunity: 'medium' as const },
-        { keyword: 'find untapped keywords', volume: 420, difficulty: 29, opportunity: 'high' as const },
-        { keyword: 'competitor keyword analysis', volume: 780, difficulty: 51, opportunity: 'medium' as const },
-      ];
-      
-      // Add competitor-specific keywords with variations
-      baseGaps.forEach((gap, index) => {
+      // Create at least 10 gaps for this competitor
+      for (let i = 0; i < 12; i++) {
+        const template = baseGapTemplates[i % baseGapTemplates.length];
+        
+        // Add some variation to make the data look more realistic
         mockGaps.push({
-          keyword: gap.keyword + (index % 3 === 0 ? ` for ${competitor}` : ''),
-          volume: gap.volume + Math.floor(Math.random() * 300),
-          difficulty: gap.difficulty + Math.floor(Math.random() * 10) - 5,
-          opportunity: gap.opportunity,
+          keyword: i % 3 === 0 ? `${template.keyword} for ${competitor}` : template.keyword,
+          volume: template.volume + Math.floor(Math.random() * 300),
+          difficulty: Math.min(100, Math.max(1, template.difficulty + Math.floor(Math.random() * 10) - 5)),
+          opportunity: template.opportunity,
           competitor: competitor
         });
-      });
+      }
     });
     
     return mockGaps;

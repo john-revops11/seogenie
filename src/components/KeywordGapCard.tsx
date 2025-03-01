@@ -45,8 +45,9 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
         setIsLoadingGaps(true);
         
         try {
-          // Make sure we request enough gaps to show at least 10 per competitor
-          const targetGapCount = Math.max(10 * competitorDomains.length, 30);
+          // Request at least 10 gaps per competitor
+          const minGapsPerCompetitor = 10;
+          const targetGapCount = minGapsPerCompetitor * competitorDomains.length;
           
           // Pass the number of gaps we want to the function
           const gaps = await findKeywordGaps(domain, competitorDomains, keywords, targetGapCount);
@@ -56,11 +57,11 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
             toast.success(`Found ${gaps.length} keyword gaps to target`);
           } else {
             setKeywordGaps([]);
-            setError("No keyword gaps found");
+            setError("No keyword gaps found. Try adjusting your analysis parameters.");
           }
         } catch (error) {
           console.error("Error fetching keyword gaps:", error);
-          setError("Failed to load keyword gaps");
+          setError(`Failed to load keyword gaps: ${(error as Error).message}`);
           setKeywordGaps([]);
         } finally {
           setIsLoadingGaps(false);
@@ -89,7 +90,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
     ? keywordGaps 
     : keywordGaps.filter(gap => gap.competitor === selectedCompetitor);
 
-  // Get unique competitor domains
+  // Get unique competitor domains for the filter
   const uniqueCompetitors = ["all", ...Array.from(new Set(
     keywordGaps.map(gap => gap.competitor || "unknown")
   ))];
@@ -107,7 +108,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
           </div>
           
           {keywordGaps.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 max-w-[60%]">
               {uniqueCompetitors.map((competitor) => (
                 <Badge 
                   key={competitor}
@@ -128,7 +129,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
             <div className="flex items-center justify-center h-[300px]">
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                <p className="text-sm text-muted-foreground">Analyzing keyword gaps...</p>
+                <p className="text-sm text-muted-foreground">Analyzing keyword gaps using AI...</p>
               </div>
             </div>
           ) : error ? (
@@ -168,7 +169,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
                 </Table>
               ) : (
                 <div className="text-center p-8">
-                  <p className="text-muted-foreground">No keyword gaps found. Try analyzing more competitor domains.</p>
+                  <p className="text-muted-foreground">No keyword gaps found for the selected competitor. Try analyzing more domains or selecting a different filter.</p>
                 </div>
               )}
             </>
