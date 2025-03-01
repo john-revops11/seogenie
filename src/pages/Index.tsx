@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -325,7 +326,7 @@ const Index = () => {
                 </CardContent>
               </Card>
             ) : (
-              <ContentGenerator domain={mainDomain} />
+              <ContentGenerator domain={mainDomain} allKeywords={keywordData.map(k => k.keyword)} />
             )}
           </TabsContent>
           
@@ -343,7 +344,7 @@ const Index = () => {
               <CardContent className="space-y-6 pt-6">
                 <div className="space-y-3">
                   <Label htmlFor="api-key">API Key</Label>
-                  <Input id="api-key" type="password" value="b84198e677msh416f3b6bc96f2b3p1a60f3jsnaadb78e898c9" readOnly className="transition-all bg-muted/30" />
+                  <Input id="api-key" type="password" value="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" readOnly className="transition-all bg-muted/30" />
                   <p className="text-sm text-muted-foreground">Used for keyword research and data retrieval</p>
                 </div>
                 
