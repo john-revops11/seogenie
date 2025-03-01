@@ -221,13 +221,19 @@ const Index = () => {
   const handleAddCompetitorFromTable = (newCompetitor: string) => {
     if (isAnalyzing) return;
     
-    if (competitorDomains.includes(newCompetitor)) {
+    const normalizedNewCompetitor = newCompetitor.trim().toLowerCase();
+    
+    const exists = competitorDomains.some(domain => 
+      domain.trim().toLowerCase() === normalizedNewCompetitor
+    );
+    
+    if (exists) {
       toast.error("This competitor is already in your analysis");
       return;
     }
     
-    setCompetitorDomains([...competitorDomains, newCompetitor]);
-    toast.success(`Added ${newCompetitor} to competitors list`);
+    setCompetitorDomains(prev => [...prev.filter(domain => domain.trim() !== ""), newCompetitor]);
+    toast.success(`Added ${normalizedNewCompetitor} to competitors list`);
   };
 
   return (
@@ -387,14 +393,16 @@ const Index = () => {
                   />
                 </div>
                 
-                <KeywordGapCard 
-                  domain={mainDomain} 
-                  competitorDomains={validCompetitorDomains} 
-                  keywords={keywordData || []}
-                  isLoading={isAnalyzing}
-                />
+                <div className="lg:col-span-2">
+                  <KeywordGapCard 
+                    domain={mainDomain} 
+                    competitorDomains={validCompetitorDomains} 
+                    keywords={keywordData || []}
+                    isLoading={isAnalyzing}
+                  />
+                </div>
                 
-                <div className="md:col-span-1 lg:col-span-2">
+                <div className="md:col-span-1 lg:col-span-1">
                   <SeoRecommendationsCard 
                     domain={mainDomain} 
                     keywords={keywordData || []}

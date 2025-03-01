@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,10 +25,10 @@ interface KeywordTableProps {
   competitorDomains: string[];
   keywords: KeywordData[];
   isLoading: boolean;
-  onAddCompetitor?: (newCompetitor: string) => void; // Added this prop to fix the build error
+  onAddCompetitor?: (newCompetitor: string) => void;
 }
 
-const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: KeywordTableProps) => {
+const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCompetitor }: KeywordTableProps) => {
   const [filteredKeywords, setFilteredKeywords] = useState<KeywordData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{column: string; direction: 'asc' | 'desc'}>({
@@ -37,42 +36,36 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     direction: 'desc'
   });
   
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const [paginatedKeywords, setPaginatedKeywords] = useState<KeywordData[]>([]);
   
-  // New state for adding competitor input
   const [newCompetitor, setNewCompetitor] = useState("");
   const [showCompetitorInput, setShowCompetitorInput] = useState(false);
   
-  // Handle incoming keyword data
   useEffect(() => {
     setFilteredKeywords(keywords);
-    setCurrentPage(1); // Reset to first page when new data arrives
+    setCurrentPage(1);
   }, [keywords]);
   
-  // Handle search
   useEffect(() => {
     if (searchQuery) {
       const filtered = keywords.filter(k => 
         k.keyword.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredKeywords(filtered);
-      setCurrentPage(1); // Reset to first page when search changes
+      setCurrentPage(1);
     } else {
       setFilteredKeywords(keywords);
     }
   }, [searchQuery, keywords]);
   
-  // Handle pagination
   useEffect(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
     setPaginatedKeywords(filteredKeywords.slice(startIndex, endIndex));
   }, [filteredKeywords, currentPage]);
   
-  // Handle sorting
   const handleSort = (column: string) => {
     const newDirection = 
       sortConfig.column === column && sortConfig.direction === 'desc' ? 'asc' : 'desc';
@@ -80,9 +73,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     setSortConfig({ column, direction: newDirection });
     
     const sorted = [...filteredKeywords].sort((a, b) => {
-      // Special case for position
       if (column === 'position') {
-        // Handle null values in ranking
         if (a.position === null && b.position === null) return 0;
         if (a.position === null) return newDirection === 'asc' ? 1 : -1;
         if (b.position === null) return newDirection === 'asc' ? -1 : 1;
@@ -92,14 +83,12 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
           : b.position - a.position;
       }
       
-      // For other numeric columns
       if (['monthly_search', 'competition_index', 'cpc'].includes(column)) {
         const aValue = a[column as keyof KeywordData] as number;
         const bValue = b[column as keyof KeywordData] as number;
         return newDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
       
-      // For string columns
       return newDirection === 'asc'
         ? String(a[column as keyof KeywordData]).localeCompare(String(b[column as keyof KeywordData]))
         : String(b[column as keyof KeywordData]).localeCompare(String(a[column as keyof KeywordData]));
@@ -108,7 +97,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     setFilteredKeywords(sorted);
   };
   
-  // Pagination controls
   const totalPages = Math.ceil(filteredKeywords.length / rowsPerPage);
   
   const goToNextPage = () => {
@@ -137,34 +125,28 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     return "text-red-600";
   };
 
-  // Safely extract domain name from URL string
   const extractDomainName = (url: string): string => {
     try {
-      // If it's already a valid URL, extract the hostname
       if (url.startsWith('http://') || url.startsWith('https://')) {
         const urlObj = new URL(url);
         return urlObj.hostname.replace(/^www\./, '');
       }
       
-      // Try with https:// prefix
       try {
         const urlObj = new URL(`https://${url}`);
         return urlObj.hostname.replace(/^www\./, '');
       } catch (e) {
-        // If that fails, just return the original string
         return url.replace(/^www\./, '');
       }
     } catch (error) {
       console.warn(`Failed to extract domain from: ${url}`, error);
-      return url; // Return original string if all parsing fails
+      return url;
     }
   };
 
-  // Handle CSV export
   const exportToCsv = () => {
     if (keywords.length === 0) return;
     
-    // Create CSV header with URL columns
     let csvContent = "Keyword,Volume,Difficulty,CPC,$,";
     csvContent += `${domain},${domain} URL,`;
     competitorDomains.forEach(comp => {
@@ -172,7 +154,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     });
     csvContent += "\n";
     
-    // Add data rows
     keywords.forEach(item => {
       csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},`;
       csvContent += `${item.position || "-"},${item.rankingUrl || "-"},`;
@@ -183,7 +164,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
       csvContent += "\n";
     });
     
-    // Create download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -194,7 +174,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     document.body.removeChild(link);
   };
 
-  // Handle adding new competitor
   const handleAddCompetitor = () => {
     setShowCompetitorInput(true);
   };
@@ -203,13 +182,11 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     if (!url.trim()) return false;
     
     try {
-      // If it already has a protocol, try to parse as is
       if (url.startsWith('http://') || url.startsWith('https://')) {
         new URL(url);
         return true;
       }
       
-      // Otherwise, try with https:// prefix
       new URL(`https://${url}`);
       return true;
     } catch (e) {
@@ -228,7 +205,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
       return;
     }
     
-    // Check if this competitor is already in the list
     const normalizedNewCompetitor = extractDomainName(newCompetitor);
     const exists = competitorDomains.some(domain => 
       extractDomainName(domain) === normalizedNewCompetitor
@@ -239,27 +215,15 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
       return;
     }
     
-    // Format the URL properly
     let formattedUrl = newCompetitor;
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = 'https://' + formattedUrl;
     }
     
-    // Here we're just showing a toast because we need to analyze this domain at the parent level
-    toast.success(`Added ${normalizedNewCompetitor} to your competitors list`, {
-      description: "Rerun analysis to see data for this competitor",
-      duration: 5000,
-      action: {
-        label: "Dismiss",
-        onClick: () => {}
-      }
-    });
+    if (onAddCompetitor) {
+      onAddCompetitor(formattedUrl);
+    }
     
-    // Pass this back to the parent component or handle state globally
-    // (This would typically need to be handled in Index.tsx)
-    console.log("New competitor to add:", formattedUrl);
-    
-    // Reset state
     setNewCompetitor("");
     setShowCompetitorInput(false);
   };
@@ -269,7 +233,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     setShowCompetitorInput(false);
   };
 
-  // Clickable link component for ranking URLs
   const RankingLink = ({ url, position }: { url: string | null | undefined, position: number | null | undefined }) => {
     if (!url || !position) return <Badge variant="outline">-</Badge>;
     
@@ -339,7 +302,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
           </div>
         </div>
         
-        {/* New competitor input field */}
         {showCompetitorInput && (
           <div className="mt-4 flex items-center gap-2 animate-fade-down">
             <Input
@@ -464,7 +426,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
           </div>
         </div>
         
-        {/* Pagination Controls */}
         {filteredKeywords.length > 0 && (
           <div className="flex items-center justify-between mt-4">
             <div className="text-xs text-muted-foreground">

@@ -1,3 +1,4 @@
+<lov-code>
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -436,9 +437,10 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       
       setIsDataReady(hasKeywordGaps && hasRecommendations);
       
-      if (hasKeywordGaps && hasRecommendations) {
-        generateInitialTopics();
-      }
+      // Remove the automatic topic generation
+      // if (hasKeywordGaps && hasRecommendations) {
+      //   generateInitialTopics();
+      // }
     };
     
     checkDataReadiness();
@@ -450,6 +452,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   }, []);
   
+  // This function will now need to be called explicitly
   const generateInitialTopics = () => {
     setIsLoadingTopics(true);
     
@@ -457,6 +460,13 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const gaps = keywordGapsCache.data || [];
       const recommendations = recommendationsCache.data;
       const selectedKeywords = keywordGapsCache.selectedKeywords || [];
+      
+      // Only generate topics if we have selected keywords
+      if (selectedKeywords.length === 0) {
+        toast.error("Please select keywords from the Keyword Gaps card first");
+        setIsLoadingTopics(false);
+        return;
+      }
       
       console.log("Generating topics with domain:", domain);
       console.log("Selected keywords for topic generation:", selectedKeywords);
@@ -474,6 +484,8 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       setTitleSuggestions(titlesMap);
       setSelectedTopic("");
       setTitle("");
+      
+      toast.success("Generated topic suggestions based on selected keywords");
     } catch (error) {
       console.error("Error generating topics:", error);
       toast.error("Failed to generate topic suggestions");
@@ -773,344 +785,50 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                     </div>
                   )}
                 </div>
+                
+                {/* New button to generate topics */}
+                {keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0 && topics.length === 0 && (
+                  <Button 
+                    onClick={generateInitialTopics}
+                    className="w-full bg-revology hover:bg-revology-dark"
+                    disabled={isLoadingTopics}
+                  >
+                    {isLoadingTopics ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating Topics...
+                      </>
+                    ) : (
+                      <>
+                        Generate Topics Based on Selected Keywords
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               
               <Separator />
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-revology-dark">Content Topics</h3>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex items-center gap-1 h-8 px-2 text-xs border-revology/30 text-revology hover:bg-revology-light/50"
-                      onClick={() => setShowCustomTopicInput(true)}
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add Topic
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex items-center gap-1 h-8 px-2 text-xs"
-                      onClick={handleRegenerateTopics}
-                      disabled={isLoadingTopics}
-                    >
-                      {isLoadingTopics ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3 w-3" />
-                      )}
-                      Regenerate
-                    </Button>
-                  </div>
-                </div>
-                
-                {showCustomTopicInput && (
-                  <div className="flex gap-2 mb-4">
-                    <Input
-                      value={customTopic}
-                      onChange={(e) => setCustomTopic(e.target.value)}
-                      placeholder="Enter custom topic"
-                      className="flex-1"
-                    />
-                    <Button 
-                      size="sm"
-                      onClick={handleAddCustomTopic}
-                      disabled={!customTopic.trim()}
-                      className="bg-revology hover:bg-revology-dark"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                )}
-                
-                <ScrollArea className="h-60 rounded-md border p-2">
-                  {topics.length > 0 ? (
-                    <div className="space-y-2">
-                      {topics.map((topic, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`p-2 rounded-md flex items-center justify-between ${selectedTopic === topic ? 'bg-revology/10 border-l-4 border-revology' : 'hover:bg-muted/50'}`}
-                        >
-                          {isEditingTopic === topic ? (
-                            <div className="flex gap-2 w-full">
-                              <Input
-                                value={editedTopicText}
-                                onChange={(e) => setEditedTopicText(e.target.value)}
-                                className="flex-1"
-                              />
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                className="h-8 w-8 p-0"
-                                onClick={handleSaveEditedTopic}
-                              >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => handleSelectTopic(topic)}
-                                className="flex-1 text-left text-sm font-medium"
-                              >
-                                {topic}
-                              </button>
-                              <div className="flex items-center gap-1">
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => handleStartEditingTopic(topic)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 text-destructive"
-                                  onClick={() => handleDeleteTopic(topic)}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
-                      {isLoadingTopics ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                          <p className="text-sm">Generating topics...</p>
-                        </div>
-                      ) : (
-                        <p className="text-sm">No topics available. Click "Regenerate" to generate new topics.</p>
-                      )}
-                    </div>
-                  )}
-                </ScrollArea>
-              </div>
-              
-              {selectedTopic && (
+              {/* Only show topics section if we have topics or if user has selected keywords */}
+              {(topics.length > 0 || keywordGapsCache.selectedKeywords?.length > 0) && (
                 <div className="space-y-4">
-                  <div>
-                    <Label className="text-lg font-medium">Title Suggestions</Label>
-                    <ScrollArea className="h-40 rounded-md border p-2 mt-2">
-                      {titleSuggestions[selectedTopic] && titleSuggestions[selectedTopic].length > 0 ? (
-                        <div className="space-y-2">
-                          {titleSuggestions[selectedTopic].map((suggestion, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`p-2 rounded-md hover:bg-muted/50 cursor-pointer ${title === suggestion ? 'bg-revology/10 border-l-4 border-revology' : ''}`}
-                              onClick={() => handleSelectTitle(suggestion)}
-                            >
-                              <p className="text-sm">{suggestion}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-muted-foreground">
-                          <p className="text-sm">No title suggestions available for this topic.</p>
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Custom Title</Label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Enter your title"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="content-type">Content Type</Label>
-                      <Select value={contentType} onValueChange={setContentType}>
-                        <SelectTrigger id="content-type">
-                          <SelectValue placeholder="Select content type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="blog">Blog Post</SelectItem>
-                          <SelectItem value="article">Article</SelectItem>
-                          <SelectItem value="guide">Guide</SelectItem>
-                          <SelectItem value="product">Product Description</SelectItem>
-                          <SelectItem value="social">Social Media</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="creativity">Creativity</Label>
-                        <span className="text-xs text-muted-foreground">{creativity}%</span>
-                      </div>
-                      <Slider
-                        id="creativity"
-                        min={0}
-                        max={100}
-                        step={10}
-                        value={[creativity]}
-                        onValueChange={(values) => setCreativity(values[0])}
-                        className="py-4"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Factual</span>
-                        <span>Creative</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    className="w-full mt-4 bg-revology hover:bg-revology-dark"
-                    onClick={handleGenerateContent}
-                    disabled={isGenerating || !title}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating Content...
-                      </>
-                    ) : (
-                      <>
-                        Generate Content
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="preview" className="space-y-4">
-            {generatedContent ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold">{generatedContent.title}</h3>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-1"
-                      onClick={handleEditContent}
-                      disabled={isEditing}
-                    >
-                      <FileEdit className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-1"
-                      onClick={handleCopy}
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-1"
-                      onClick={handleDownload}
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="px-4 py-2 bg-muted/30 rounded-md">
-                  <p className="text-sm text-muted-foreground">{generatedContent.metaDescription}</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Outline</Label>
-                  <div className="space-y-1">
-                    {generatedContent.outline.map((item, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <div className="min-w-4 pt-0.5">
-                          <CheckCircle className="h-4 w-4 text-revology" />
-                        </div>
-                        <p className="text-sm">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Content</Label>
-                  {isEditing ? (
-                    <>
-                      <Textarea
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        className="min-h-[300px] font-mono"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsEditing(false)}
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-revology-dark">Content Topics</h3>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex items-center gap-1 h-8 px-2 text-xs border-revology/30 text-revology hover:bg-revology-light/50"
+                        onClick={() => setShowCustomTopicInput(true)}
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add Topic
+                      </Button>
+                      {topics.length > 0 && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex items-center gap-1 h-8 px-2 text-xs"
+                          onClick={handleRegenerateTopics}
+                          disabled={isLoadingTopics}
                         >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={handleSaveEdits}
-                          className="bg-revology hover:bg-revology-dark"
-                        >
-                          Save Changes
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="p-4 border rounded-md min-h-[300px]">
-                      <div className="prose prose-sm max-w-none">
-                        <div dangerouslySetInnerHTML={{ __html: generatedContent.content.replace(/\n/g, '<br />') }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <Button
-                  onClick={handleRegenerateContent}
-                  className="w-full mt-4"
-                  variant="outline"
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Regenerate Content
-                    </>
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-muted-foreground">
-                  Generate content first to preview it here.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default ContentGenerator;
