@@ -1,4 +1,4 @@
-<lov-code>
+
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -854,4 +854,318 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                         placeholder="Enter a custom topic..."
                         value={customTopic}
                         onChange={e => setCustomTopic(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button 
+                        size="sm"
+                        onClick={handleAddCustomTopic}
+                        className="bg-revology hover:bg-revology-dark"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowCustomTopicInput(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Topic list */}
+                  {topics.length > 0 ? (
+                    <ScrollArea className="h-[200px] rounded-md border p-4">
+                      <div className="space-y-2">
+                        {topics.map((topic, index) => (
+                          <div 
+                            key={index}
+                            className={`p-2 rounded hover:bg-accent/50 transition-colors cursor-pointer relative group ${selectedTopic === topic ? 'bg-accent' : ''}`}
+                            onClick={() => isEditingTopic !== topic && handleSelectTopic(topic)}
+                          >
+                            {isEditingTopic === topic ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={editedTopicText}
+                                  onChange={e => setEditedTopicText(e.target.value)}
+                                  className="flex-1 text-sm"
+                                  autoFocus
+                                />
+                                <Button 
+                                  size="xs" 
+                                  onClick={handleSaveEditedTopic}
+                                  className="h-7 py-0 px-2 text-xs bg-revology hover:bg-revology-dark"
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-sm font-medium">{topic}</span>
+                                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    size="xs" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartEditingTopic(topic);
+                                    }}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button 
+                                    size="xs" 
+                                    variant="ghost" 
+                                    className="h-6 w-6 p-0 text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTopic(topic);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  ) : keywordGapsCache.selectedKeywords?.length > 0 && (
+                    <div className="flex justify-center items-center p-6 rounded-md border">
+                      <div className="text-center">
+                        <RefreshCw className="h-10 w-10 text-muted-foreground/50 mx-auto mb-4" />
+                        <h4 className="text-sm font-medium">Generate Topics</h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Use the button above to generate SEO-optimized topics based on your selected keywords.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Title selection when a topic is selected */}
+                  {selectedTopic && (
+                    <div className="mt-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-revology-dark">Suggested Titles</h3>
+                        <Badge variant="outline" className="text-xs">
+                          Based on "{selectedTopic}"
+                        </Badge>
+                      </div>
+                      
+                      <ScrollArea className="h-[150px] rounded-md border p-4">
+                        <div className="space-y-2">
+                          {titleSuggestions[selectedTopic]?.map((suggestion, index) => (
+                            <div 
+                              key={index}
+                              className={`p-2 rounded hover:bg-accent/50 transition-colors cursor-pointer ${title === suggestion ? 'bg-accent' : ''}`}
+                              onClick={() => handleSelectTitle(suggestion)}
+                            >
+                              <span className="text-sm">{suggestion}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="custom-title">Custom Title</Label>
+                        <Input 
+                          id="custom-title" 
+                          value={title} 
+                          onChange={e => setTitle(e.target.value)}
+                          placeholder="Enter a custom title..."
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Content generation configuration */}
+                  {selectedTopic && (
+                    <div className="mt-6 space-y-4">
+                      <Separator />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="content-type">Content Type</Label>
+                          <Select value={contentType} onValueChange={setContentType}>
+                            <SelectTrigger id="content-type">
+                              <SelectValue placeholder="Select content type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="blog">Blog Post</SelectItem>
+                              <SelectItem value="article">Article</SelectItem>
+                              <SelectItem value="guide">Comprehensive Guide</SelectItem>
+                              <SelectItem value="tutorial">Tutorial</SelectItem>
+                              <SelectItem value="case-study">Case Study</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="creativity">AI Creativity</Label>
+                            <span className="text-xs text-muted-foreground">{creativity}%</span>
+                          </div>
+                          <Slider
+                            id="creativity"
+                            min={10}
+                            max={90}
+                            step={10}
+                            value={[creativity]}
+                            onValueChange={(value) => setCreativity(value[0])}
+                            className="cursor-pointer"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Factual</span>
+                            <span>Creative</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={handleGenerateContent}
+                        className="w-full mt-6 bg-revology hover:bg-revology-dark"
+                        disabled={isGenerating}
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating Content...
+                          </>
+                        ) : (
+                          <>
+                            Generate SEO-Optimized Content
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="preview" className="space-y-6">
+            {generatedContent ? (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold">{generatedContent.title}</h2>
+                  <p className="text-muted-foreground italic">{generatedContent.metaDescription}</p>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Content Outline</h3>
+                  <div className="rounded-md border p-4 bg-accent/10">
+                    <ul className="list-disc list-inside space-y-1">
+                      {generatedContent.outline.map((item, index) => (
+                        <li key={index} className="text-sm">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Content</h3>
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button size="sm" onClick={handleSaveEdits} className="bg-green-600 hover:bg-green-700">
+                            <Check className="mr-1 h-4 w-4" />
+                            Save
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" onClick={handleEditContent}>
+                            <Edit className="mr-1 h-4 w-4" />
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleCopy}>
+                            <Copy className="mr-1 h-4 w-4" />
+                            Copy
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleDownload}>
+                            <Download className="mr-1 h-4 w-4" />
+                            Download
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {isEditing ? (
+                    <Textarea
+                      value={editedContent}
+                      onChange={e => setEditedContent(e.target.value)}
+                      className="min-h-[400px] font-mono text-sm"
+                    />
+                  ) : (
+                    <div className="rounded-md border p-6 max-h-[500px] overflow-y-auto">
+                      <div className="prose prose-sm max-w-none">
+                        {generatedContent.content.split("\n").map((paragraph, index) => {
+                          if (paragraph.startsWith("# ")) {
+                            return <h1 key={index} className="text-xl font-bold mt-6 mb-4">{paragraph.replace("# ", "")}</h1>;
+                          } else if (paragraph.startsWith("## ")) {
+                            return <h2 key={index} className="text-lg font-bold mt-6 mb-3">{paragraph.replace("## ", "")}</h2>;
+                          } else if (paragraph.startsWith("### ")) {
+                            return <h3 key={index} className="text-md font-bold mt-5 mb-2">{paragraph.replace("### ", "")}</h3>;
+                          } else if (paragraph.startsWith("- ")) {
+                            return <li key={index} className="ml-6">{paragraph.replace("- ", "")}</li>;
+                          } else if (paragraph.trim() === "") {
+                            return <br key={index} />;
+                          } else {
+                            return <p key={index} className="mb-3">{paragraph}</p>;
+                          }
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-center mt-6">
+                  <Button 
+                    onClick={handleRegenerateContent}
+                    className="bg-revology hover:bg-revology-dark"
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate Content
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FileEdit className="w-12 h-12 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold">No content generated yet</h3>
+                <p className="mt-2 text-muted-foreground max-w-md">
+                  Generate content from the "Generate" tab to preview it here.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ContentGenerator;
