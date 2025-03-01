@@ -238,11 +238,8 @@ const Index = () => {
   };
 
   const handleGenerateContentFromKeyword = (keyword: string, relatedKeywords: string[]) => {
-    // Navigate to content tab with the selected keywords
     setActiveTab("content");
     
-    // If we have the keywordGapsCache available in the ContentGenerator component,
-    // we can trigger it through window or a custom event
     const event = new CustomEvent('generate-content-from-keyword', { 
       detail: { 
         primaryKeyword: keyword,
@@ -251,7 +248,6 @@ const Index = () => {
     });
     window.dispatchEvent(event);
     
-    // Provide feedback to the user
     toast.success(`Switched to content generator with "${keyword}"`);
   };
 
@@ -301,16 +297,23 @@ const Index = () => {
           
           <TabsContent value="dashboard" className="space-y-6">
             {analysisError ? (
-              <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle className="text-destructive">Analysis Error</CardTitle>
-                  <CardDescription>There was a problem analyzing the domains</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm">{analysisError}</p>
-                  <Button onClick={handleReset} variant="outline">Try Again</Button>
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                <Card className="border-destructive/50">
+                  <CardHeader>
+                    <CardTitle className="text-destructive">Analysis Error</CardTitle>
+                    <CardDescription>There was a problem analyzing the domains</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm">{analysisError}</p>
+                    <Button onClick={handleReset} variant="outline">Try Again</Button>
+                  </CardContent>
+                </Card>
+                
+                <KeywordResearch 
+                  domain={mainDomain || "example.com"}
+                  onGenerateContent={handleGenerateContentFromKeyword} 
+                />
+              </div>
             ) : !analysisComplete ? (
               <Card className="glass-panel transition-all duration-300 hover:shadow-xl border-revology/10">
                 <CardHeader>
@@ -431,7 +434,6 @@ const Index = () => {
                   </div>
                 </div>
                 
-                {/* Add the new Keyword Research component */}
                 <KeywordResearch 
                   domain={mainDomain}
                   onGenerateContent={handleGenerateContentFromKeyword} 
@@ -493,7 +495,6 @@ const Index = () => {
                 
                 <Separator />
                 
-                {/* Add new API integration settings */}
                 <div className="space-y-3">
                   <Label>API Integrations</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -530,7 +531,6 @@ const Index = () => {
                 
                 <Separator />
                 
-                {/* Webhook configuration option */}
                 <div className="space-y-3">
                   <Label htmlFor="webhook-url">Webhook URL</Label>
                   <Input id="webhook-url" placeholder="https://your-webhook-endpoint.com/seo-updates" className="transition-all" />
