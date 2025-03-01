@@ -33,9 +33,10 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   const [activeTab, setActiveTab] = useState("editor");
   const [creativity, setCreativity] = useState([50]);
   
-  // Update keywords if allKeywords prop changes
+  // Update keywords if allKeywords prop changes and is not empty
   useEffect(() => {
-    if (allKeywords.length > 0) {
+    // Make sure allKeywords exists and has items before trying to use it
+    if (allKeywords && allKeywords.length > 0) {
       // Use the top 5 keywords from allKeywords if available
       const topKeywords = allKeywords.slice(0, 5).map(k => k.toLowerCase());
       if (topKeywords.length > 0) {
@@ -104,7 +105,8 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   };
   
   // Generate suggested keywords based on allKeywords or use defaults
-  const suggestedKeywords = allKeywords.length > 0 
+  // Safely handle the case when allKeywords might be undefined
+  const suggestedKeywords = (allKeywords && allKeywords.length > 0)
     ? [...new Set(allKeywords.slice(0, 15))]
         .filter(kw => !keywords.includes(kw))
         .slice(0, 6)
