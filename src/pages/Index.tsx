@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
-import { useRouter } from 'next/router';
 import KeywordTable from "@/components/KeywordTable";
 import KeywordGapCard from "@/components/KeywordGapCard";
 import SeoRecommendationsCard from "@/components/SeoRecommendationsCard";
@@ -16,7 +15,6 @@ const Index = () => {
   const [competitorDomains, setCompetitorDomains] = useState([""]);
   const [keywords, setKeywords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   
   const handleDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDomain(e.target.value);
@@ -48,7 +46,6 @@ const Index = () => {
     setKeywords([]);
     
     try {
-      // Pass the domain and competitorDomains to the /api/analyze route
       const response = await fetch(`/api/analyze?domain=${domain}&competitorDomains=${competitorDomains.join(',')}`);
       
       if (!response.ok) {
