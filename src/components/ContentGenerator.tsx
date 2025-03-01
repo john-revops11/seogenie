@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,10 +32,8 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   const [activeTab, setActiveTab] = useState("editor");
   const [creativity, setCreativity] = useState([50]);
   
-  // Update keywords if allKeywords prop changes
   useEffect(() => {
     if (allKeywords.length > 0) {
-      // Use the top 5 keywords from allKeywords if available
       const topKeywords = allKeywords.slice(0, 5).map(k => k.toLowerCase());
       if (topKeywords.length > 0) {
         setKeywords(topKeywords);
@@ -103,7 +100,6 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
     setKeywords(newKeywords);
   };
   
-  // Generate suggested keywords based on allKeywords or use defaults
   const suggestedKeywords = allKeywords.length > 0 
     ? [...new Set(allKeywords.slice(0, 15))]
         .filter(kw => !keywords.includes(kw))

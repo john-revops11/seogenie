@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -148,6 +149,9 @@ const Index = () => {
     return "Finalizing results...";
   };
 
+  // Get an array of just the keyword strings for content generation
+  const keywordStrings = keywordData.map(kw => kw.keyword);
+
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
@@ -281,10 +285,19 @@ const Index = () => {
                   />
                 </div>
                 
-                <KeywordGapCard domain={mainDomain} />
+                <KeywordGapCard 
+                  domain={mainDomain} 
+                  competitorDomains={competitorDomains.filter(Boolean)} 
+                  keywords={keywordData}
+                  isLoading={isAnalyzing}
+                />
                 
                 <div className="md:col-span-1 lg:col-span-2">
-                  <SeoRecommendationsCard domain={mainDomain} />
+                  <SeoRecommendationsCard 
+                    domain={mainDomain} 
+                    keywords={keywordData}
+                    isLoading={isAnalyzing}
+                  />
                 </div>
               </div>
             )}
@@ -316,7 +329,10 @@ const Index = () => {
                 </CardContent>
               </Card>
             ) : (
-              <ContentGenerator domain={mainDomain} />
+              <ContentGenerator 
+                domain={mainDomain} 
+                allKeywords={keywordStrings}
+              />
             )}
           </TabsContent>
           
