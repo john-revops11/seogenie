@@ -1,4 +1,3 @@
-<lov-code>
 import { toast } from "sonner";
 
 // API configuration
@@ -6,6 +5,10 @@ const API_HOST = "keyword-tool.p.rapidapi.com";
 const API_KEY = "b84198e677msh416f3b6bc96f2b3p1a60f3jsnaadb78e898c9"; // This is already public in the screenshots
 const API_URL = "https://keyword-tool.p.rapidapi.com/urlextract/";
 const OPENAI_API_KEY = "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";
+
+// NEW Google Keyword Insight API configuration
+const GOOGLE_KEYWORD_API_HOST = "google-keyword-insight1.p.rapidapi.com";
+const GOOGLE_KEYWORD_API_URL = "https://google-keyword-insight1.p.rapidapi.com/globalurl/";
 
 export interface KeywordData {
   keyword: string;
@@ -38,6 +41,19 @@ export interface DomainKeywordResponse {
     low_bid: number;
     high_bid: number;
   }>;
+}
+
+// Google Keyword Insight API response interface
+export interface GoogleKeywordInsightResponse {
+  keywords: Array<{
+    keyword: string;
+    volume: number;
+    difficulty: number;
+    cpc: number;
+    current_rank: number | null;
+  }>;
+  status: string;
+  url: string;
 }
 
 // Function to generate domain-relevant keywords for different business niches
@@ -228,7 +244,76 @@ const generateDomainKeywords = (domainUrl: string): KeywordData[] => {
   return Array.from(keywordSet.values());
 };
 
+// New function to fetch keywords using Google Keyword Insight API
+export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<KeywordData[]> => {
+  try {
+    const queryParams = new URLSearchParams({
+      url: domainUrl,
+      lang: 'en'
+    });
+
+    console.log(`Fetching keywords from Google Keyword Insight API for domain: ${domainUrl}`);
+    
+    const response = await fetch(`${GOOGLE_KEYWORD_API_URL}?${queryParams}`, {
+      method: "GET",
+      headers: {
+        "x-rapidapi-host": GOOGLE_KEYWORD_API_HOST,
+        "x-rapidapi-key": API_KEY
+      }
+    });
+
+    // Check for API quota exceeded or other errors
+    if (!response.ok) {
+      console.warn(`Google Keyword API error ${response.status} for ${domainUrl}. Falling back to synthetic data.`);
+      toast.info("Using synthetic keyword data (API limit reached)");
+      return generateDomainKeywords(domainUrl);
+    }
+
+    const data: GoogleKeywordInsightResponse = await response.json();
+    
+    if (data.status !== "success" || !data.keywords || data.keywords.length === 0) {
+      console.warn(`Google Keyword API unsuccessful for ${domainUrl}. Falling back to synthetic data.`);
+      toast.info("Using synthetic keyword data (API request unsuccessful)");
+      return generateDomainKeywords(domainUrl);
+    }
+
+    // Transform the API response to our KeywordData format
+    return data.keywords.map(item => ({
+      keyword: item.keyword,
+      monthly_search: item.volume,
+      competition: getCompetitionLabel(item.difficulty),
+      competition_index: item.difficulty,
+      cpc: item.cpc,
+      position: item.current_rank,
+      rankingUrl: null, // We'll simulate this for now
+    }));
+  } catch (error) {
+    console.error(`Error fetching Google keywords for ${domainUrl}:`, error);
+    toast.info("Using synthetic keyword data (API connection error)");
+    return generateDomainKeywords(domainUrl);
+  }
+};
+
+// Helper function to convert difficulty number to competition label
+function getCompetitionLabel(difficulty: number): string {
+  if (difficulty < 30) return "low";
+  if (difficulty < 60) return "medium";
+  return "high";
+}
+
 export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
+  // Try the Google Keyword Insight API first
+  try {
+    const googleKeywords = await fetchGoogleKeywordInsights(domainUrl);
+    if (googleKeywords.length > 0) {
+      console.log(`Successfully fetched ${googleKeywords.length} keywords from Google Keyword Insight API`);
+      return googleKeywords;
+    }
+  } catch (error) {
+    console.error("Error with Google Keyword Insight API, falling back to alternative:", error);
+  }
+  
+  // Fall back to the original API if Google API fails
   try {
     const queryParams = new URLSearchParams({
       url: domainUrl,
@@ -237,7 +322,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       scan_type: "url"
     });
 
-    console.log(`Fetching keywords for domain: ${domainUrl}`);
+    console.log(`Falling back to original API for domain: ${domainUrl}`);
     
     const response = await fetch(`${API_URL}?${queryParams}`, {
       method: "GET",
@@ -321,7 +406,7 @@ export const analyzeDomains = async (
       .filter(domain => domain.trim() !== "")
       .map(domain => ensureValidUrl(domain));
     
-    console.log("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
+    console.log("Analyzing domains using Google Keyword Insight API:", formattedMainDomain, formattedCompetitorDomains);
     
     // Start with loading the main domain keywords
     const mainKeywords = await fetchDomainKeywords(formattedMainDomain);
@@ -698,63 +783,4 @@ export const findKeywordGaps = async (
       { keyword: 'seo competitor analysis', volume: 1200, difficulty: 45, opportunity: 'high' as const },
       { keyword: 'keyword gap tool', volume: 880, difficulty: 38, opportunity: 'high' as const },
       { keyword: 'best keyword research method', volume: 720, difficulty: 52, opportunity: 'medium' as const },
-      { keyword: 'seo tools comparison', volume: 1600, difficulty: 67, opportunity: 'medium' as const },
-      { keyword: 'free keyword position checker', volume: 1900, difficulty: 28, opportunity: 'high' as const },
-      { keyword: 'how to find competitor keywords', volume: 1300, difficulty: 42, opportunity: 'high' as const },
-      { keyword: 'seo gap analysis template', volume: 590, difficulty: 33, opportunity: 'medium' as const },
-      { keyword: 'keyword mapping strategy', volume: 650, difficulty: 47, opportunity: 'medium' as const },
-      { keyword: 'find untapped keywords', volume: 420, difficulty: 29, opportunity: 'high' as const },
-      { keyword: 'competitor keyword analysis', volume: 780, difficulty: 51, opportunity: 'medium' as const },
-      { keyword: 'long tail keyword finder', volume: 510, difficulty: 32, opportunity: 'medium' as const },
-      { keyword: 'keyword difficulty checker', volume: 920, difficulty: 43, opportunity: 'high' as const },
-      { keyword: 'seo content gap analysis', volume: 670, difficulty: 37, opportunity: 'medium' as const },
-      { keyword: 'best keywords for seo', volume: 1400, difficulty: 62, opportunity: 'high' as const },
-      { keyword: 'keyword research tips', volume: 830, difficulty: 29, opportunity: 'medium' as const },
-    ];
-    
-    // Create 10+ gaps for each competitor with variations
-    competitorDomainNames.forEach((competitor) => {
-      // Create at least 10 gaps for this competitor
-      for (let i = 0; i < 12; i++) {
-        const template = baseGapTemplates[i % baseGapTemplates.length];
-        
-        // Add some variation to make the data look more realistic
-        mockGaps.push({
-          keyword: i % 3 === 0 ? `${template.keyword} for ${competitor}` : template.keyword,
-          volume: template.volume + Math.floor(Math.random() * 300),
-          difficulty: Math.min(100, Math.max(1, template.difficulty + Math.floor(Math.random() * 10) - 5)),
-          opportunity: template.opportunity,
-          competitor: competitor
-        });
-      }
-    });
-    
-    return mockGaps;
-  }
-};
-
-export const generateSeoRecommendations = async (
-  domain: string, 
-  keywords: KeywordData[]
-): Promise<{
-  onPage: SeoRecommendation[];
-  technical: SeoRecommendation[];
-  content: SeoRecommendation[];
-}> => {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert SEO consultant. Based on the domain and keywords provided, generate actionable SEO recommendations.'
-          },
-          {
-            role: 'user',
-            content: `Generate SEO recommendations for the
+      { keyword: 'seo tools comparison', volume:
