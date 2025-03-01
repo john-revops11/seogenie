@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +5,8 @@ import { Loader2, Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Create a cache to store keyword gaps
 export const keywordGapsCache = {
@@ -15,7 +16,7 @@ export const keywordGapsCache = {
   keywordsLength: 0,
   selectedKeywords: [] as string[],
   page: 1,
-  itemsPerPage: 10
+  itemsPerPage: 15
 };
 
 interface KeywordGapCardProps {
@@ -99,8 +100,9 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const [loading, setLoading] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
   const [currentPage, setCurrentPage] = useState(keywordGapsCache.page || 1);
-  const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 10);
+  const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 15);
   const [displayedKeywords, setDisplayedKeywords] = useState<KeywordGap[]>([]);
+  const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
   
   // Generate keyword gaps based on keyword data
   useEffect(() => {
@@ -268,18 +270,24 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     generateKeywordGaps();
   }, [domain, competitorDomains, keywords, isLoading]);
 
-  // Effect for pagination
+  // Effect for pagination and filtering
   useEffect(() => {
     if (!keywordGaps) return;
     
+    // Filter by competitor if needed
+    let filteredKeywords = keywordGaps;
+    if (filterCompetitor !== "all") {
+      filteredKeywords = keywordGaps.filter(kw => kw.competitor === filterCompetitor);
+    }
+    
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    setDisplayedKeywords(keywordGaps.slice(startIndex, endIndex));
+    setDisplayedKeywords(filteredKeywords.slice(startIndex, endIndex));
     
     // Update cache
     keywordGapsCache.page = currentPage;
     keywordGapsCache.itemsPerPage = itemsPerPage;
-  }, [keywordGaps, currentPage, itemsPerPage]);
+  }, [keywordGaps, currentPage, itemsPerPage, filterCompetitor]);
 
   // Handle keyword selection
   const handleKeywordSelection = (keyword: string) => {
@@ -308,14 +316,9 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const addMoreKeywords = () => {
     if (!keywordGaps) return;
     
-    // Increase the items per page by 10
-    const newItemsPerPage = itemsPerPage + 10;
+    // Increase the items per page by 15
+    const newItemsPerPage = itemsPerPage + 15;
     setItemsPerPage(newItemsPerPage);
-    
-    // Update displayed keywords
-    const startIndex = (currentPage - 1) * newItemsPerPage;
-    const endIndex = startIndex + newItemsPerPage;
-    setDisplayedKeywords(keywordGaps.slice(startIndex, endIndex));
     
     // Update cache
     keywordGapsCache.itemsPerPage = newItemsPerPage;
@@ -325,7 +328,14 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   
   // Pagination handlers
   const goToNextPage = () => {
-    if (keywordGaps && currentPage < Math.ceil(keywordGaps.length / itemsPerPage)) {
+    if (!keywordGaps) return;
+    
+    let filteredKeywords = keywordGaps;
+    if (filterCompetitor !== "all") {
+      filteredKeywords = keywordGaps.filter(kw => kw.competitor === filterCompetitor);
+    }
+    
+    if (currentPage < Math.ceil(filteredKeywords.length / itemsPerPage)) {
       setCurrentPage(currentPage + 1);
     }
   };
@@ -336,8 +346,19 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     }
   };
 
+  // Handle competitor filter change
+  const handleCompetitorFilterChange = (value: string) => {
+    setFilterCompetitor(value);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
   // Calculate pagination info
-  const totalKeywords = keywordGaps?.length || 0;
+  const totalKeywords = keywordGaps ? (
+    filterCompetitor === "all" 
+      ? keywordGaps.length
+      : keywordGaps.filter(kw => kw.competitor === filterCompetitor).length
+  ) : 0;
+  
   const totalPages = Math.ceil(totalKeywords / itemsPerPage);
   const startItem = totalKeywords === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(startItem + itemsPerPage - 1, totalKeywords);
@@ -359,6 +380,16 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     }
   };
 
+  // Get unique competitor names for the filter
+  const getUniqueCompetitors = () => {
+    if (!keywordGaps) return [];
+    const competitors = new Set<string>();
+    keywordGaps.forEach(gap => {
+      if (gap.competitor) competitors.add(gap.competitor);
+    });
+    return Array.from(competitors);
+  };
+
   return (
     <Card className="animate-fade-in">
       <CardHeader>
@@ -373,50 +404,75 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           </Badge>
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {loading || isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : keywordGaps && keywordGaps.length > 0 ? (
-          <div className="space-y-4">
-            {displayedKeywords.map((gap, index) => {
-              const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty, gap.volume);
-              return (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-md hover:bg-muted transition-all">
-                  <div>
-                    <div className="font-medium">{gap.keyword}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="text-amber-500 font-medium">Rank {gap.rank}</span> on {gap.competitor}
-                      <Badge className={`text-xs ${getIntentBadgeColor(gap.keyword, gap.difficulty, gap.volume)}`}>
-                        {intent.charAt(0).toUpperCase() + intent.slice(1)}
+          <>
+            {/* Filters and controls */}
+            <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
+              <div className="w-full sm:w-auto">
+                <Select value={filterCompetitor} onValueChange={handleCompetitorFilterChange}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Filter by competitor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Competitors</SelectItem>
+                    {getUniqueCompetitors().map(comp => (
+                      <SelectItem key={comp} value={comp}>{comp}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Badge variant="outline">
+                  {totalKeywords} keyword gaps found
+                </Badge>
+              </div>
+            </div>
+            
+            {/* Keyword gaps table */}
+            <div className="space-y-4">
+              {displayedKeywords.map((gap, index) => {
+                const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty, gap.volume);
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-md hover:bg-muted transition-all">
+                    <div>
+                      <div className="font-medium">{gap.keyword}</div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="text-amber-500 font-medium">Rank {gap.rank}</span> on {gap.competitor}
+                        <Badge className={`text-xs ${getIntentBadgeColor(gap.keyword, gap.difficulty, gap.volume)}`}>
+                          {intent.charAt(0).toUpperCase() + intent.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {gap.volume.toLocaleString()} vol
                       </Badge>
+                      <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty)}`}>
+                        {gap.difficulty} KD
+                      </Badge>
+                      <Button 
+                        variant={selectedKeywords.includes(gap.keyword) ? "default" : "outline"}
+                        size="sm"
+                        className={`h-7 w-7 p-0 ${selectedKeywords.includes(gap.keyword) ? 'bg-revology text-white' : ''}`}
+                        onClick={() => handleKeywordSelection(gap.keyword)}
+                      >
+                        {selectedKeywords.includes(gap.keyword) ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <span className="text-xs">+</span>
+                        )}
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {gap.volume.toLocaleString()} vol
-                    </Badge>
-                    <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty)}`}>
-                      {gap.difficulty} KD
-                    </Badge>
-                    <Button 
-                      variant={selectedKeywords.includes(gap.keyword) ? "default" : "outline"}
-                      size="sm"
-                      className={`h-7 w-7 p-0 ${selectedKeywords.includes(gap.keyword) ? 'bg-revology text-white' : ''}`}
-                      onClick={() => handleKeywordSelection(gap.keyword)}
-                    >
-                      {selectedKeywords.includes(gap.keyword) ? (
-                        <Check className="h-3.5 w-3.5" />
-                      ) : (
-                        <span className="text-xs">+</span>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             No keyword gaps found. This could mean you're ranking well for most keywords in your niche!
@@ -449,15 +505,30 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
             </Button>
           </div>
           
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={addMoreKeywords}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Show More Keywords
-          </Button>
+          <div className="flex gap-2">
+            <Select 
+              value={itemsPerPage.toString()} 
+              onValueChange={(value) => setItemsPerPage(Number(value))}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Page size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15">15 per page</SelectItem>
+                <SelectItem value="30">30 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={addMoreKeywords}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Show More
+            </Button>
+          </div>
         </CardFooter>
       )}
     </Card>

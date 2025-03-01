@@ -7,7 +7,7 @@ export const findKeywordGaps = async (
   mainDomain: string,
   competitorDomains: string[],
   keywords: KeywordData[],
-  targetGapCount: number = 30 // Default to 30 gaps (aiming for at least 10 per competitor)
+  targetGapCount: number = 50 * competitorDomains.length // 50 gaps per competitor
 ): Promise<KeywordGap[]> => {
   try {
     if (!keywords.length) {
@@ -54,6 +54,10 @@ export const findKeywordGaps = async (
       // Convert to KeywordGap format
       const directGaps: KeywordGap[] = [];
       
+      // Create a map to track gaps by competitor to ensure even distribution
+      const gapsByCompetitor = new Map<string, KeywordGap[]>();
+      competitorDomainNames.forEach(comp => gapsByCompetitor.set(comp, []));
+      
       for (const kw of potentialGaps) {
         // Find the best-ranking competitor for this keyword
         let bestCompetitor = '';
@@ -83,42 +87,38 @@ export const findKeywordGaps = async (
           opportunity = 'low';
         }
         
-        directGaps.push({
+        const gap: KeywordGap = {
           keyword: kw.keyword,
           volume: kw.monthly_search,
           difficulty: kw.competition_index,
           opportunity: opportunity,
-          competitor: bestCompetitor
-        });
+          competitor: bestCompetitor,
+          rank: bestPosition
+        };
         
-        // Stop once we have enough gaps
-        if (directGaps.length >= targetGapCount) break;
+        // Add to the competitor's gaps array
+        const competitorGaps = gapsByCompetitor.get(bestCompetitor) || [];
+        if (competitorGaps.length < 50) { // Limit to 50 per competitor
+          competitorGaps.push(gap);
+          gapsByCompetitor.set(bestCompetitor, competitorGaps);
+        }
       }
       
-      // Check if we have enough gaps for each competitor
-      const gapsByCompetitor = new Map<string, number>();
-      directGaps.forEach(gap => {
-        const competitor = gap.competitor || "unknown";
-        gapsByCompetitor.set(competitor, (gapsByCompetitor.get(competitor) || 0) + 1);
-      });
-      
-      // If we have enough, return them
-      const hasEnoughPerCompetitor = competitorDomainNames.every(comp => 
-        (gapsByCompetitor.get(comp) || 0) >= 10
-      );
-      
-      if (hasEnoughPerCompetitor || directGaps.length >= targetGapCount) {
-        console.log("Returning directly identified gaps:", directGaps.length);
-        return directGaps;
+      // Combine all gaps from all competitors
+      for (const competitorGaps of gapsByCompetitor.values()) {
+        directGaps.push(...competitorGaps);
       }
+      
+      console.log("Returning directly identified gaps:", directGaps.length);
+      return directGaps;
     }
     
     // Fall back to OpenAI for analysis if we don't have enough direct gaps
     console.log("Using OpenAI to analyze keyword gaps");
     
-    // Ensure we're requesting at least 10 gaps per competitor
-    const minGapsPerCompetitor = Math.ceil(targetGapCount / competitorDomains.length);
-    const adjustedGapCount = Math.max(targetGapCount, minGapsPerCompetitor * competitorDomains.length);
+    // Ensure we're requesting up to 50 gaps per competitor
+    const minGapsPerCompetitor = 50;
+    const adjustedGapCount = minGapsPerCompetitor * competitorDomains.length;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -138,9 +138,9 @@ export const findKeywordGaps = async (
             content: `Analyze the keyword data for main domain "${mainDomainName}" and competitors ${competitorDomainNames.join(', ')}. 
             Identify the top keyword gaps (keywords competitors rank for that the main domain does not, or ranks poorly for).
             
-            I need at least ${minGapsPerCompetitor} keyword gaps for EACH competitor domain (${adjustedGapCount} total gaps).
+            I need up to ${minGapsPerCompetitor} keyword gaps for EACH competitor domain (${adjustedGapCount} total gaps maximum).
             
-            Keyword data: ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 50)))}
+            Keyword data: ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 100)))}
             
             For each keyword gap, include these properties:
             - keyword: string (the keyword)
@@ -170,7 +170,7 @@ export const findKeywordGaps = async (
             }
             
             IMPORTANT: You must include the competitor property for each gap to identify which competitor ranks for each keyword.
-            You must return at least ${minGapsPerCompetitor} keywords for each competitor.`
+            Try to provide up to ${minGapsPerCompetitor} keywords for each competitor (evenly distributed if possible).`
           }
         ],
         temperature: 0.7,
