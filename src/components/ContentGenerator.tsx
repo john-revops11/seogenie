@@ -21,37 +21,14 @@ interface ContentGeneratorProps {
   allKeywords: string[];
 }
 
-// Topic suggestion helper function - Enhanced for niche relevance
-const generateTopicSuggestions = (
-  domain: string,
-  keywordGaps: any[] = [],
-  seoRecommendations: {
-    onPage: SeoRecommendation[];
-    technical: SeoRecommendation[];
-    content: SeoRecommendation[];
-  } | null = null,
-  selectedKeywords: string[] = []
-): string[] => {
-  if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
-    return [];
-  }
-  
-  // Extract the domain niche based on the domain name and keywords
+// Enhanced domain analysis function
+const analyzeDomainNiche = (domain: string, keywords: string[] = []): string[] => {
   const domainName = domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0];
+  // Extract meaningful words from domain name
   const domainWords = domainName.split(/[^a-zA-Z0-9]/).filter(word => word.length > 3);
   
-  // Prioritize selected keywords when available
-  const keywordsToUse = selectedKeywords.length > 0 
-    ? selectedKeywords 
-    : keywordGaps?.map(gap => gap.keyword) || [];
-  
-  const contentRecs = seoRecommendations?.content || [];
-  
-  // Use a Set to avoid duplicate topics
-  const topics = new Set<string>();
-  
-  // Extract common themes/terms from keywords to identify the domain niche
-  const allWords = keywordsToUse.flatMap(keyword => 
+  // Extract common themes from keywords
+  const allWords = keywords.flatMap(keyword => 
     keyword.toLowerCase().split(/\s+/)
   );
   
@@ -66,157 +43,25 @@ const generateTopicSuggestions = (
   // Sort words by frequency to find common niche terms
   const nicheTerms = Object.entries(wordFrequency)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
+    .slice(0, 10)
     .map(([term]) => term);
   
   // Combine domain words with niche terms
   const relevantTerms = [...new Set([...domainWords, ...nicheTerms])];
-  console.log("Detected niche terms:", relevantTerms);
   
-  // Extract topics from keyword gaps with improved niche relevance
-  if (keywordsToUse.length > 0) {
-    // Group keywords by common terms to identify themes
-    const keywordGroups: Record<string, string[]> = {};
-    
-    keywordsToUse.forEach(keyword => {
-      // Check if keyword contains any relevant niche terms
-      const containsNicheTerm = relevantTerms.some(term => 
-        keyword.toLowerCase().includes(term.toLowerCase())
-      );
-      
-      // Extract potential main terms from each keyword
-      const words = keyword.split(' ');
-      if (words.length >= 2) {
-        // Try different combinations of words for potential topics
-        const mainTermOptions = [
-          words.slice(0, 2).join(' '), // First two words
-          words.length >= 3 ? words.slice(0, 3).join(' ') : null, // First three words
-          words[0] // Just the first word for broader topics
-        ].filter(Boolean) as string[];
-        
-        // Prioritize terms that contain niche-relevant words
-        const termsToPrioritize = containsNicheTerm 
-          ? mainTermOptions 
-          : mainTermOptions.filter(term => 
-              relevantTerms.some(nicheTerm => 
-                term.toLowerCase().includes(nicheTerm.toLowerCase())
-              )
-            );
-        
-        // If we have niche-relevant terms, use those, otherwise use all terms
-        const termsToUse = termsToPrioritize.length > 0 ? termsToPrioritize : mainTermOptions;
-        
-        termsToUse.forEach(mainTerm => {
-          if (!keywordGroups[mainTerm]) {
-            keywordGroups[mainTerm] = [];
-          }
-          keywordGroups[mainTerm].push(keyword);
-        });
-      } else if (words.length === 1) {
-        // Single word keyword
-        const mainTerm = words[0];
-        if (!keywordGroups[mainTerm]) {
-          keywordGroups[mainTerm] = [];
-        }
-        keywordGroups[mainTerm].push(keyword);
-      }
-    });
-    
-    // Filter groups that have at least 2 related keywords or contain niche terms
-    Object.entries(keywordGroups)
-      .filter(([term, keywords]) => {
-        // Keep if it has multiple keywords OR contains a niche term
-        return keywords.length >= 2 || 
-               relevantTerms.some(nicheTerm => 
-                 term.toLowerCase().includes(nicheTerm.toLowerCase())
-               );
-      })
-      .slice(0, 8) // Limit to avoid too many topics
-      .forEach(([mainTerm, keywords]) => {
-        // Create topic variations based on the keyword group
-        const topicName = mainTerm.charAt(0).toUpperCase() + mainTerm.slice(1);
-        
-        // Generate multiple topic formats based on the main term and niche
-        const topicVariations = [
-          `${topicName} Strategies for Growth`,
-          `${topicName} Optimization Guide`,
-          `${topicName} Framework`,
-          `Advanced ${topicName} Tactics`,
-          `${topicName} Best Practices`,
-          `Complete ${topicName} Guide`
-        ];
-        
-        // Add a few variations to the topics set
-        topicVariations.slice(0, 2).forEach(topic => topics.add(topic));
-      });
-  }
+  console.log("Domain niche analysis:", {
+    domain,
+    domainWords,
+    topNicheTerms: nicheTerms,
+    combinedRelevantTerms: relevantTerms
+  });
   
-  // Extract topics from SEO content recommendations with niche focus
-  if (contentRecs.length > 0) {
-    contentRecs.forEach(rec => {
-      const recommendation = rec.recommendation.toLowerCase();
-      
-      // Look for content recommendations that match the niche
-      const matchesNiche = relevantTerms.some(term => 
-        recommendation.includes(term.toLowerCase())
-      );
-      
-      // Prioritize high-priority or niche-relevant recommendations
-      if (rec.priority === 'high' || matchesNiche) {
-        // Format the recommendation as a topic
-        let topicName = '';
-        
-        if (recommendation.includes('create content about')) {
-          // Extract the topic from "Create content about X" format
-          const match = recommendation.match(/create content about ["'](.+?)["']/i);
-          if (match && match[1]) {
-            topicName = match[1].charAt(0).toUpperCase() + match[1].slice(1);
-          }
-        } else {
-          // Extract first part of the recommendation
-          const topicWords = recommendation.split(' ').slice(0, 4);
-          topicName = topicWords
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-        }
-        
-        if (topicName && topicName.length > 5) {
-          // Check if the topic is related to the niche
-          if (matchesNiche || 
-              relevantTerms.some(term => topicName.toLowerCase().includes(term.toLowerCase()))) {
-            topics.add(topicName);
-          }
-        }
-      }
-    });
-  }
-  
-  // If we don't have enough topics yet, generate some based on the niche terms
-  if (topics.size < 5 && relevantTerms.length > 0) {
-    const nicheBasedTopics = [
-      `${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Optimization Guide`,
-      `Best Practices for ${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)}`,
-      `${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Strategy Framework`,
-      `How to Improve Your ${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Performance`,
-      `${relevantTerms[0].charAt(0).toUpperCase() + relevantTerms[0].slice(1)} Trends and Insights`
-    ];
-    
-    nicheBasedTopics.forEach(topic => topics.add(topic));
-  }
-  
-  // Getting a clean array of topics
-  const uniqueTopics = Array.from(topics);
-  
-  // Generate some randomness to ensure new topics on regeneration
-  const randomSeed = Math.random();
-  const shuffledTopics = [...uniqueTopics].sort(() => randomSeed - 0.5);
-  
-  return shuffledTopics.slice(0, 8);
+  return relevantTerms;
 };
 
-// Title suggestion helper function - Enhanced for SEO relevance
-const generateTitleSuggestions = (
-  topic: string,
+// Enhanced topic suggestion function with stronger domain relevance
+const generateTopicSuggestions = (
+  domain: string,
   keywordGaps: any[] = [],
   seoRecommendations: {
     onPage: SeoRecommendation[];
@@ -226,10 +71,231 @@ const generateTitleSuggestions = (
   selectedKeywords: string[] = []
 ): string[] => {
   if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
+    return [];
+  }
+  
+  // Perform deep domain niche analysis
+  const keywordsToUse = selectedKeywords.length > 0 
+    ? selectedKeywords 
+    : keywordGaps?.map(gap => gap.keyword) || [];
+  
+  const nicheTerms = analyzeDomainNiche(domain, keywordsToUse);
+  console.log("Niche terms for topic generation:", nicheTerms);
+  
+  const contentRecs = seoRecommendations?.content || [];
+  
+  // Use a Set to avoid duplicate topics
+  const topics = new Set<string>();
+  
+  // First approach: Group keywords by semantic themes
+  const keywordThemes: Record<string, string[]> = {};
+  
+  keywordsToUse.forEach(keyword => {
+    // Check if keyword contains any niche terms
+    const relevantNicheTerms = nicheTerms.filter(term => 
+      keyword.toLowerCase().includes(term.toLowerCase())
+    );
+    
+    if (relevantNicheTerms.length > 0) {
+      // Use the most specific niche term (usually the longest one)
+      const primaryTerm = relevantNicheTerms.sort((a, b) => b.length - a.length)[0];
+      
+      if (!keywordThemes[primaryTerm]) {
+        keywordThemes[primaryTerm] = [];
+      }
+      keywordThemes[primaryTerm].push(keyword);
+    } else {
+      // For keywords without direct niche terms, group by first significant word
+      const words = keyword.split(' ');
+      const significantWord = words.find(w => w.length > 4) || words[0];
+      
+      if (!keywordThemes[significantWord]) {
+        keywordThemes[significantWord] = [];
+      }
+      keywordThemes[significantWord].push(keyword);
+    }
+  });
+  
+  // Identify top themes based on keyword count and relevance
+  const themeEntries = Object.entries(keywordThemes)
+    .map(([theme, keywords]) => ({
+      theme,
+      keywords,
+      nicheRelevance: nicheTerms.includes(theme) ? 3 : 
+                      nicheTerms.some(term => theme.includes(term)) ? 2 : 1,
+      keywordCount: keywords.length,
+      // Calculate the average search volume if volume data is available
+      avgVolume: keywords.reduce((sum, kw) => {
+        const gap = keywordGaps.find(g => g.keyword === kw);
+        return gap ? sum + gap.volume : sum;
+      }, 0) / keywords.length
+    }))
+    .sort((a, b) => {
+      // Sort first by niche relevance
+      if (a.nicheRelevance !== b.nicheRelevance) {
+        return b.nicheRelevance - a.nicheRelevance;
+      }
+      // Then by keyword count
+      if (a.keywordCount !== b.keywordCount) {
+        return b.keywordCount - a.keywordCount;
+      }
+      // Then by average volume
+      return b.avgVolume - a.avgVolume;
+    })
+    .slice(0, 10); // Get top 10 themes
+  
+  console.log("Top keyword themes:", themeEntries.map(t => `${t.theme} (${t.keywords.length} keywords)`));
+  
+  // Generate topics based on top themes
+  themeEntries.forEach(({theme, keywords}) => {
+    // Format the theme name for usage in topics
+    const themeFormatted = theme.charAt(0).toUpperCase() + theme.slice(1).toLowerCase();
+    
+    // Identify common modifiers in the keywords for this theme
+    const modifiers = new Set<string>();
+    keywords.forEach(kw => {
+      const kwWords = kw.toLowerCase().split(' ');
+      // Look for modifiers like "best", "top", "guide", etc.
+      const commonModifiers = ['best', 'top', 'guide', 'how', 'why', 'what', 'when', 'where', 'complete', 'ultimate'];
+      commonModifiers.forEach(mod => {
+        if (kwWords.includes(mod)) {
+          modifiers.add(mod);
+        }
+      });
+    });
+    
+    // Create diverse topic variations using the theme and its related keywords
+    const topicVariations = [
+      `${themeFormatted} Optimization Guide for ${domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0].toUpperCase()}`,
+      `Complete ${themeFormatted} Strategy for ${new Date().getFullYear()}`,
+      `How to Improve Your ${themeFormatted} Performance`,
+      `The Ultimate ${themeFormatted} Guide for ${domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0].charAt(0).toUpperCase() + domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0].slice(1)} Websites`,
+      `${themeFormatted} Best Practices that Drive Results`,
+    ];
+    
+    // If we have modifiers, use them to create additional topic variations
+    if (modifiers.size > 0) {
+      const modArray = Array.from(modifiers);
+      if (modArray.includes('how')) {
+        topics.add(`How to Master ${themeFormatted} for Better Visibility`);
+      }
+      
+      if (modArray.includes('best') || modArray.includes('top')) {
+        topics.add(`Top ${themeFormatted} Strategies for ${domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0].charAt(0).toUpperCase() + domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0].slice(1)} Sites`);
+      }
+      
+      if (modArray.includes('guide') || modArray.includes('complete') || modArray.includes('ultimate')) {
+        topics.add(`The Definitive ${themeFormatted} Blueprint`);
+      }
+    }
+    
+    // Add a few variations to the topics set
+    topicVariations.slice(0, 2).forEach(topic => topics.add(topic));
+  });
+  
+  // Second approach: Analyze SEO content recommendations for topic ideas
+  if (contentRecs.length > 0) {
+    contentRecs.forEach(rec => {
+      const recommendation = rec.recommendation.toLowerCase();
+      
+      // Look for content recommendations that match the niche
+      const matchesNiche = nicheTerms.some(term => 
+        recommendation.includes(term.toLowerCase())
+      );
+      
+      // Prioritize high-priority or niche-relevant recommendations
+      if (rec.priority === 'high' || matchesNiche) {
+        // Extract potential topics from the recommendation
+        if (recommendation.includes('create content about') || 
+            recommendation.includes('write about') || 
+            recommendation.includes('focus on')) {
+          // Try to extract the topic from different recommendation patterns
+          let extractedTopic = '';
+          
+          const patterns = [
+            /create content about ["'](.+?)["']/i,
+            /write about ["'](.+?)["']/i,
+            /focus on ["'](.+?)["']/i,
+            /create (.+?) content/i,
+            /focus on (.+?)(?:\.|$)/i
+          ];
+          
+          for (const pattern of patterns) {
+            const match = recommendation.match(pattern);
+            if (match && match[1]) {
+              extractedTopic = match[1].trim();
+              break;
+            }
+          }
+          
+          if (extractedTopic) {
+            const formattedTopic = extractedTopic.charAt(0).toUpperCase() + extractedTopic.slice(1);
+            topics.add(`${formattedTopic}: A Comprehensive Guide`);
+            topics.add(`Mastering ${formattedTopic} for Better Rankings`);
+          }
+        }
+      }
+    });
+  }
+  
+  // Third approach: Create synthetic topics based on domain name and niche terms
+  const domainName = domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0];
+  const formattedDomainName = domainName.charAt(0).toUpperCase() + domainName.slice(1);
+  
+  // Use 2-3 of the most relevant niche terms to create domain-specific topics
+  const topNicheTerms = nicheTerms.slice(0, 3);
+  topNicheTerms.forEach(term => {
+    const formattedTerm = term.charAt(0).toUpperCase() + term.slice(1);
+    topics.add(`${formattedTerm} Strategies for ${formattedDomainName} Success`);
+    topics.add(`How ${formattedDomainName} Experts Approach ${formattedTerm}`);
+  });
+  
+  // Getting a clean array of topics and ensuring diversity
+  let uniqueTopics = Array.from(topics);
+  
+  // Generate some randomness to ensure new topics on regeneration
+  const randomSeed = Math.random();
+  const shuffledTopics = [...uniqueTopics].sort(() => randomSeed - 0.5);
+  
+  // Ensure we have at least 8 topics
+  if (shuffledTopics.length < 8 && nicheTerms.length > 0) {
+    const genericTopics = [
+      `${nicheTerms[0].charAt(0).toUpperCase() + nicheTerms[0].slice(1)} Optimization Guide`,
+      `Best Practices for ${nicheTerms[0].charAt(0).toUpperCase() + nicheTerms[0].slice(1)}`,
+      `${nicheTerms[0].charAt(0).toUpperCase() + nicheTerms[0].slice(1)} Strategy Framework`,
+      `How to Improve Your ${nicheTerms[0].charAt(0).toUpperCase() + nicheTerms[0].slice(1)} Performance`,
+      `${nicheTerms[0].charAt(0).toUpperCase() + nicheTerms[0].slice(1)} Trends and Insights`
+    ];
+    
+    genericTopics.forEach(topic => {
+      if (!topics.has(topic)) {
+        topics.add(topic);
+      }
+    });
+    
+    uniqueTopics = Array.from(topics);
+  }
+  
+  return shuffledTopics.slice(0, 8);
+};
+
+// Enhanced title suggestion function with SEO optimization
+const generateTitleSuggestions = (
+  topic: string,
+  keywordGaps: any[] = [],
+  seoRecommendations: {
+    onPage: SeoRecommendation[];
+    technical: SeoRecommendation[];
+    content: SeoRecommendation[];
+  } | null = null,
+  selectedKeywords: string[] = [],
+  domain: string = ""
+): string[] => {
+  if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
     return [
-      `Guide to ${topic}`,
-      `${topic}: Best Practices`,
-      `Understanding ${topic}`
+      `Complete Guide to ${topic}`,
+      `${topic}: Best Practices for ${new Date().getFullYear()}`,
+      `Mastering ${topic}: Expert Strategies`
     ];
   }
   
@@ -238,17 +304,21 @@ const generateTitleSuggestions = (
     ? selectedKeywords 
     : keywordGaps?.map(gap => gap.keyword) || [];
   
+  // Get domain name for branding titles
+  const domainName = domain.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0];
+  const formattedDomainName = domainName.charAt(0).toUpperCase() + domainName.slice(1);
+  
   // Use a Set to avoid duplicate titles
   const titles = new Set<string>();
   
   // Find keywords related to the selected topic
+  const topicWords = topic.toLowerCase().split(' ').filter(w => w.length > 3);
   const relatedKeywords = keywordsToUse.filter(keyword => {
     const keywordLower = keyword.toLowerCase();
-    const topicWords = topic.toLowerCase().split(' ');
-    return topicWords.some(word => keywordLower.includes(word) && word.length > 3);
+    return topicWords.some(word => keywordLower.includes(word));
   });
   
-  // Find the most relevant keywords based on search volume or opportunity
+  // Find high-volume, high-opportunity keywords for SEO optimization
   const prioritizedKeywords = relatedKeywords
     .map(keyword => {
       const relatedGap = keywordGaps.find(gap => gap.keyword === keyword);
@@ -270,53 +340,65 @@ const generateTitleSuggestions = (
     .slice(0, 5)
     .map(item => item.keyword);
   
-  // Generate titles from the most relevant keywords
+  console.log("Related keywords for title suggestions:", prioritizedKeywords);
+  
+  // Generate titles that incorporate high-value keywords
   prioritizedKeywords.forEach(keyword => {
-    // Create variations of titles incorporating the keyword
+    // Format keyword for title usage
     const keywordFormat = keyword.charAt(0).toUpperCase() + keyword.slice(1);
-    titles.add(`${topic}: Complete Guide to ${keywordFormat}`);
-    titles.add(`How ${topic} Improves Your ${keywordFormat} Strategy`);
-    titles.add(`${keywordFormat}: The Ultimate ${topic} Approach`);
+    
+    // Generate titles that incorporate both the topic and keyword
+    titles.add(`${topic}: The Ultimate Guide to ${keywordFormat}`);
+    titles.add(`How to Master ${keywordFormat} with Proven ${topic} Strategies`);
+    
+    // Add domain-branded titles for better relevance
+    if (domain) {
+      titles.add(`${formattedDomainName}'s Guide to ${keywordFormat} and ${topic}`);
+    }
   });
   
   // Use SEO content recommendations for title inspiration
   const contentRecs = seoRecommendations?.content || [];
   contentRecs.forEach(rec => {
     const recommendation = rec.recommendation;
+    
     // Match recommendations to topic
     const topicWords = topic.toLowerCase().split(' ').filter(w => w.length > 3);
     const containsTopicWord = topicWords.some(word => 
       recommendation.toLowerCase().includes(word)
     );
     
-    if (containsTopicWord) {
+    if (containsTopicWord || rec.priority === 'high') {
       // Extract useful phrases from recommendation
-      let titlePhrase = recommendation.split(':').pop()?.trim() || 'Best Practices and Strategies';
+      let titlePhrase = recommendation.split(':').pop()?.trim() || '';
       titlePhrase = titlePhrase.replace(/^["']|["']$/g, ''); // Remove quotes if present
       
-      // Create a title using the topic and the phrase
-      titles.add(`${topic}: ${titlePhrase.charAt(0).toUpperCase() + titlePhrase.slice(1)}`);
+      if (titlePhrase.length > 10) {
+        // Create a title using the topic and the phrase
+        const formattedPhrase = titlePhrase.charAt(0).toUpperCase() + titlePhrase.slice(1);
+        titles.add(`${topic}: ${formattedPhrase}`);
+      }
     }
   });
   
-  // If we don't have enough titles yet, add some SEO-optimized formats
-  if (titles.size < 3) {
-    const seoFormats = [
-      `Ultimate Guide to ${topic} [${new Date().getFullYear()}]`,
-      `${topic}: Expert Strategies That Drive Results`,
-      `${topic} 101: Everything You Need to Know`,
-      `The Complete ${topic} Framework for Success`,
-      `${topic} Mastery: Proven Techniques and Tips`
-    ];
-    
-    seoFormats.forEach(title => titles.add(title));
-  }
+  // Ensure we have SEO-optimized title formats
+  const currentYear = new Date().getFullYear();
+  const seoFormats = [
+    `${topic} in ${currentYear}: Complete Guide & Best Practices`,
+    `The Ultimate ${topic} Framework for ${formattedDomainName} Success`,
+    `${topic} Mastery: Step-by-Step Strategy for Better Results`,
+    `${topic}: What Every ${formattedDomainName} Expert Should Know`,
+    `${topic} Guide: Proven Strategies That Drive Rankings`
+  ];
+  
+  seoFormats.forEach(title => titles.add(title));
   
   // Generate some randomness to ensure new titles on regeneration
   const randomSeed = Math.random();
   const shuffledTitles = Array.from(titles).sort(() => randomSeed - 0.5);
   
-  return shuffledTitles.slice(0, 3);
+  // Return a good mix of titles (at least 5)
+  return shuffledTitles.slice(0, Math.max(5, Math.min(shuffledTitles.length, 10)));
 };
 
 const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
@@ -370,7 +452,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   }, []);
   
-  // Generate initial topic suggestions
+  // Generate initial topic suggestions with enhanced domain relevance
   const generateInitialTopics = () => {
     setIsLoadingTopics(true);
     
@@ -382,13 +464,14 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       console.log("Generating topics with domain:", domain);
       console.log("Selected keywords for topic generation:", selectedKeywords);
       
+      // Generate domain-relevant topics
       const generatedTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       setTopics(generatedTopics);
       
-      // Generate titles for each topic
+      // Generate titles for each topic with enhanced SEO relevance
       const titlesMap: {[topic: string]: string[]} = {};
       generatedTopics.forEach(topic => {
-        titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+        titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords, domain);
       });
       
       setTitleSuggestions(titlesMap);
@@ -402,7 +485,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
-  // Handle adding a custom topic
+  // Handle adding a custom topic with enhanced title generation
   const handleAddCustomTopic = () => {
     if (!customTopic.trim()) {
       toast.error("Please enter a custom topic");
@@ -413,12 +496,12 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     const newTopic = customTopic.trim();
     setTopics(prev => [newTopic, ...prev.slice(0, 7)]);
     
-    // Generate titles for the custom topic
+    // Generate SEO-optimized titles for the custom topic
     const gaps = keywordGapsCache.data || [];
     const recommendations = recommendationsCache.data;
     const selectedKeywords = keywordGapsCache.selectedKeywords || [];
     
-    const titles = generateTitleSuggestions(newTopic, gaps, recommendations, selectedKeywords);
+    const titles = generateTitleSuggestions(newTopic, gaps, recommendations, selectedKeywords, domain);
     
     setTitleSuggestions(prev => ({
       ...prev,
@@ -504,7 +587,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     toast.success("Topic removed");
   };
   
-  // Regenerate topic suggestions with improved handling
+  // Regenerate topic suggestions with improved variety
   const handleRegenerateTopics = () => {
     setIsLoadingTopics(true);
     
@@ -513,10 +596,11 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const recommendations = recommendationsCache.data;
       const selectedKeywords = keywordGapsCache.selectedKeywords || [];
       
-      // Create a different randomSeed each time
+      // Create a different randomSeed each time for more variety
       const randomSeed = Math.random() + new Date().getTime();
-      console.log("Regenerating topics with seed:", randomSeed);
+      console.log("Regenerating topics with random seed:", randomSeed);
       
+      // Generate a fresh set of topics
       const newTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       
       // Ensure we get different topics than what we currently have
@@ -524,28 +608,31 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const filteredNewTopics = newTopics.filter(topic => !currentTopicsSet.has(topic));
       
       if (filteredNewTopics.length < 3) {
-        // If we don't have enough different topics, try again with different variations
-        console.log("Not enough unique topics, generating alternatives");
+        // If we don't have enough different topics, force more variety
+        console.log("Not enough unique topics, generating alternatives with different parameters");
         
-        // Force some variation by changing the priority of keywords
+        // Change the priority of keywords to get different themes
         const reorderedKeywords = [...selectedKeywords].reverse();
+        
+        // Try with a different approach by adjusting the seed and keywords
         const alternativeTopics = generateTopicSuggestions(domain, gaps, recommendations, reorderedKeywords);
         
         // Generate titles for each new topic
         const titlesMap: {[topic: string]: string[]} = {};
         alternativeTopics.forEach(topic => {
-          titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+          titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords, domain);
         });
         
         setTopics(alternativeTopics);
         setTitleSuggestions(titlesMap);
       } else {
-        setTopics(newTopics);
+        // Use the filtered new topics
+        setTopics(filteredNewTopics);
         
         // Generate titles for each new topic
         const titlesMap: {[topic: string]: string[]} = {};
-        newTopics.forEach(topic => {
-          titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+        filteredNewTopics.forEach(topic => {
+          titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords, domain);
         });
         
         setTitleSuggestions(titlesMap);
@@ -750,277 +837,3 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                       onClick={handleAddCustomTopic}
                       disabled={!customTopic.trim()}
                       className="bg-revology hover:bg-revology-dark"
-                    >
-                      Add
-                    </Button>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowCustomTopicInput(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-                
-                <div className="grid md:grid-cols-2 gap-4 mt-4">
-                  {isLoadingTopics ? (
-                    <div className="col-span-2 flex justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : topics.length > 0 ? (
-                    topics.map((topic, topicIndex) => (
-                      <Card 
-                        key={topicIndex} 
-                        className={`overflow-hidden transition-all ${selectedTopic === topic ? 'border-revology/50 shadow-md' : ''}`}
-                      >
-                        <CardHeader className="py-3 px-4 bg-gradient-to-r from-revology-light/20 to-transparent">
-                          {isEditingTopic === topic ? (
-                            <div className="flex items-center gap-2">
-                              <Input 
-                                value={editedTopicText}
-                                onChange={(e) => setEditedTopicText(e.target.value)}
-                                className="flex-1"
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0 text-green-600"
-                                onClick={handleSaveEditedTopic}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-base font-bold text-revology-dark">
-                                {topic}
-                              </CardTitle>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => handleStartEditingTopic(topic)}
-                                >
-                                  <Edit className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => handleDeleteTopic(topic)}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </CardHeader>
-                        <CardContent className="pb-4 px-4">
-                          <div className="space-y-2 mt-2">
-                            {titleSuggestions[topic] ? (
-                              titleSuggestions[topic].map((topicTitle, titleIndex) => (
-                                <div 
-                                  key={titleIndex}
-                                  className={`p-2 rounded-md cursor-pointer text-sm ${
-                                    selectedTopic === topic && title === topicTitle 
-                                      ? 'bg-revology-light/30 text-revology border border-revology/30' 
-                                      : 'bg-muted/50 hover:bg-muted'
-                                  }`}
-                                  onClick={() => {
-                                    handleSelectTopic(topic);
-                                    handleSelectTitle(topicTitle);
-                                  }}
-                                >
-                                  {topicTitle}
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-sm text-muted-foreground">No title suggestions available</div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="col-span-2 text-center py-8 text-muted-foreground">
-                      No topics available. Try selecting keywords from the Keyword Gaps card or add a custom topic.
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <Separator className="my-4" />
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Selected Title</Label>
-                  <Input 
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Select a topic and title, or enter a custom title"
-                    className={selectedTopic ? "border-revology/30 focus-visible:ring-revology/20" : ""}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Content Type</Label>
-                  <Select value={contentType} onValueChange={setContentType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select content type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="blog">Blog Post</SelectItem>
-                      <SelectItem value="article">Article</SelectItem>
-                      <SelectItem value="whitepaper">White Paper</SelectItem>
-                      <SelectItem value="casestudy">Case Study</SelectItem>
-                      <SelectItem value="guide">Guide</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label>Creativity</Label>
-                    <span className="text-xs text-muted-foreground">{creativity}%</span>
-                  </div>
-                  <Slider
-                    value={[creativity]}
-                    min={0}
-                    max={100}
-                    step={10}
-                    onValueChange={(value) => setCreativity(value[0])}
-                    className="py-2"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1">
-                    <span>Factual</span>
-                    <span>Creative</span>
-                  </div>
-                </div>
-              </div>
-              
-              <Button 
-                className="w-full mt-6 bg-revology hover:bg-revology-dark" 
-                onClick={handleGenerateContent}
-                disabled={isGenerating || !title || (keywordGapsCache.selectedKeywords.length === 0)}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate Content"
-                )}
-              </Button>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="preview" className="space-y-6">
-            {generatedContent && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xl font-semibold">{generatedContent.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {generatedContent.metaDescription}
-                    </p>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex items-center gap-1"
-                      onClick={handleCopy}
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex items-center gap-1"
-                      onClick={handleDownload}
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <Textarea 
-                      className="min-h-[400px] font-mono text-sm"
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setIsEditing(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleSaveEdits}
-                      >
-                        Save Changes
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-4 article-content" dangerouslySetInnerHTML={{
-                        __html: generatedContent.content
-                          .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-6 mb-4">$1</h1>')
-                          .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-semibold mt-5 mb-3">$1</h2>')
-                          .replace(/^### (.*$)/gim, '<h3 class="text-xl font-medium mt-4 mb-2">$1</h3>')
-                          .replace(/^#### (.*$)/gim, '<h4 class="text-lg font-medium mt-3 mb-2">$1</h4>')
-                          .replace(/^\* (.*$)/gim, '<li class="ml-6 list-disc">$1</li>')
-                          .replace(/^- (.*$)/gim, '<li class="ml-6 list-disc">$1</li>')
-                          .replace(/^(\d+\. )(.*$)/gim, '<li class="ml-6 list-decimal">$2</li>')
-                          .replace(/<\/li>\n<li/g, '</li><li')
-                          .replace(/^\n\n/gim, '</p><p class="my-3">')
-                          .replace(/\n\n/gim, '</p><p class="my-3">')
-                          .replace(/\n/gim, '<br>')
-                          .replace(/<\/p><p/g, '</p>\n<p')
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                      }} />
-                    </ScrollArea>
-                    
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        className="flex items-center gap-1" 
-                        onClick={handleEditContent}
-                      >
-                        <FileEdit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button 
-                        className="flex items-center gap-1 bg-revology hover:bg-revology-dark" 
-                        onClick={handleRegenerateContent}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        Regenerate
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default ContentGenerator;
