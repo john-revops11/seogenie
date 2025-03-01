@@ -1,3 +1,4 @@
+<lov-code>
 import { toast } from "sonner";
 
 // API configuration
@@ -39,6 +40,194 @@ export interface DomainKeywordResponse {
   }>;
 }
 
+// Function to generate domain-relevant keywords for different business niches
+const generateDomainKeywords = (domainUrl: string): KeywordData[] => {
+  const domainName = new URL(domainUrl).hostname.replace(/^www\./, '');
+  const baseTerms = domainName.split(/[^a-zA-Z0-9]/).filter(term => term.length > 3);
+  
+  // Determine domain category from domain name
+  let industry = "general";
+  
+  // Check domain for common industry indicators
+  const domainLower = domainName.toLowerCase();
+  if (domainLower.includes("analytics") || domainLower.includes("insight") || domainLower.includes("data")) {
+    industry = "analytics";
+  } else if (domainLower.includes("marketing") || domainLower.includes("advert") || domainLower.includes("brand")) {
+    industry = "marketing";
+  } else if (domainLower.includes("revenue") || domainLower.includes("pricing") || domainLower.includes("finance")) {
+    industry = "revenue";
+  } else if (domainLower.includes("software") || domainLower.includes("tech") || domainLower.includes("app")) {
+    industry = "tech";
+  } else if (domainLower.includes("retail") || domainLower.includes("shop") || domainLower.includes("store")) {
+    industry = "retail";
+  }
+  
+  console.log(`Generating synthetic keywords for ${domainName} (detected industry: ${industry})`);
+  
+  // Industry-specific keywords libraries with realistic patterns
+  const keywordLibraries: Record<string, string[]> = {
+    analytics: [
+      "data analytics strategy", "business intelligence solutions", "analytics dashboard", 
+      "predictive analytics tools", "data visualization software", "customer data insights",
+      "analytics implementation", "reporting automation", "data-driven decision making",
+      "analytics ROI", "KPI tracking", "analytics consulting services",
+      "marketing analytics", "performance metrics", "data analysis methods"
+    ],
+    marketing: [
+      "marketing strategy development", "campaign optimization", "brand positioning",
+      "marketing ROI measurement", "customer acquisition strategy", "conversion rate optimization",
+      "digital marketing analytics", "content strategy", "customer journey mapping",
+      "market segmentation", "marketing attribution modeling", "multichannel marketing"
+    ],
+    revenue: [
+      "revenue growth management", "pricing strategy", "profit optimization",
+      "revenue forecasting models", "pricing analytics", "monetization strategy",
+      "dynamic pricing implementation", "revenue leakage analysis", "price elasticity testing",
+      "discount strategy optimization", "customer lifetime value", "subscription pricing models"
+    ],
+    tech: [
+      "software implementation", "technology ROI", "tech stack optimization",
+      "digital transformation strategy", "SaaS platform selection", "IT cost optimization",
+      "enterprise software integration", "technical performance metrics", "cloud migration strategy",
+      "software vendor evaluation", "technology roadmap", "API integration"
+    ],
+    retail: [
+      "retail analytics", "inventory optimization", "retail pricing strategy",
+      "omnichannel retail", "customer segmentation", "category management",
+      "merchandising effectiveness", "retail performance metrics", "shelf space optimization",
+      "retail growth strategy", "assortment planning", "product mix optimization"
+    ],
+    general: [
+      "business strategy", "performance improvement", "operational efficiency",
+      "cost reduction strategy", "growth strategy", "business transformation",
+      "process optimization", "competitive analysis", "market research",
+      "benchmarking metrics", "business intelligence", "strategic planning"
+    ]
+  };
+  
+  // Generic high-volume business terms that apply to most businesses
+  const commonBusinessTerms = [
+    "ROI analytics", "business growth strategy", "performance metrics", 
+    "optimization strategy", "strategic planning", "implementation framework",
+    "competitive advantage", "business transformation", "operational excellence",
+    "data-driven strategy", "market analysis", "best practices",
+    "consulting services", "value proposition", "business case development"
+  ];
+  
+  // Select keyword library based on industry
+  const industryKeywords = keywordLibraries[industry] || keywordLibraries.general;
+  
+  // Generate domain-specific variations by combining domain terms with industry keywords
+  const domainSpecificKeywords: KeywordData[] = [];
+  
+  // Add some base terms first
+  baseTerms.forEach(term => {
+    if (term.length > 3) {
+      domainSpecificKeywords.push({
+        keyword: term,
+        monthly_search: Math.floor(Math.random() * 3000) + 1000,
+        competition: Math.random() > 0.5 ? "high" : "medium",
+        competition_index: Math.floor(Math.random() * 70) + 30,
+        cpc: parseFloat((Math.random() * 5 + 1).toFixed(2))
+      });
+    }
+  });
+  
+  // Use industry-specific keywords
+  industryKeywords.forEach(keyword => {
+    // Create a base keyword entry
+    domainSpecificKeywords.push({
+      keyword: keyword,
+      monthly_search: Math.floor(Math.random() * 5000) + 500,
+      competition: Math.random() > 0.6 ? "high" : Math.random() > 0.3 ? "medium" : "low",
+      competition_index: Math.floor(Math.random() * 100) + 1,
+      cpc: parseFloat((Math.random() * 10 + 0.5).toFixed(2))
+    });
+    
+    // Create a domain-specific version for some keywords
+    if (Math.random() > 0.5 && baseTerms.length > 0) {
+      const baseTerm = baseTerms[Math.floor(Math.random() * baseTerms.length)];
+      if (baseTerm && baseTerm.length > 3) {
+        domainSpecificKeywords.push({
+          keyword: `${baseTerm} ${keyword}`,
+          monthly_search: Math.floor(Math.random() * 2000) + 100,
+          competition: Math.random() > 0.5 ? "medium" : "low",
+          competition_index: Math.floor(Math.random() * 50) + 20,
+          cpc: parseFloat((Math.random() * 8 + 0.5).toFixed(2))
+        });
+      }
+    }
+  });
+  
+  // Add common business terms
+  commonBusinessTerms.forEach(term => {
+    // Create a domain-specific version for business terms
+    if (baseTerms.length > 0) {
+      const baseTerm = baseTerms[Math.floor(Math.random() * baseTerms.length)];
+      if (baseTerm && baseTerm.length > 3) {
+        domainSpecificKeywords.push({
+          keyword: `${baseTerm} ${term}`,
+          monthly_search: Math.floor(Math.random() * 3000) + 200,
+          competition: Math.random() > 0.6 ? "high" : "medium",
+          competition_index: Math.floor(Math.random() * 60) + 40,
+          cpc: parseFloat((Math.random() * 15 + 1).toFixed(2))
+        });
+      }
+    }
+    
+    // Also add the generic term
+    domainSpecificKeywords.push({
+      keyword: term,
+      monthly_search: Math.floor(Math.random() * 5000) + 1000,
+      competition: Math.random() > 0.7 ? "high" : "medium",
+      competition_index: Math.floor(Math.random() * 80) + 20,
+      cpc: parseFloat((Math.random() * 12 + 2).toFixed(2))
+    });
+  });
+  
+  // Add industry-specific combinations
+  if (industry === "revenue" || industry === "analytics") {
+    const revenueTerms = [
+      "pricing strategy", "revenue optimization", "profit analysis",
+      "pricing analytics", "revenue growth management", "monetization strategy",
+      "pricing models", "revenue forecasting", "customer lifetime value"
+    ];
+    
+    revenueTerms.forEach(term => {
+      domainSpecificKeywords.push({
+        keyword: term,
+        monthly_search: Math.floor(Math.random() * 2000) + 500,
+        competition: "high",
+        competition_index: Math.floor(Math.random() * 30) + 70, // Higher competition
+        cpc: parseFloat((Math.random() * 20 + 5).toFixed(2)) // Higher CPC
+      });
+      
+      // Create domain-specific versions
+      if (baseTerms.length > 0) {
+        const baseTerm = baseTerms[Math.floor(Math.random() * baseTerms.length)];
+        if (baseTerm && baseTerm.length > 3) {
+          domainSpecificKeywords.push({
+            keyword: `${baseTerm} ${term}`,
+            monthly_search: Math.floor(Math.random() * 1000) + 200,
+            competition: Math.random() > 0.5 ? "high" : "medium",
+            competition_index: Math.floor(Math.random() * 40) + 50,
+            cpc: parseFloat((Math.random() * 15 + 3).toFixed(2))
+          });
+        }
+      }
+    });
+  }
+  
+  // Create a set to remove duplicates
+  const keywordSet = new Map<string, KeywordData>();
+  domainSpecificKeywords.forEach(item => {
+    keywordSet.set(item.keyword, item);
+  });
+  
+  // Convert back to array and return
+  return Array.from(keywordSet.values());
+};
+
 export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
     const queryParams = new URLSearchParams({
@@ -58,19 +247,27 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       }
     });
 
+    // Check for API quota exceeded or other errors
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      console.warn(`API error ${response.status} for ${domainUrl}. Falling back to synthetic data.`);
+      toast.info("Using synthetic keyword data (API limit reached)");
+      return generateDomainKeywords(domainUrl);
     }
 
     const data: DomainKeywordResponse = await response.json();
     
     if (!data.success) {
-      console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
-      throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
+      console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}. Falling back to synthetic data.`);
+      toast.info("Using synthetic keyword data (API request unsuccessful)");
+      return generateDomainKeywords(domainUrl);
     }
 
-    // Get domain's base URL for forming ranking URLs
-    const baseUrl = new URL(domainUrl).origin;
+    // If API returns no keywords, fall back to synthetic data
+    if (!data.data || data.data.length === 0) {
+      console.warn(`API returned no keywords for ${domainUrl}. Falling back to synthetic data.`);
+      toast.info("Using synthetic keyword data (no keywords found)");
+      return generateDomainKeywords(domainUrl);
+    }
 
     // Transform the API response to our KeywordData format
     return data.data.map(item => ({
@@ -84,8 +281,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     }));
   } catch (error) {
     console.error(`Error fetching domain keywords for ${domainUrl}:`, error);
-    toast.error(`Failed to fetch keywords for ${domainUrl}: ${(error as Error).message}`);
-    return [];
+    toast.info("Using synthetic keyword data (API connection error)");
+    return generateDomainKeywords(domainUrl);
   }
 };
 
@@ -560,199 +757,4 @@ export const generateSeoRecommendations = async (
           },
           {
             role: 'user',
-            content: `Generate SEO recommendations for the domain "${domain}" based on these keywords: ${JSON.stringify(keywords.slice(0, 15))}. 
-            Return recommendations for these categories: 
-            1. On-Page SEO (HTML, content, structure)
-            2. Technical SEO (speed, mobile-friendliness, etc.)
-            3. Content Strategy (topics, formats, etc.)
-            
-            For each recommendation include:
-            - type (onPage, technical, or content)
-            - recommendation (string with the main recommendation)
-            - priority (high, medium, or low)
-            - details (optional string with more details)
-            - implementationDifficulty (easy, medium, or hard)
-            
-            Format your response as a JSON object with three arrays: onPage, technical, and content, each containing the recommendations for that category.`
-          }
-        ],
-        temperature: 0.7,
-        response_format: { type: 'json_object' }
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  } catch (error) {
-    console.error("Error generating SEO recommendations:", error);
-    toast.error(`Failed to generate SEO recommendations: ${(error as Error).message}`);
-    
-    // Return mock recommendations if the API fails, but structure them correctly
-    return {
-      onPage: [
-        { type: 'onPage', recommendation: 'Add primary keyword to H1 tags', priority: 'high', details: 'Ensure your primary keyword appears in the main heading of each page', implementationDifficulty: 'easy' },
-        { type: 'onPage', recommendation: 'Improve meta descriptions with keywords', priority: 'medium', details: 'Include primary and secondary keywords in meta descriptions while keeping them under 160 characters', implementationDifficulty: 'easy' },
-      ],
-      technical: [
-        { type: 'technical', recommendation: 'Improve page load speed on mobile', priority: 'high', details: 'Optimize images and implement lazy loading to improve mobile performance', implementationDifficulty: 'medium' },
-        { type: 'technical', recommendation: 'Fix broken links in blog section', priority: 'medium', details: 'Perform a site audit to identify and fix any broken links', implementationDifficulty: 'medium' },
-      ],
-      content: [
-        { type: 'content', recommendation: 'Create content about "keyword research methods"', priority: 'high', details: 'Develop comprehensive guides on keyword research methodology', implementationDifficulty: 'medium' },
-        { type: 'content', recommendation: 'Develop comparison posts about tools', priority: 'medium', details: 'Create in-depth comparisons of popular tools in your industry', implementationDifficulty: 'medium' },
-      ]
-    };
-  }
-};
-
-export const generateContent = async (
-  domain: string,
-  title: string,
-  keywords: string[],
-  contentType: string,
-  creativity: number
-): Promise<{
-  title: string;
-  metaDescription: string;
-  outline: string[];
-  content: string;
-}> => {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a leading Pricing & Analytics Consultant for Revology Analytics, with expertise in Revenue Growth Management, content creation, and SEO optimization.
-            
-Your expertise includes:
-- Pricing & Revenue Optimization: Value-based pricing, dynamic models, subscription strategies
-- Analytics & Forecasting: Statistical modeling, revenue projections, performance metrics
-- Revenue Growth Management (RGM): Promotion effectiveness, product mix optimization, channel strategies
-- SEO & Content Strategy: Creating engaging, optimized content that ranks well on search engines
-
-You follow best practices like proper keyword usage, heading structure, and data-driven insights.`
-          },
-          {
-            role: 'user',
-            content: `Create ${contentType} content for Revology Analytics (${domain}) with the title "${title}".
-            
-Target keywords: ${keywords.join(', ')}
-
-The content should demonstrate thought leadership in pricing and revenue growth, using data analysis and industry insights to highlight best practices, key trends, and actionable takeaways.
-
-Return a JSON object with these properties:
-- title: An optimized title that includes primary keywords
-- metaDescription: A compelling meta description under 160 characters that includes keywords and encourages clicks
-- outline: An array of section headings (5-7 items)
-- content: The full content in Markdown format, properly structured with headings, paragraphs, and occasional bullet points. Include primary keywords naturally in headings and throughout the content, while maintaining a focus on pricing strategy, revenue management, and analytics insights.`
-          }
-        ],
-        temperature: creativity / 100, // Convert 0-100 scale to 0-1
-        response_format: { type: 'json_object' }
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return JSON.parse(data.choices[0].message.content);
-  } catch (error) {
-    console.error("Error generating content:", error);
-    toast.error(`Failed to generate content: ${(error as Error).message}`);
-    
-    // Return mock content if the API fails - now with pricing and revenue focus
-    return {
-      title: title,
-      metaDescription: `Discover advanced ${keywords.join(", ")} strategies to optimize your pricing and revenue management. Learn data-driven approaches to enhance profitability and competitive advantage.`,
-      outline: [
-        "Introduction to Revenue Growth Management",
-        "The Role of Pricing Strategy in Business Performance",
-        "Data-Driven Approaches to Revenue Optimization",
-        "Key Metrics for Measuring Pricing Effectiveness",
-        "Implementing Dynamic Pricing Models",
-        "Customer Segmentation for Strategic Pricing",
-        "Conclusion: Building a Sustainable Revenue Growth Framework"
-      ],
-      content: `# ${title}
-
-## Introduction to Revenue Growth Management
-
-In today's competitive business landscape, effective **Revenue Growth Management (RGM)** has become a critical differentiator between market leaders and followers. At its core, RGM integrates **pricing strategy**, promotional planning, and product portfolio optimization to maximize sustainable revenue and profit growth.
-
-## The Role of Pricing Strategy in Business Performance
-
-**Pricing strategy** is perhaps the most powerful lever for improving profitability. Research consistently shows that a 1% improvement in price can yield up to 11% increase in operating profit—far exceeding the impact of similar improvements in variable costs, fixed costs, or sales volume.
-
-- Establishes clear value perception in the market
-- Directly impacts margin and profit performance
-- Creates strategic positioning against competitors
-- Supports long-term sustainable growth objectives
-
-## Data-Driven Approaches to Revenue Optimization
-
-Modern **revenue optimization** relies on robust analytics and data-driven decision making. Organizations that excel in this area follow a systematic approach:
-
-1. **Data Collection & Integration**: Consolidating transactional, customer, competitor, and market data
-2. **Advanced Analytics**: Applying statistical methods to identify patterns and opportunities
-3. **Scenario Modeling**: Testing potential pricing and promotional strategies
-4. **Implementation & Measurement**: Executing changes and tracking results through clear KPIs
-
-## Key Metrics for Measuring Pricing Effectiveness
-
-To effectively manage your **pricing strategy**, you must track the right metrics. The most valuable indicators include:
-
-* **Price Realization**: The actual price achieved versus list price
-* **Price Waterfall Analysis**: Visualization of discounts, rebates, and other reductions
-* **Pocket Margin**: The true profit after accounting for all costs
-* **Price Elasticity**: How demand responds to price changes
-* **Customer Value Metrics**: How pricing correlates with customer-perceived value
-
-## Implementing Dynamic Pricing Models
-
-**Dynamic pricing** models allow businesses to adjust prices in real-time based on market conditions, demand fluctuations, customer segments, and competitive positioning. Implementation follows these key phases:
-
-- Assessment of current pricing capability and data infrastructure
-- Development of pricing rules and algorithms based on business objectives
-- Testing in controlled market segments
-- Iterative refinement based on performance data
-- Full-scale deployment with continuous monitoring
-
-## Customer Segmentation for Strategic Pricing
-
-Effective **pricing strategy** requires a deep understanding of your customer segments. By segmenting customers based on willingness-to-pay, value perception, and purchasing behavior, organizations can develop tailored pricing approaches that maximize revenue while maintaining customer satisfaction.
-
-1. Identify key segmentation variables (industry, size, purchase behavior)
-2. Analyze price sensitivity by segment
-3. Develop segment-specific value propositions
-4. Establish tiered pricing structures aligned with segment characteristics
-5. Measure and refine based on segment performance
-
-## Conclusion: Building a Sustainable Revenue Growth Framework
-
-Building a sustainable **revenue growth management** framework requires integration of pricing strategy, promotional effectiveness, and product portfolio optimization. The most successful organizations treat RGM as an ongoing capability rather than a one-time initiative.
-
-To maximize your organization's pricing and revenue potential:
-
-1. Establish cross-functional alignment on pricing objectives
-2. Invest in analytics capabilities and data infrastructure
-3. Develop clear governance and decision-making processes
-4. Create a culture of continuous testing and learning
-5. Measure impact through clear KPIs tied to financial outcomes
-
-Ready to transform your approach to revenue management? Start by conducting a comprehensive assessment of your current pricing capabilities and identifying the highest-value opportunities for improvement.`
-    };
-  }
-};
+            content: `Generate SEO recommendations for the
