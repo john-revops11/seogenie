@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // API configuration
@@ -324,19 +323,20 @@ export const findKeywordGaps = async (
   }
 };
 
-export const generateContent = async (
-  domain: string,
-  title: string,
-  keywords: string[],
-  contentType: string,
-  creativity: number
-): Promise<{
+export interface ContentGenerationParams {
+  domain: string;
   title: string;
-  metaDescription: string;
-  outline: string[];
-  content: string;
-}> => {
+  keywords: string[];
+  contentType: string;
+  length: string;
+  tone: string;
+  creativity: number;
+}
+
+export const generateContent = async (params: ContentGenerationParams): Promise<string> => {
   try {
+    const { domain, title, keywords, contentType, length, tone, creativity } = params;
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -356,15 +356,141 @@ export const generateContent = async (
             content: `Create ${contentType} content for the website "${domain}" with the title "${title}".
             
             Target keywords: ${keywords.join(', ')}
+            Tone: ${tone}
+            Length: ${length} (${length === 'short' ? '~300 words' : length === 'medium' ? '~600 words' : '~1200 words'})
             
-            Return a JSON object with these properties:
-            - title: An SEO-optimized title that includes primary keywords
-            - metaDescription: A compelling meta description under 160 characters that includes keywords and encourages clicks
-            - outline: An array of section headings (5-7 items)
-            - content: The full content in Markdown format, properly structured with headings, paragraphs, and occasional bullet points. Include primary keywords naturally in headings and throughout the content.`
+            Return content in Markdown format, properly structured with headings, paragraphs, and occasional bullet points. Include primary keywords naturally in headings and throughout the content.`
           }
         ],
-        temperature: creativity / 100, // Convert 0-100 scale to 0-1
+        temperature: creativity,
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error("Error generating content:", error);
+    toast.error(`Failed to generate content: ${(error as Error).message}`);
+    
+    // Return mock content if the API fails
+    return `# ${params.title}
+
+## Introduction
+
+In today's competitive digital landscape, having the right **SEO tools** at your disposal can make the difference between online visibility and obscurity. Effective **keyword research** forms the foundation of any successful SEO strategy, allowing businesses to understand what their potential customers are searching for.
+
+## Why This Matters
+
+**Keyword research** isn't just about finding popular search terms; it's about uncovering the specific language your audience uses when looking for solutions. By understanding these patterns, you can create content that directly addresses their needs and questions.
+
+- Identifies customer pain points and questions
+- Reveals new market opportunities
+- Helps prioritize content creation efforts
+- Provides competitive intelligence
+
+## Key Strategies
+
+The market offers numerous strategies designed to simplify and enhance your approach:
+
+1. **Focus on user intent** - Understand why people are searching
+2. **Analyze competitors** - See what's working for others in your industry
+3. **Target long-tail keywords** - Less competition, more conversion potential
+4. **Create comprehensive content** - Answer all related questions
+5. **Optimize for featured snippets** - Aim for position zero
+
+Each of these approaches offers unique benefits that can help you identify valuable opportunities.
+
+## Implementation Tips
+
+Not all strategies are created equal. The most valuable approach for your business will balance several factors:
+
+* **Audience Research**: Understand who you're trying to reach
+* **Competitive Analysis**: Know what you're up against
+* **Content Mapping**: Connect keywords to content pieces
+* **Performance Tracking**: Measure what's working
+
+## Conclusion
+
+Effective strategies and proper implementation are not one-time tasks but ongoing processes that evolve with your business and the digital landscape. By consistently refining your approach and staying informed about changes in search algorithms, you can maintain and improve your website's visibility.
+
+Ready to take your strategy to the next level? Start by conducting a comprehensive audit and identifying new opportunities for growth.`;
+  }
+};
+
+// New function to generate content ideas based on keyword analysis
+export const generateContentIdeas = async (
+  domain: string,
+  keywords: KeywordData[],
+  competitorDomains: string[] = []
+): Promise<{
+  topics: Array<{
+    topic: string;
+    articles: Array<{
+      title: string;
+      metaDescription: string;
+      keywordsToInclude: string[];
+    }>
+  }>
+}> => {
+  try {
+    if (!keywords || keywords.length === 0) {
+      throw new Error("No keywords available for content idea generation");
+    }
+    
+    // Use the top 30 keywords for idea generation
+    const topKeywords = keywords.slice(0, 30).map(k => k.keyword);
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert SEO content strategist who creates high-value content plans optimized for search engines.`
+          },
+          {
+            role: 'user',
+            content: `Based on keyword analysis for the domain "${domain}" and its competitors ${competitorDomains.join(', ')}, 
+            generate 5 content topics with 3 article ideas for each topic.
+            
+            Keywords analyzed: ${topKeywords.join(', ')}
+            
+            For each topic:
+            1. Provide a descriptive topic name
+            2. For each article:
+               - Provide an SEO-optimized title (60-65 characters)
+               - Write a compelling meta description (150-160 characters)
+               - List 3-5 primary keywords to include
+               
+            Return the response as JSON in this exact format:
+            {
+              "topics": [
+                {
+                  "topic": "Topic name",
+                  "articles": [
+                    {
+                      "title": "Article title",
+                      "metaDescription": "Meta description",
+                      "keywordsToInclude": ["keyword1", "keyword2", "keyword3"]
+                    },
+                    ...
+                  ]
+                },
+                ...
+              ]
+            }`
+          }
+        ],
+        temperature: 0.7,
         response_format: { type: 'json_object' }
       })
     });
@@ -376,82 +502,113 @@ export const generateContent = async (
     const data = await response.json();
     return JSON.parse(data.choices[0].message.content);
   } catch (error) {
-    console.error("Error generating content:", error);
-    toast.error(`Failed to generate content: ${(error as Error).message}`);
+    console.error("Error generating content ideas:", error);
+    toast.error(`Failed to generate content ideas: ${(error as Error).message}`);
     
-    // Return mock content if the API fails
+    // Return mock content ideas if the API fails
     return {
-      title: title,
-      metaDescription: `Discover the best ${keywords.join(", ")} and strategies to improve your SEO performance. Learn how to analyze and optimize your website for better rankings.`,
-      outline: [
-        "Introduction to SEO Tools and Keyword Research",
-        "Why Keyword Research is Critical for SEO Success",
-        "Top 5 SEO Tools for Effective Keyword Analysis",
-        "How to Identify Valuable Keywords for Your Industry",
-        "Implementing Keyword Strategy for Better Rankings",
-        "Measuring and Tracking Keyword Performance",
-        "Conclusion and Next Steps"
-      ],
-      content: `# ${title}
-
-## Introduction to SEO Tools and Keyword Research
-
-In today's competitive digital landscape, having the right **SEO tools** at your disposal can make the difference between online visibility and obscurity. Effective **keyword research** forms the foundation of any successful SEO strategy, allowing businesses to understand what their potential customers are searching for.
-
-## Why Keyword Research is Critical for SEO Success
-
-**Keyword research** isn't just about finding popular search terms; it's about uncovering the specific language your audience uses when looking for solutions. By understanding these patterns, you can create content that directly addresses their needs and questions.
-
-- Identifies customer pain points and questions
-- Reveals new market opportunities
-- Helps prioritize content creation efforts
-- Provides competitive intelligence
-
-## Top 5 SEO Tools for Effective Keyword Analysis
-
-The market offers numerous **SEO tools** designed to simplify and enhance your keyword discovery process:
-
-1. **SEMrush** - Comprehensive keyword data with competitive analysis
-2. **Ahrefs** - In-depth backlink analysis and keyword difficulty metrics
-3. **Moz Keyword Explorer** - Keyword suggestions with opportunity scores
-4. **Google Keyword Planner** - Direct insights from Google's data
-5. **Ubersuggest** - User-friendly interface with content ideas
-
-Each of these tools offers unique features that can help you identify valuable keywords and understand their potential.
-
-## How to Identify Valuable Keywords for Your Industry
-
-Not all keywords are created equal. The most valuable keywords for your business will balance search volume, competition, and relevance:
-
-* **Search Volume**: How many people are searching for this term monthly
-* **Keyword Difficulty**: How hard it will be to rank for this term
-* **Commercial Intent**: How likely searchers are to convert
-* **Relevance**: How closely the keyword matches your offerings
-
-## Implementing Keyword Strategy for Better Rankings
-
-Once you've identified your target keywords, implementation becomes key:
-
-- Incorporate primary keywords in titles, headings, and opening paragraphs
-- Use secondary keywords naturally throughout your content
-- Optimize meta descriptions and URL structures
-- Create topic clusters around related keywords
-- Develop a content calendar based on keyword opportunities
-
-## Measuring and Tracking Keyword Performance
-
-The work doesn't end with implementation. Regular monitoring helps you understand what's working and what needs adjustment:
-
-1. Track ranking positions for target keywords
-2. Monitor organic traffic to optimized pages
-3. Analyze user behavior and engagement metrics
-4. Adjust strategy based on performance data
-
-## Conclusion and Next Steps
-
-**SEO tools** and effective **keyword research** are not one-time tasks but ongoing processes that evolve with your business and the digital landscape. By consistently refining your approach and staying informed about changes in search algorithms, you can maintain and improve your website's visibility.
-
-Ready to take your SEO strategy to the next level? Start by conducting a comprehensive keyword audit and identifying new opportunities for growth.`
+      topics: [
+        {
+          topic: "SEO Strategy Fundamentals",
+          articles: [
+            {
+              title: "10 Essential SEO Strategies Every Business Should Implement",
+              metaDescription: "Discover the foundational SEO strategies that drive organic traffic and boost rankings. Learn actionable tips to improve your website's search visibility.",
+              keywordsToInclude: ["SEO strategies", "organic traffic", "search rankings", "SEO fundamentals"]
+            },
+            {
+              title: "How to Build an SEO Strategy That Outperforms Your Competitors",
+              metaDescription: "Learn to develop an SEO strategy that puts you ahead of competitors. This guide provides a step-by-step approach to competitive SEO analysis.",
+              keywordsToInclude: ["competitive SEO", "competitor analysis", "SEO strategy", "outrank competitors"]
+            },
+            {
+              title: "The Ultimate Guide to On-Page and Off-Page SEO Techniques",
+              metaDescription: "Master both on-page and off-page SEO with this comprehensive guide. Discover proven techniques to optimize your website and build authority.",
+              keywordsToInclude: ["on-page SEO", "off-page SEO", "SEO techniques", "website optimization"]
+            }
+          ]
+        },
+        {
+          topic: "Keyword Research Mastery",
+          articles: [
+            {
+              title: "Advanced Keyword Research: Finding Untapped Opportunities",
+              metaDescription: "Discover advanced keyword research methods to uncover high-value, low-competition keywords. Learn how to find the terms your competitors are missing.",
+              keywordsToInclude: ["keyword research", "untapped keywords", "low competition", "keyword opportunities"]
+            },
+            {
+              title: "How to Use Keyword Gap Analysis to Boost Organic Traffic",
+              metaDescription: "Learn how keyword gap analysis can reveal content opportunities your competitors are ranking for that you're missing. Boost your traffic with this guide.",
+              keywordsToInclude: ["keyword gap analysis", "competitor keywords", "content opportunities", "organic traffic"]
+            },
+            {
+              title: "The Complete Guide to Long-Tail Keywords and Search Intent",
+              metaDescription: "Master long-tail keywords and search intent to drive targeted traffic. This guide shows how to align content with user needs for better conversions.",
+              keywordsToInclude: ["long-tail keywords", "search intent", "targeted traffic", "content alignment"]
+            }
+          ]
+        },
+        {
+          topic: "Content Optimization Strategies",
+          articles: [
+            {
+              title: "Content Optimization Checklist: 15 Ways to Improve Rankings",
+              metaDescription: "Follow this proven content optimization checklist to boost your search rankings. Learn the essential on-page factors that influence SEO performance.",
+              keywordsToInclude: ["content optimization", "SEO checklist", "improve rankings", "on-page factors"]
+            },
+            {
+              title: "How to Optimize Existing Content for Featured Snippets",
+              metaDescription: "Learn to optimize your content for featured snippets and position zero. This guide provides actionable strategies to win this valuable SERP real estate.",
+              keywordsToInclude: ["featured snippets", "position zero", "content optimization", "SERP features"]
+            },
+            {
+              title: "The Art of SEO Copywriting: Writing for Users and Search Engines",
+              metaDescription: "Master SEO copywriting techniques that please both readers and search engines. Create compelling content that ranks well and converts visitors.",
+              keywordsToInclude: ["SEO copywriting", "content writing", "user experience", "engaging content"]
+            }
+          ]
+        },
+        {
+          topic: "Technical SEO Essentials",
+          articles: [
+            {
+              title: "Technical SEO Audit: How to Find and Fix Critical Issues",
+              metaDescription: "Learn how to conduct a thorough technical SEO audit and resolve common problems. This step-by-step guide will help improve your site's performance.",
+              keywordsToInclude: ["technical SEO audit", "site performance", "SEO issues", "site optimization"]
+            },
+            {
+              title: "Mobile-First Indexing: Optimizing Your Site for Smartphones",
+              metaDescription: "Prepare your website for mobile-first indexing with this comprehensive guide. Learn what Google prioritizes for mobile SEO and how to implement it.",
+              keywordsToInclude: ["mobile-first indexing", "mobile SEO", "responsive design", "page speed"]
+            },
+            {
+              title: "Schema Markup Implementation: Boosting CTR and Visibility",
+              metaDescription: "Implement schema markup to enhance your search listings with rich results. Learn how structured data can improve click-through rates and visibility.",
+              keywordsToInclude: ["schema markup", "structured data", "rich results", "SERP visibility"]
+            }
+          ]
+        },
+        {
+          topic: "Link Building and Authority",
+          articles: [
+            {
+              title: "Ethical Link Building: 12 Strategies That Actually Work in 2023",
+              metaDescription: "Discover ethical link building strategies that drive results without risking penalties. This guide covers proven tactics for building quality backlinks.",
+              keywordsToInclude: ["link building", "backlinks", "SEO authority", "ethical SEO"]
+            },
+            {
+              title: "How to Earn High-Quality Backlinks with Content Marketing",
+              metaDescription: "Learn how to create link-worthy content that naturally attracts backlinks. This guide shows how content marketing and SEO work together for link building.",
+              keywordsToInclude: ["content marketing", "earn backlinks", "link-worthy content", "natural link building"]
+            },
+            {
+              title: "Competitor Backlink Analysis: Finding Your Best Link Opportunities",
+              metaDescription: "Use competitor backlink analysis to discover your best link building opportunities. This guide shows how to leverage competitor research for SEO gains.",
+              keywordsToInclude: ["backlink analysis", "competitor research", "link opportunities", "SEO competitive analysis"]
+            }
+          ]
+        }
+      ]
     };
   }
 };

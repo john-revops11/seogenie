@@ -36,7 +36,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
     // Make sure allKeywords exists and has items before trying to use it
     if (allKeywords && allKeywords.length > 0) {
       // Use the top 5 keywords from allKeywords if available
-      const topKeywords = allKeywords.slice(0, 5).map(k => k.toLowerCase());
+      const topKeywords = allKeywords.slice(0, 5).map(k => k.keyword.toLowerCase());
       if (topKeywords.length > 0) {
         setKeywords(topKeywords);
       }
@@ -97,7 +97,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   // Generate suggested keywords based on allKeywords or use defaults
   // Safely handle the case when allKeywords might be undefined
   const suggestedKeywords = (allKeywords && allKeywords.length > 0)
-    ? [...new Set(allKeywords.slice(0, 15))]
+    ? [...new Set(allKeywords.slice(0, 15).map(kw => kw.keyword))]
         .filter(kw => !keywords.includes(kw))
         .slice(0, 6)
     : ["marketing", "seo", "content strategy", "analytics", "conversion", "optimization"];
