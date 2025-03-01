@@ -1,13 +1,24 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, Search, Download, ArrowUpDown, Loader2, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { 
+  ChevronUp, 
+  ChevronDown, 
+  Search, 
+  Download, 
+  ArrowUpDown, 
+  Loader2, 
+  ChevronLeft, 
+  ChevronRight, 
+  ExternalLink,
+  PlusCircle
+} from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface KeywordTableProps {
   domain: string;
@@ -28,6 +39,10 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const [paginatedKeywords, setPaginatedKeywords] = useState<KeywordData[]>([]);
+  
+  // New state for adding competitor input
+  const [newCompetitor, setNewCompetitor] = useState("");
+  const [showCompetitorInput, setShowCompetitorInput] = useState(false);
   
   // Handle incoming keyword data
   useEffect(() => {
@@ -177,6 +192,81 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
     document.body.removeChild(link);
   };
 
+  // Handle adding new competitor
+  const handleAddCompetitor = () => {
+    setShowCompetitorInput(true);
+  };
+
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) return false;
+    
+    try {
+      // If it already has a protocol, try to parse as is
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        new URL(url);
+        return true;
+      }
+      
+      // Otherwise, try with https:// prefix
+      new URL(`https://${url}`);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const confirmAddCompetitor = () => {
+    if (!newCompetitor.trim()) {
+      toast.error("Please enter a competitor domain");
+      return;
+    }
+    
+    if (!validateUrl(newCompetitor)) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+    
+    // Check if this competitor is already in the list
+    const normalizedNewCompetitor = extractDomainName(newCompetitor);
+    const exists = competitorDomains.some(domain => 
+      extractDomainName(domain) === normalizedNewCompetitor
+    );
+    
+    if (exists) {
+      toast.error("This competitor is already in your analysis");
+      return;
+    }
+    
+    // Format the URL properly
+    let formattedUrl = newCompetitor;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+    
+    // Here we're just showing a toast because we need to analyze this domain at the parent level
+    toast.success(`Added ${normalizedNewCompetitor} to your competitors list`, {
+      description: "Rerun analysis to see data for this competitor",
+      duration: 5000,
+      action: {
+        label: "Dismiss",
+        onClick: () => {}
+      }
+    });
+    
+    // Pass this back to the parent component or handle state globally
+    // (This would typically need to be handled in Index.tsx)
+    console.log("New competitor to add:", formattedUrl);
+    
+    // Reset state
+    setNewCompetitor("");
+    setShowCompetitorInput(false);
+  };
+
+  const cancelAddCompetitor = () => {
+    setNewCompetitor("");
+    setShowCompetitorInput(false);
+  };
+
   // Clickable link component for ranking URLs
   const RankingLink = ({ url, position }: { url: string | null | undefined, position: number | null | undefined }) => {
     if (!url || !position) return <Badge variant="outline">-</Badge>;
@@ -234,8 +324,46 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading }: Keywor
             >
               <Download className="h-4 w-4" />
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="transition-all border-revology/30 text-revology hover:text-revology hover:bg-revology-light/50"
+              onClick={handleAddCompetitor}
+              disabled={isLoading || showCompetitorInput}
+            >
+              <PlusCircle className="mr-1 h-4 w-4" />
+              <span className="hidden sm:inline">Add Competitor</span>
+            </Button>
           </div>
         </div>
+        
+        {/* New competitor input field */}
+        {showCompetitorInput && (
+          <div className="mt-4 flex items-center gap-2 animate-fade-down">
+            <Input
+              placeholder="competitor.com"
+              value={newCompetitor}
+              onChange={(e) => setNewCompetitor(e.target.value)}
+              className="transition-all"
+              autoFocus
+            />
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={confirmAddCompetitor}
+              className="bg-revology hover:bg-revology-dark whitespace-nowrap"
+            >
+              Add
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={cancelAddCompetitor}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-hidden">

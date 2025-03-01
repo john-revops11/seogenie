@@ -224,6 +224,21 @@ const Index = () => {
 
   const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
 
+  // Handle adding a new competitor from the KeywordTable component
+  const handleAddCompetitorFromTable = (newCompetitor: string) => {
+    if (isAnalyzing) return;
+    
+    // Check if already exists
+    if (competitorDomains.includes(newCompetitor)) {
+      toast.error("This competitor is already in your analysis");
+      return;
+    }
+    
+    // Add the new competitor
+    setCompetitorDomains([...competitorDomains, newCompetitor]);
+    toast.success(`Added ${newCompetitor} to competitors list`);
+  };
+
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
