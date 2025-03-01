@@ -93,7 +93,9 @@ export const findKeywordGaps = async (
           difficulty: kw.competition_index,
           opportunity: opportunity,
           competitor: bestCompetitor,
-          rank: bestPosition
+          rank: bestPosition,
+          // Add a flag to identify if this is a top opportunity
+          isTopOpportunity: false
         };
         
         // Add to the competitor's gaps array
@@ -108,6 +110,26 @@ export const findKeywordGaps = async (
       for (const competitorGaps of gapsByCompetitor.values()) {
         directGaps.push(...competitorGaps);
       }
+      
+      // Identify top 5 opportunity keywords across all competitors
+      // Sort by opportunity and then by volume
+      const sortedGaps = [...directGaps].sort((a, b) => {
+        // First by opportunity
+        if (a.opportunity !== b.opportunity) {
+          return a.opportunity === 'high' ? -1 : a.opportunity === 'medium' ? 0 : 1;
+        }
+        // Then by volume
+        return b.volume - a.volume;
+      });
+      
+      // Mark the top 5 as high opportunity
+      sortedGaps.slice(0, 5).forEach(gap => {
+        // Find this gap in the original array and mark it
+        const originalGap = directGaps.find(g => g.keyword === gap.keyword && g.competitor === gap.competitor);
+        if (originalGap) {
+          originalGap.isTopOpportunity = true;
+        }
+      });
       
       console.log("Returning directly identified gaps:", directGaps.length);
       return directGaps;
@@ -148,6 +170,7 @@ export const findKeywordGaps = async (
             - difficulty: number (1-100 scale where higher is more difficult)
             - opportunity: string (high, medium, or low based on potential value)
             - competitor: string (the competitor domain that ranks for this keyword)
+            - isTopOpportunity: boolean (mark the top 5 keywords with highest potential value as true)
             
             Format your response EXACTLY like this JSON example:
             {
@@ -157,20 +180,24 @@ export const findKeywordGaps = async (
                   "volume": 1200,
                   "difficulty": 45,
                   "opportunity": "high",
-                  "competitor": "competitor1.com"
+                  "competitor": "competitor1.com",
+                  "isTopOpportunity": true
                 },
                 {
                   "keyword": "example keyword 2",
                   "volume": 800,
                   "difficulty": 30,
                   "opportunity": "medium",
-                  "competitor": "competitor2.com"
+                  "competitor": "competitor2.com",
+                  "isTopOpportunity": false
                 }
               ]
             }
             
-            IMPORTANT: You must include the competitor property for each gap to identify which competitor ranks for each keyword.
-            Try to provide up to ${minGapsPerCompetitor} keywords for each competitor (evenly distributed if possible).`
+            IMPORTANT: 
+            - You must include the competitor property for each gap to identify which competitor ranks for each keyword.
+            - Try to provide up to ${minGapsPerCompetitor} keywords for each competitor (evenly distributed if possible).
+            - Mark exactly 5 keywords total as isTopOpportunity: true based on their overall value and potential impact for the main domain.`
           }
         ],
         temperature: 0.7,

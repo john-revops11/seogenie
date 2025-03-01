@@ -28,6 +28,7 @@ import ContentGenerator from "@/components/ContentGenerator";
 import Layout from "@/components/Layout";
 import { analyzeDomains } from "@/services/keywordService";
 import KeywordTable from "@/components/KeywordTable";
+import KeywordResearch from "@/components/KeywordResearch";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -236,6 +237,24 @@ const Index = () => {
     toast.success(`Added ${normalizedNewCompetitor} to competitors list`);
   };
 
+  const handleGenerateContentFromKeyword = (keyword: string, relatedKeywords: string[]) => {
+    // Navigate to content tab with the selected keywords
+    setActiveTab("content");
+    
+    // If we have the keywordGapsCache available in the ContentGenerator component,
+    // we can trigger it through window or a custom event
+    const event = new CustomEvent('generate-content-from-keyword', { 
+      detail: { 
+        primaryKeyword: keyword,
+        relatedKeywords: relatedKeywords
+      } 
+    });
+    window.dispatchEvent(event);
+    
+    // Provide feedback to the user
+    toast.success(`Switched to content generator with "${keyword}"`);
+  };
+
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
@@ -382,33 +401,41 @@ const Index = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 animate-slide-up">
-                <div className="md:col-span-2 lg:col-span-2">
-                  <KeywordTable 
-                    domain={mainDomain} 
-                    competitorDomains={validCompetitorDomains} 
-                    keywords={keywordData || []}
-                    isLoading={isAnalyzing}
-                    onAddCompetitor={handleAddCompetitorFromTable}
-                  />
+              <div className="space-y-6 animate-slide-up">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                  <div className="md:col-span-2 lg:col-span-2">
+                    <KeywordTable 
+                      domain={mainDomain} 
+                      competitorDomains={validCompetitorDomains} 
+                      keywords={keywordData || []}
+                      isLoading={isAnalyzing}
+                      onAddCompetitor={handleAddCompetitorFromTable}
+                    />
+                  </div>
+                  
+                  <div className="lg:col-span-1">
+                    <KeywordGapCard 
+                      domain={mainDomain} 
+                      competitorDomains={validCompetitorDomains} 
+                      keywords={keywordData || []}
+                      isLoading={isAnalyzing}
+                    />
+                  </div>
+                  
+                  <div className="lg:col-span-1">
+                    <SeoRecommendationsCard 
+                      domain={mainDomain} 
+                      keywords={keywordData || []}
+                      isLoading={isAnalyzing}
+                    />
+                  </div>
                 </div>
                 
-                <div className="lg:col-span-1">
-                  <KeywordGapCard 
-                    domain={mainDomain} 
-                    competitorDomains={validCompetitorDomains} 
-                    keywords={keywordData || []}
-                    isLoading={isAnalyzing}
-                  />
-                </div>
-                
-                <div className="lg:col-span-1">
-                  <SeoRecommendationsCard 
-                    domain={mainDomain} 
-                    keywords={keywordData || []}
-                    isLoading={isAnalyzing}
-                  />
-                </div>
+                {/* Add the new Keyword Research component */}
+                <KeywordResearch 
+                  domain={mainDomain}
+                  onGenerateContent={handleGenerateContentFromKeyword} 
+                />
               </div>
             )}
           </TabsContent>
@@ -465,6 +492,57 @@ const Index = () => {
                 </div>
                 
                 <Separator />
+                
+                {/* Add new API integration settings */}
+                <div className="space-y-3">
+                  <Label>API Integrations</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="p-4 border-dashed hover:border-revology/30 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <Search className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">DataForSEO</h3>
+                          <p className="text-xs text-muted-foreground">Keyword research API</p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 border-dashed hover:border-revology/30 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <Zap className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">OpenAI</h3>
+                          <p className="text-xs text-muted-foreground">AI content generation</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  <Button variant="outline" className="mt-2 w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New API Integration
+                  </Button>
+                </div>
+                
+                <Separator />
+                
+                {/* Webhook configuration option */}
+                <div className="space-y-3">
+                  <Label htmlFor="webhook-url">Webhook URL</Label>
+                  <Input id="webhook-url" placeholder="https://your-webhook-endpoint.com/seo-updates" className="transition-all" />
+                  <p className="text-sm text-muted-foreground">Receive notifications when analysis is complete</p>
+                  
+                  <div className="pt-2">
+                    <Label className="text-sm font-normal flex items-center gap-2">
+                      <input type="checkbox" className="rounded text-revology" />
+                      Enable webhook notifications
+                    </Label>
+                  </div>
+                </div>
                 
                 <div className="space-y-3">
                   <Label htmlFor="brand-voice">Brand Voice</Label>

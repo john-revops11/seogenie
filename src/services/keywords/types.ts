@@ -1,4 +1,3 @@
-
 // Common type definitions for keyword services
 
 export interface KeywordData {
@@ -52,8 +51,9 @@ export interface KeywordGap {
   volume: number;
   difficulty: number;
   opportunity: 'high' | 'medium' | 'low';
-  competitor?: string; // Competitor domain that ranks for this keyword
-  rank?: number; // The competitor's ranking position for this keyword
+  competitor: string;
+  rank?: number;
+  isTopOpportunity?: boolean; // Add this property
 }
 
 export interface SeoRecommendation {
