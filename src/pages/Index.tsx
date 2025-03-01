@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import KeywordGapCard from "@/components/KeywordGapCard";
 import SeoRecommendationsCard from "@/components/SeoRecommendationsCard";
 import ContentGenerator from "@/components/ContentGenerator";
 import Layout from "@/components/Layout";
+import { analyzeDomains } from "@/services/keywordService";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -35,6 +36,7 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [keywordData, setKeywordData] = useState<any[]>([]);
   
   const addCompetitorDomain = () => {
     setCompetitorDomains([...competitorDomains, ""]);
@@ -53,11 +55,33 @@ const Index = () => {
   };
 
   const validateUrl = (url: string) => {
-    const pattern = /^(?:(?:https?:\/\/)?(?:www\.)?)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?$/;
-    return pattern.test(url);
+    if (!url) return false;
+    
+    // Add https:// prefix if not present
+    let processedUrl = url;
+    if (!/^https?:\/\//i.test(url)) {
+      processedUrl = 'https://' + url;
+    }
+    
+    try {
+      new URL(processedUrl);
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
-  const handleAnalyze = () => {
+  const formatUrl = (url: string) => {
+    if (!url) return "";
+    
+    // Add https:// prefix if not present
+    if (!/^https?:\/\//i.test(url)) {
+      return 'https://' + url;
+    }
+    return url;
+  };
+
+  const handleAnalyze = async () => {
     // Form validation
     if (!mainDomain || !validateUrl(mainDomain)) {
       toast.error("Please enter a valid main domain");
@@ -69,26 +93,50 @@ const Index = () => {
       return;
     }
     
+    // Prepare URLs with proper format
+    const formattedMainDomain = formatUrl(mainDomain);
+    const formattedCompetitorDomains = competitorDomains
+      .filter(Boolean)
+      .map(formatUrl);
+    
     // Start the analysis process
     setIsAnalyzing(true);
     setProgress(0);
+    setKeywordData([]);
     
-    // Mock progress updates
+    // Mock progress updates while we do the real API call
     const interval = setInterval(() => {
       setProgress(prev => {
         const newProgress = prev + Math.random() * 15;
-        if (newProgress >= 100) {
+        if (newProgress >= 95) {
           clearInterval(interval);
-          setTimeout(() => {
-            setIsAnalyzing(false);
-            setAnalysisComplete(true);
-            toast.success("Analysis complete! View your results in the dashboard.");
-          }, 500);
-          return 100;
+          return 95; // Hold at 95% until API call completes
         }
         return newProgress;
       });
     }, 800);
+    
+    try {
+      // Perform the real API call
+      const result = await analyzeDomains(formattedMainDomain, formattedCompetitorDomains);
+      
+      if (result.success) {
+        setKeywordData(result.keywords);
+        setProgress(100);
+        setTimeout(() => {
+          setIsAnalyzing(false);
+          setAnalysisComplete(true);
+          toast.success("Analysis complete! View your results in the dashboard.");
+        }, 500);
+      } else {
+        throw new Error("Analysis failed");
+      }
+    } catch (error) {
+      clearInterval(interval);
+      setIsAnalyzing(false);
+      toast.error(`Analysis failed: ${(error as Error).message}`);
+      setProgress(0);
+    }
   };
 
   const renderProgressStatus = () => {
@@ -144,6 +192,7 @@ const Index = () => {
                         value={mainDomain}
                         onChange={(e) => setMainDomain(e.target.value)}
                         className="transition-all focus:ring-2 focus:ring-primary/20"
+                        disabled={isAnalyzing}
                       />
                     </div>
                     
@@ -155,6 +204,7 @@ const Index = () => {
                           size="sm" 
                           onClick={addCompetitorDomain}
                           className="text-xs transition-all"
+                          disabled={isAnalyzing}
                         >
                           <Plus className="w-3 h-3 mr-1" />
                           Add
@@ -168,6 +218,7 @@ const Index = () => {
                             value={domain}
                             onChange={(e) => updateCompetitorDomain(index, e.target.value)}
                             className="transition-all focus:ring-2 focus:ring-primary/20"
+                            disabled={isAnalyzing}
                           />
                           {competitorDomains.length > 1 && (
                             <Button
@@ -175,6 +226,7 @@ const Index = () => {
                               size="icon"
                               onClick={() => removeCompetitorDomain(index)}
                               className="h-8 w-8"
+                              disabled={isAnalyzing}
                             >
                               <X className="w-4 h-4" />
                             </Button>
@@ -216,7 +268,12 @@ const Index = () => {
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-slide-up">
                 <div className="md:col-span-2 lg:col-span-3">
-                  <KeywordTable domain={mainDomain} competitorDomains={competitorDomains.filter(Boolean)} />
+                  <KeywordTable 
+                    domain={mainDomain} 
+                    competitorDomains={competitorDomains.filter(Boolean)} 
+                    keywords={keywordData}
+                    isLoading={isAnalyzing}
+                  />
                 </div>
                 
                 <KeywordGapCard domain={mainDomain} />
@@ -267,7 +324,7 @@ const Index = () => {
               <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <Label htmlFor="api-key">API Key</Label>
-                  <Input id="api-key" type="password" placeholder="Enter your API key" className="transition-all" />
+                  <Input id="api-key" type="password" value="b84198e677msh416f3b6bc96f2b3p1a60f3jsnaadb78e898c9" readOnly className="transition-all bg-muted/30" />
                   <p className="text-sm text-muted-foreground">Used for keyword research and data retrieval</p>
                 </div>
                 
