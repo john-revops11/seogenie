@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -829,4 +830,330 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="flex items-center gap-1 h-8 px-2 text
+                          className="flex items-center gap-1 h-8 px-2 text-xs border-revology/30 text-revology hover:bg-revology-light/50"
+                          onClick={handleRegenerateTopics}
+                          disabled={isLoadingTopics}
+                        >
+                          <RefreshCw className={`h-3 w-3 ${isLoadingTopics ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Show custom topic input when needed */}
+                  {showCustomTopicInput && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Enter a custom topic..."
+                        value={customTopic}
+                        onChange={e => setCustomTopic(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleAddCustomTopic}
+                        className="border-revology/30 hover:bg-revology-light/20"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setShowCustomTopicInput(false);
+                          setCustomTopic("");
+                        }}
+                        className="border-red-300/30 hover:bg-red-50"
+                      >
+                        <div className="text-red-500">×</div>
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Topic cards */}
+                  {topics.length > 0 ? (
+                    <div className="grid gap-2">
+                      {topics.map((topic, idx) => (
+                        <div
+                          key={idx}
+                          className={`border rounded-md p-3 cursor-pointer transition-all ${
+                            selectedTopic === topic ? 'border-revology bg-revology/5' : 'border-muted hover:border-muted-foreground/20'
+                          }`}
+                          onClick={() => isEditingTopic !== topic && handleSelectTopic(topic)}
+                        >
+                          {isEditingTopic === topic ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editedTopicText}
+                                onChange={e => setEditedTopicText(e.target.value)}
+                                className="flex-1"
+                                autoFocus
+                              />
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={handleSaveEditedTopic}
+                                className="border-revology/30 hover:bg-revology-light/20"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setIsEditingTopic(null)}
+                                className="border-red-300/30 hover:bg-red-50"
+                              >
+                                <div className="text-red-500">×</div>
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium">{topic}</div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleStartEditingTopic(topic);
+                                  }}
+                                >
+                                  <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleDeleteTopic(topic);
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : isLoadingTopics ? (
+                    <div className="flex flex-col items-center justify-center py-6">
+                      <Loader2 className="w-8 h-8 text-primary/50 animate-spin mb-2" />
+                      <p className="text-sm text-muted-foreground">Generating topic suggestions...</p>
+                    </div>
+                  ) : keywordGapsCache.selectedKeywords?.length > 0 ? (
+                    <div className="text-sm text-muted-foreground text-center py-4 border rounded-md p-4">
+                      Click the "Generate Topics Based on Selected Keywords" button above to create content topics.
+                    </div>
+                  ) : null}
+                </div>
+              )}
+              
+              {/* Title selection section */}
+              {selectedTopic && (
+                <div className="space-y-4 mt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-revology-dark">Title Options</h3>
+                    <Badge variant="outline" className="bg-revology/10">
+                      For: {selectedTopic}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    {titleSuggestions[selectedTopic]?.map((titleOption, idx) => (
+                      <div
+                        key={idx}
+                        className={`border rounded-md p-3 cursor-pointer transition-all ${
+                          title === titleOption ? 'border-revology bg-revology/5' : 'border-muted hover:border-muted-foreground/20'
+                        }`}
+                        onClick={() => handleSelectTitle(titleOption)}
+                      >
+                        <div className="font-medium">{titleOption}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Content configuration */}
+              {selectedTopic && title && (
+                <div className="space-y-6 mt-6">
+                  <Separator />
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-revology-dark">Content Settings</h3>
+                    
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label>Content Type</Label>
+                        <Select
+                          value={contentType}
+                          onValueChange={setContentType}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select content type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="blog">Blog Post</SelectItem>
+                            <SelectItem value="article">Article</SelectItem>
+                            <SelectItem value="product">Product Description</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Creativity Level</Label>
+                          <span className="text-sm text-muted-foreground">{creativity}%</span>
+                        </div>
+                        <Slider
+                          value={[creativity]}
+                          min={0}
+                          max={100}
+                          step={10}
+                          onValueChange={values => setCreativity(values[0])}
+                          className="py-2"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Factual</span>
+                          <span>Balanced</span>
+                          <span>Creative</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={handleGenerateContent}
+                      className="w-full bg-revology hover:bg-revology-dark"
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating Content...
+                        </>
+                      ) : (
+                        "Generate Content"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="preview" className="pt-2">
+            {generatedContent ? (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-revology-dark">{generatedContent.title}</h3>
+                    <p className="text-sm text-muted-foreground italic">
+                      {generatedContent.metaDescription}
+                    </p>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h4 className="text-md font-semibold mb-2">Content Outline</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {generatedContent.outline.map((item, idx) => (
+                        <li key={idx} className="text-sm">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-md font-semibold">Content</h4>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleCopy}
+                        className="text-xs flex items-center gap-1 h-8"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleDownload}
+                        className="text-xs flex items-center gap-1 h-8"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Download
+                      </Button>
+                      {!isEditing ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleEditContent}
+                          className="text-xs flex items-center gap-1 h-8"
+                        >
+                          <FileEdit className="h-3.5 w-3.5" />
+                          Edit
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleSaveEdits}
+                          className="text-xs flex items-center gap-1 h-8 border-revology/30 hover:bg-revology-light/20"
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 text-revology" />
+                          Save
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleRegenerateContent}
+                        className="text-xs flex items-center gap-1 h-8"
+                        disabled={isGenerating}
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                        Regenerate
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {isEditing ? (
+                    <Textarea
+                      value={editedContent}
+                      onChange={e => setEditedContent(e.target.value)}
+                      className="min-h-[400px] font-mono text-sm"
+                    />
+                  ) : (
+                    <ScrollArea className="h-[400px] rounded-md border p-4">
+                      <div className="whitespace-pre-wrap">
+                        {generatedContent.content}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FileEdit className="w-12 h-12 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold">No content generated yet</h3>
+                <p className="mt-2 text-muted-foreground max-w-md">
+                  Select a topic and title from the Generate tab, then click "Generate Content" to create optimized content based on your selected keywords.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ContentGenerator;
