@@ -47,7 +47,8 @@ const SeoRecommendationsCard = ({ domain, keywords, isLoading }: SeoRecommendati
         setIsLoadingRecs(true);
         
         try {
-          const recs = await generateSeoRecommendations(domain, keywords);
+          // Limit to top 100 keywords for recommendations
+          const recs = await generateSeoRecommendations(domain, keywords.slice(0, 100));
           setRecommendations(recs);
         } catch (error) {
           console.error("Error fetching SEO recommendations:", error);
@@ -206,7 +207,7 @@ const SeoRecommendationsCard = ({ domain, keywords, isLoading }: SeoRecommendati
               </TabsContent>
               
               {/* Pagination Controls */}
-              {recommendations.filter(rec => rec.type === activeTab).length > itemsPerPage && (
+              {recommendations.filter(rec => rec.type === activeTab).length > itemsPerPage && !isLoading && !isLoadingRecs && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-xs text-muted-foreground">
                     Showing {filterRecommendations(activeTab).length} of {recommendations.filter(rec => rec.type === activeTab).length} recommendations

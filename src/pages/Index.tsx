@@ -49,24 +49,27 @@ const Index = () => {
     setKeywords([]);
     
     try {
-      const response = await fetch(`/api/analyze?domain=${domain}&competitorDomains=${competitorDomains.join(',')}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setKeywords(data.keywords);
+      // Simulate API call (replace with actual API when available)
+      setTimeout(() => {
+        // Mock data for testing the UI
+        const mockKeywords = Array(150).fill(null).map((_, i) => ({
+          keyword: `test keyword ${i+1}`,
+          volume: Math.floor(Math.random() * 10000),
+          difficulty: Math.floor(Math.random() * 100),
+          position: Math.floor(Math.random() * 100),
+          competitors: competitorDomains.map(comp => ({
+            domain: comp,
+            position: Math.floor(Math.random() * 100)
+          }))
+        }));
+        
+        setKeywords(mockKeywords);
         toast.success("Domain analysis completed successfully!");
-      } else {
-        toast.error("Domain analysis failed. Please try again.");
-      }
-    } catch (error: any) {
+        setIsLoading(false);
+      }, 2000);
+    } catch (error) {
       console.error("Error during domain analysis:", error);
       toast.error(`An error occurred: ${error.message}`);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -88,7 +91,7 @@ const Index = () => {
                 id="domain" 
                 placeholder="Enter domain to analyze" 
                 value={domain}
-                onChange={handleDomainChange}
+                onChange={(e) => setDomain(e.target.value)}
                 disabled={isLoading}
                 className="pl-10"
               />
@@ -106,7 +109,11 @@ const Index = () => {
                   type="url"
                   placeholder="Enter competitor domain"
                   value={competitor}
-                  onChange={(e) => handleCompetitorChange(index, e.target.value)}
+                  onChange={(e) => {
+                    const updatedCompetitors = [...competitorDomains];
+                    updatedCompetitors[index] = e.target.value;
+                    setCompetitorDomains(updatedCompetitors);
+                  }}
                   disabled={isLoading}
                 />
                 {competitorDomains.length > 1 ? (
@@ -114,7 +121,11 @@ const Index = () => {
                     type="button" 
                     variant="outline" 
                     size="icon"
-                    onClick={() => removeCompetitorField(index)}
+                    onClick={() => {
+                      const updatedCompetitors = [...competitorDomains];
+                      updatedCompetitors.splice(index, 1);
+                      setCompetitorDomains(updatedCompetitors);
+                    }}
                     disabled={isLoading}
                   >
                     -
@@ -125,7 +136,7 @@ const Index = () => {
             <Button 
               type="button" 
               variant="secondary" 
-              onClick={addCompetitorField}
+              onClick={() => setCompetitorDomains([...competitorDomains, ""])}
               disabled={isLoading}
             >
               Add Competitor

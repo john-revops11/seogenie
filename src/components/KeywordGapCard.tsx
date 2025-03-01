@@ -29,7 +29,8 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
         setIsLoadingGaps(true);
         
         try {
-          const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
+          // Limit to top 100 keyword gaps
+          const gaps = await findKeywordGaps(domain, competitorDomains, keywords.slice(0, 100));
           
           // Sort gaps by volume (descending)
           const sortedGaps = [...gaps].sort((a, b) => b.volume - a.volume);
@@ -131,7 +132,7 @@ const KeywordGapCard = ({ domain, competitorDomains, keywords, isLoading }: Keyw
         </ScrollArea>
         
         {/* Pagination Controls */}
-        {keywordGaps && keywordGaps.length > itemsPerPage && (
+        {keywordGaps && keywordGaps.length > itemsPerPage && !isLoading && !isLoadingGaps && (
           <div className="flex items-center justify-between mt-4">
             <div className="text-xs text-muted-foreground">
               Showing {paginatedGaps.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, keywordGaps.length)} of {keywordGaps.length} gaps
