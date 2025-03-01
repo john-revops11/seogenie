@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // API configuration
@@ -67,7 +66,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     
     if (!data.success) {
       console.warn(`API unsuccessful for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
-      throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason'}`);
+      throw new Error(`API returned unsuccessful response for ${domainUrl}: ${data.reason || 'Unknown reason}`);
     }
 
     // Get domain's base URL for forming ranking URLs
@@ -255,18 +254,21 @@ function ensureValidUrl(urlString: string): string {
   }
 }
 
-export interface SeoRecommendation {
-  type: 'onPage' | 'technical' | 'content';
-  recommendation: string;
-  priority: 'high' | 'medium' | 'low';
-}
-
 export interface KeywordGap {
   keyword: string;
   volume: number;
   difficulty: number;
   opportunity: 'high' | 'medium' | 'low';
   competitor?: string; // Competitor domain that ranks for this keyword
+  rank?: number; // The competitor's ranking position for this keyword
+}
+
+export interface SeoRecommendation {
+  type: 'onPage' | 'technical' | 'content';
+  recommendation: string;
+  priority: 'high' | 'medium' | 'low';
+  details?: string; // Optional details about the recommendation
+  implementationDifficulty?: 'easy' | 'medium' | 'hard'; // Optional difficulty assessment
 }
 
 export const findKeywordGaps = async (
@@ -537,7 +539,11 @@ export const findKeywordGaps = async (
 export const generateSeoRecommendations = async (
   domain: string, 
   keywords: KeywordData[]
-): Promise<SeoRecommendation[]> => {
+): Promise<{
+  onPage: SeoRecommendation[];
+  technical: SeoRecommendation[];
+  content: SeoRecommendation[];
+}> => {
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -555,11 +561,19 @@ export const generateSeoRecommendations = async (
           {
             role: 'user',
             content: `Generate SEO recommendations for the domain "${domain}" based on these keywords: ${JSON.stringify(keywords.slice(0, 15))}. 
-            Return exactly 7 recommendations for each of these categories: 
+            Return recommendations for these categories: 
             1. On-Page SEO (HTML, content, structure)
             2. Technical SEO (speed, mobile-friendliness, etc.)
             3. Content Strategy (topics, formats, etc.)
-            Format as a JSON array of objects with properties: type (onPage, technical, or content), recommendation (string), priority (high, medium, or low).`
+            
+            For each recommendation include:
+            - type (onPage, technical, or content)
+            - recommendation (string with the main recommendation)
+            - priority (high, medium, or low)
+            - details (optional string with more details)
+            - implementationDifficulty (easy, medium, or hard)
+            
+            Format your response as a JSON object with three arrays: onPage, technical, and content, each containing the recommendations for that category.`
           }
         ],
         temperature: 0.7,
@@ -572,20 +586,26 @@ export const generateSeoRecommendations = async (
     }
     
     const data = await response.json();
-    return JSON.parse(data.choices[0].message.content).recommendations;
+    return JSON.parse(data.choices[0].message.content);
   } catch (error) {
     console.error("Error generating SEO recommendations:", error);
     toast.error(`Failed to generate SEO recommendations: ${(error as Error).message}`);
     
-    // Return mock recommendations if the API fails
-    return [
-      { type: 'onPage', recommendation: 'Add primary keyword to H1 tags', priority: 'high' },
-      { type: 'onPage', recommendation: 'Improve meta descriptions with keywords', priority: 'medium' },
-      { type: 'technical', recommendation: 'Improve page load speed on mobile', priority: 'high' },
-      { type: 'technical', recommendation: 'Fix broken links in blog section', priority: 'medium' },
-      { type: 'content', recommendation: 'Create content about "keyword research methods"', priority: 'high' },
-      { type: 'content', recommendation: 'Develop comparison posts about tools', priority: 'medium' },
-    ];
+    // Return mock recommendations if the API fails, but structure them correctly
+    return {
+      onPage: [
+        { type: 'onPage', recommendation: 'Add primary keyword to H1 tags', priority: 'high', details: 'Ensure your primary keyword appears in the main heading of each page', implementationDifficulty: 'easy' },
+        { type: 'onPage', recommendation: 'Improve meta descriptions with keywords', priority: 'medium', details: 'Include primary and secondary keywords in meta descriptions while keeping them under 160 characters', implementationDifficulty: 'easy' },
+      ],
+      technical: [
+        { type: 'technical', recommendation: 'Improve page load speed on mobile', priority: 'high', details: 'Optimize images and implement lazy loading to improve mobile performance', implementationDifficulty: 'medium' },
+        { type: 'technical', recommendation: 'Fix broken links in blog section', priority: 'medium', details: 'Perform a site audit to identify and fix any broken links', implementationDifficulty: 'medium' },
+      ],
+      content: [
+        { type: 'content', recommendation: 'Create content about "keyword research methods"', priority: 'high', details: 'Develop comprehensive guides on keyword research methodology', implementationDifficulty: 'medium' },
+        { type: 'content', recommendation: 'Develop comparison posts about tools', priority: 'medium', details: 'Create in-depth comparisons of popular tools in your industry', implementationDifficulty: 'medium' },
+      ]
+    };
   }
 };
 

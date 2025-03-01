@@ -3,11 +3,15 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2 } from "lucide-react";
-import { SeoRecommendation } from "@/services/keywordService";
+import { SeoRecommendation, generateSeoRecommendations } from "@/services/keywordService";
 
 // Create a cache to store SEO recommendations
 export const recommendationsCache = {
-  data: null as SeoRecommendation[] | null,
+  data: null as {
+    onPage: SeoRecommendation[];
+    technical: SeoRecommendation[];
+    content: SeoRecommendation[];
+  } | null,
   domain: "",
   keywordsLength: 0
 };
@@ -19,12 +23,16 @@ interface SeoRecommendationsCardProps {
 }
 
 export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecommendationsCardProps) {
-  const [recommendations, setRecommendations] = useState<SeoRecommendation[] | null>(null);
+  const [recommendations, setRecommendations] = useState<{
+    onPage: SeoRecommendation[];
+    technical: SeoRecommendation[];
+    content: SeoRecommendation[];
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Generate SEO recommendations based on keyword data
   useEffect(() => {
-    const generateRecommendations = () => {
+    const fetchRecommendations = async () => {
       if (isLoading || keywords.length === 0) return;
       
       // Check if we already have cached data for this domain
@@ -40,90 +48,15 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
       setLoading(true);
       
       try {
-        // Generate SEO recommendations based on keyword data
-        const seoRecommendations: SeoRecommendation[] = [
-          {
-            type: "technical",
-            recommendation: "Improve page load speed",
-            details: "Fast-loading pages rank better. Optimize images, use browser caching, and minimize JavaScript.",
-            priority: "high",
-            implementationDifficulty: "medium"
-          },
-          {
-            type: "content",
-            recommendation: "Add more comprehensive content around your top keywords",
-            details: "Create in-depth content (2000+ words) that covers all aspects of your top-ranking keywords.",
-            priority: "high",
-            implementationDifficulty: "medium"
-          },
-          {
-            type: "technical",
-            recommendation: "Ensure mobile-friendliness",
-            details: "Google primarily uses mobile-first indexing. Test your site on various mobile devices.",
-            priority: "high",
-            implementationDifficulty: "medium"
-          },
-          
-          // For high-volume keywords
-          {
-            type: "keyword",
-            recommendation: "Focus on high-volume, medium-difficulty keywords",
-            details: `Target keywords with higher search volumes (>1000) and moderate difficulty scores (<50).`,
-            priority: "high",
-            implementationDifficulty: "hard"
-          },
-          {
-            type: "content",
-            recommendation: "Create a content calendar for keyword gaps",
-            details: "Plan content to target the keyword gaps identified in the analysis.",
-            priority: "medium",
-            implementationDifficulty: "easy"
-          },
-          {
-            type: "technical",
-            recommendation: "Optimize internal linking structure",
-            details: "Link between related content to distribute page authority and help users navigate.",
-            priority: "medium",
-            implementationDifficulty: "medium"
-          },
-          
-          // For on-page optimization
-          {
-            type: "on-page",
-            recommendation: "Optimize meta titles and descriptions",
-            details: "Include main keywords in meta titles and write compelling meta descriptions.",
-            priority: "high",
-            implementationDifficulty: "easy"
-          },
-          {
-            type: "on-page",
-            recommendation: "Use schema markup",
-            details: "Implement structured data to help search engines understand your content better.",
-            priority: "medium", 
-            implementationDifficulty: "hard"
-          },
-          {
-            type: "backlink",
-            recommendation: "Build quality backlinks",
-            details: "Create shareable content and reach out to industry websites for backlinks.",
-            priority: "high",
-            implementationDifficulty: "hard"
-          }
-        ];
-        
-        // Sort recommendations by priority (high first)
-        const sortedRecommendations = seoRecommendations.sort((a, b) => {
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
-          return priorityOrder[a.priority as keyof typeof priorityOrder] - 
-                 priorityOrder[b.priority as keyof typeof priorityOrder];
-        });
+        // Use AI-generated recommendations
+        const aiRecommendations = await generateSeoRecommendations(domain, keywords);
         
         // Update cache
-        recommendationsCache.data = sortedRecommendations;
+        recommendationsCache.data = aiRecommendations;
         recommendationsCache.domain = domain;
         recommendationsCache.keywordsLength = keywords.length;
         
-        setRecommendations(sortedRecommendations);
+        setRecommendations(aiRecommendations);
       } catch (error) {
         console.error("Error generating SEO recommendations:", error);
       } finally {
@@ -131,7 +64,7 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
       }
     };
     
-    generateRecommendations();
+    fetchRecommendations();
   }, [domain, keywords, isLoading]);
 
   const getPriorityColor = (priority: string) => {
@@ -143,7 +76,7 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
     }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty) {
       case "easy": return "text-green-600 border-green-200 bg-green-50";
       case "medium": return "text-amber-600 border-amber-200 bg-amber-50";
@@ -156,11 +89,26 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
     switch (type) {
       case "technical": return "🔧";
       case "content": return "📝";
-      case "keyword": return "🔑";
-      case "on-page": return "📄";
-      case "backlink": return "🔗";
+      case "onPage": return "📄";
       default: return "📊";
     }
+  };
+
+  // Flatten recommendations for display
+  const getAllRecommendations = () => {
+    if (!recommendations) return [];
+    const allRecs = [
+      ...(recommendations.onPage || []),
+      ...(recommendations.technical || []),
+      ...(recommendations.content || [])
+    ];
+    
+    // Sort by priority (high first)
+    return allRecs.sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return priorityOrder[a.priority as keyof typeof priorityOrder] - 
+             priorityOrder[b.priority as keyof typeof priorityOrder];
+    });
   };
 
   return (
@@ -179,9 +127,9 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : recommendations && recommendations.length > 0 ? (
+        ) : recommendations ? (
           <div className="space-y-4">
-            {recommendations.map((rec, index) => (
+            {getAllRecommendations().map((rec, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -192,13 +140,15 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
                     <Badge className={`${getPriorityColor(rec.priority)}`}>
                       {rec.priority} priority
                     </Badge>
-                    <Badge className={`${getDifficultyColor(rec.implementationDifficulty)}`}>
-                      {rec.implementationDifficulty}
-                    </Badge>
+                    {rec.implementationDifficulty && (
+                      <Badge className={`${getDifficultyColor(rec.implementationDifficulty)}`}>
+                        {rec.implementationDifficulty}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground ml-7">{rec.details}</p>
-                {index < recommendations.length - 1 && <div className="pt-1 pb-1 border-b border-border/40" />}
+                {rec.details && <p className="text-sm text-muted-foreground ml-7">{rec.details}</p>}
+                {index < getAllRecommendations().length - 1 && <div className="pt-1 pb-1 border-b border-border/40" />}
               </div>
             ))}
           </div>
@@ -208,9 +158,9 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
           </div>
         )}
 
-        {recommendations && recommendations.length > 0 && (
+        {recommendations && (
           <div className="text-xs text-muted-foreground mt-6 text-center">
-            These recommendations are tailored based on your domain and keyword analysis
+            These AI-generated recommendations are tailored based on your domain and keyword analysis
           </div>
         )}
       </CardContent>

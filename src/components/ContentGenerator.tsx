@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,13 @@ interface ContentGeneratorProps {
 const generateTopicSuggestions = (
   domain: string,
   keywordGaps: any[] = [],
-  seoRecommendations: any[] = []
+  seoRecommendations: {
+    onPage: any[];
+    technical: any[];
+    content: any[];
+  } | null = null
 ): string[] => {
-  if ((!keywordGaps || keywordGaps.length === 0) && 
-      (!seoRecommendations || seoRecommendations.length === 0)) {
+  if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
     return [
       "Pricing Strategy Optimization",
       "Revenue Growth Management",
@@ -39,7 +43,7 @@ const generateTopicSuggestions = (
   
   const gapKeywords = keywordGaps?.map(gap => gap.keyword) || [];
   
-  const contentRecs = seoRecommendations?.filter(rec => rec.type === "content") || [];
+  const contentRecs = seoRecommendations?.content || [];
   
   const topics = new Set<string>();
   
@@ -107,10 +111,13 @@ const generateTopicSuggestions = (
 const generateTitleSuggestions = (
   topic: string,
   keywordGaps: any[] = [],
-  seoRecommendations: any[] = []
+  seoRecommendations: {
+    onPage: any[];
+    technical: any[];
+    content: any[];
+  } | null = null
 ): string[] => {
-  if ((!keywordGaps || keywordGaps.length === 0) && 
-      (!seoRecommendations || seoRecommendations.length === 0)) {
+  if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
     return [
       `Ultimate Guide to ${topic} for Business Growth`,
       `How ${topic} Drives Revenue: Proven Strategies`,
@@ -134,7 +141,7 @@ const generateTitleSuggestions = (
     titles.add(`The Ultimate Guide to ${topic} and ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
   });
   
-  const contentRecs = seoRecommendations?.filter(rec => rec.type === "content") || [];
+  const contentRecs = seoRecommendations?.content || [];
   contentRecs.forEach(rec => {
     const recommendation = rec.recommendation;
     if (recommendation.toLowerCase().includes(topic.toLowerCase().split(' ')[0])) {

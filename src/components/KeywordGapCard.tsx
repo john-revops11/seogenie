@@ -61,14 +61,26 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
               kw.ranks[competitor] <= 20 && 
               (!kw.ranks[domain] || kw.ranks[domain] > 20)
             )
-            .map(kw => ({
-              keyword: kw.keyword,
-              competitor: competitor,
-              rank: kw.ranks[competitor],
-              volume: kw.volume || 0,
-              difficulty: kw.difficulty || 0,
-              opportunity: 100 - (kw.difficulty || 0)
-            }));
+            .map(kw => {
+              // Calculate opportunity based on difficulty
+              let opportunity: 'high' | 'medium' | 'low' = 'medium';
+              const difficultyValue = kw.difficulty || 0;
+              
+              if (difficultyValue < 30) {
+                opportunity = 'high';
+              } else if (difficultyValue > 60) {
+                opportunity = 'low';
+              }
+              
+              return {
+                keyword: kw.keyword,
+                competitor: competitor,
+                rank: kw.ranks[competitor],
+                volume: kw.volume || 0,
+                difficulty: kw.difficulty || 0,
+                opportunity: opportunity
+              };
+            });
           
           competitorKeywordGaps.push(...competitorKeywords);
         });
