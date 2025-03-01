@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { generateContent } from "@/services/keywordService";
+import { generateContent, SeoRecommendation } from "@/services/keywordService";
 import { keywordGapsCache } from "@/components/KeywordGapCard";
 import { recommendationsCache } from "@/components/SeoRecommendationsCard";
 
@@ -26,9 +25,9 @@ const generateTopicSuggestions = (
   domain: string,
   keywordGaps: any[] = [],
   seoRecommendations: {
-    onPage: any[];
-    technical: any[];
-    content: any[];
+    onPage: SeoRecommendation[];
+    technical: SeoRecommendation[];
+    content: SeoRecommendation[];
   } | null = null
 ): string[] => {
   if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
@@ -112,9 +111,9 @@ const generateTitleSuggestions = (
   topic: string,
   keywordGaps: any[] = [],
   seoRecommendations: {
-    onPage: any[];
-    technical: any[];
-    content: any[];
+    onPage: SeoRecommendation[];
+    technical: SeoRecommendation[];
+    content: SeoRecommendation[];
   } | null = null
 ): string[] => {
   if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
@@ -211,14 +210,9 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     
     try {
       const gaps = keywordGapsCache.data || [];
+      const recommendations = recommendationsCache.data;
       
-      const allRecommendations = [
-        ...(recommendationsCache.data?.onPage || []),
-        ...(recommendationsCache.data?.technical || []),
-        ...(recommendationsCache.data?.content || [])
-      ];
-      
-      const generatedTopics = generateTopicSuggestions(domain, gaps, allRecommendations);
+      const generatedTopics = generateTopicSuggestions(domain, gaps, recommendations);
       setTopics(generatedTopics);
       
       setSelectedTopic("");
@@ -238,14 +232,9 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     
     try {
       const gaps = keywordGapsCache.data || [];
+      const recommendations = recommendationsCache.data;
       
-      const allRecommendations = [
-        ...(recommendationsCache.data?.onPage || []),
-        ...(recommendationsCache.data?.technical || []),
-        ...(recommendationsCache.data?.content || [])
-      ];
-      
-      const titles = generateTitleSuggestions(topic, gaps, allRecommendations);
+      const titles = generateTitleSuggestions(topic, gaps, recommendations);
       setTitleSuggestions(titles);
       
       if (titles.length > 0) {
@@ -268,12 +257,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     
     try {
       const gaps = keywordGapsCache.data || [];
-      
-      const allRecommendations = [
-        ...(recommendationsCache.data?.onPage || []),
-        ...(recommendationsCache.data?.technical || []),
-        ...(recommendationsCache.data?.content || [])
-      ];
+      const recommendations = recommendationsCache.data;
       
       const randomSeed = Math.random().toString();
       console.log("Regenerating topics with seed:", randomSeed);
@@ -282,14 +266,14 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       let newTopics = [];
       
       for (let i = 0; i < 3; i++) {
-        const candidateTopics = generateTopicSuggestions(domain, gaps, allRecommendations);
+        const candidateTopics = generateTopicSuggestions(domain, gaps, recommendations);
         newTopics = candidateTopics.filter(topic => !existingTopics.has(topic));
         
         if (newTopics.length >= 5) break;
       }
       
       if (newTopics.length < 5) {
-        newTopics = generateTopicSuggestions(domain, gaps, allRecommendations);
+        newTopics = generateTopicSuggestions(domain, gaps, recommendations);
       }
       
       setTopics(newTopics);
@@ -316,12 +300,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     
     try {
       const gaps = keywordGapsCache.data || [];
-      
-      const allRecommendations = [
-        ...(recommendationsCache.data?.onPage || []),
-        ...(recommendationsCache.data?.technical || []),
-        ...(recommendationsCache.data?.content || [])
-      ];
+      const recommendations = recommendationsCache.data;
       
       const randomSeed = Math.random().toString();
       console.log("Regenerating titles with seed:", randomSeed);
@@ -330,14 +309,14 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       let newTitles = [];
       
       for (let i = 0; i < 3; i++) {
-        const candidateTitles = generateTitleSuggestions(selectedTopic, gaps, allRecommendations);
+        const candidateTitles = generateTitleSuggestions(selectedTopic, gaps, recommendations);
         newTitles = candidateTitles.filter(title => !existingTitles.has(title));
         
         if (newTitles.length >= 3) break;
       }
       
       if (newTitles.length < 3) {
-        newTitles = generateTitleSuggestions(selectedTopic, gaps, allRecommendations);
+        newTitles = generateTitleSuggestions(selectedTopic, gaps, recommendations);
       }
       
       setTitleSuggestions(newTitles);

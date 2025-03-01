@@ -44,27 +44,69 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       
       try {
         // Identify keywords that competitors rank for but the main domain doesn't
-        const mainDomainKeywords = new Set(
-          keywords
-            .filter(kw => kw.ranks && kw.ranks[domain] && kw.ranks[domain] <= 20)
-            .map(kw => kw.keyword.toLowerCase())
-        );
-        
         const competitorKeywordGaps: KeywordGap[] = [];
         
-        // For each competitor, find keywords they rank for but main domain doesn't
-        competitorDomains.forEach(competitor => {
-          const competitorKeywords = keywords
-            .filter(kw => 
-              kw.ranks && 
-              kw.ranks[competitor] && 
-              kw.ranks[competitor] <= 20 && 
-              (!kw.ranks[domain] || kw.ranks[domain] > 20)
-            )
-            .map(kw => {
+        // Get the domain's base names for easier comparison
+        const getDomainName = (url: string) => {
+          try {
+            return new URL(url).hostname.replace(/^www\./, '');
+          } catch (e) {
+            return url;
+          }
+        };
+        
+        const mainDomainName = getDomainName(domain);
+        const competitorNames = competitorDomains.map(getDomainName);
+        
+        // Extract ranks from keywords data
+        // Process each keyword to check if competitors rank for it but main domain doesn't
+        keywords.forEach(kw => {
+          // Create a simplified representation of ranks
+          const ranks: Record<string, number> = {};
+          
+          // If the keyword has a ranks property with domain rankings
+          if (kw.ranks) {
+            Object.keys(kw.ranks).forEach(domainKey => {
+              if (kw.ranks[domainKey] && kw.ranks[domainKey] <= 20) {
+                ranks[getDomainName(domainKey)] = kw.ranks[domainKey];
+              }
+            });
+          } 
+          // If the keyword uses competitorRankings format
+          else if (kw.competitorRankings) {
+            // Add competitor rankings
+            Object.keys(kw.competitorRankings).forEach(domainKey => {
+              if (kw.competitorRankings[domainKey] && kw.competitorRankings[domainKey] <= 20) {
+                ranks[domainKey] = kw.competitorRankings[domainKey];
+              }
+            });
+            
+            // Add main domain ranking if it exists
+            if (kw.position && kw.position <= 20) {
+              ranks[mainDomainName] = kw.position;
+            }
+          }
+          
+          // Check if main domain doesn't rank but at least one competitor does
+          const mainDomainRanks = ranks[mainDomainName];
+          const hasCompetitorRanking = competitorNames.some(comp => ranks[comp] && ranks[comp] <= 20);
+          
+          if ((!mainDomainRanks || mainDomainRanks > 20) && hasCompetitorRanking) {
+            // Find the best ranking competitor
+            let bestCompetitor = '';
+            let bestRank = 100;
+            
+            competitorNames.forEach(comp => {
+              if (ranks[comp] && ranks[comp] < bestRank) {
+                bestRank = ranks[comp];
+                bestCompetitor = comp;
+              }
+            });
+            
+            if (bestCompetitor) {
               // Calculate opportunity based on difficulty
               let opportunity: 'high' | 'medium' | 'low' = 'medium';
-              const difficultyValue = kw.difficulty || 0;
+              const difficultyValue = kw.difficulty || kw.competition_index || 0;
               
               if (difficultyValue < 30) {
                 opportunity = 'high';
@@ -72,17 +114,16 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
                 opportunity = 'low';
               }
               
-              return {
+              competitorKeywordGaps.push({
                 keyword: kw.keyword,
-                competitor: competitor,
-                rank: kw.ranks[competitor],
-                volume: kw.volume || 0,
-                difficulty: kw.difficulty || 0,
-                opportunity: opportunity
-              };
-            });
-          
-          competitorKeywordGaps.push(...competitorKeywords);
+                volume: kw.volume || kw.monthly_search || 0,
+                difficulty: difficultyValue,
+                opportunity: opportunity,
+                competitor: bestCompetitor,
+                rank: ranks[bestCompetitor]
+              });
+            }
+          }
         });
         
         // Sort by volume (highest first)
@@ -90,6 +131,8 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
         
         // Take top 10 gaps
         const topGaps = sortedGaps.slice(0, 10);
+        
+        console.log("Found keyword gaps:", topGaps.length);
         
         // Update cache
         keywordGapsCache.data = topGaps;
