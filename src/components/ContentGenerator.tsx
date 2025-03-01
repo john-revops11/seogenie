@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, RefreshCw, FileEdit, Copy, Download, Plus } from "lucide-react";
+import { Loader2, RefreshCw, FileEdit, Copy, Download, Plus, CheckCircle, Edit, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { generateContent, SeoRecommendation } from "@/services/keywordService";
 import { keywordGapsCache } from "@/components/KeywordGapCard";
 import { recommendationsCache } from "@/components/SeoRecommendationsCard";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -31,30 +30,29 @@ const generateTopicSuggestions = (
     onPage: SeoRecommendation[];
     technical: SeoRecommendation[];
     content: SeoRecommendation[];
-  } | null = null
+  } | null = null,
+  selectedKeywords: string[] = []
 ): string[] => {
   if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
-    return [
-      "Pricing Strategy Optimization",
-      "Revenue Growth Management",
-      "Dynamic Pricing Models",
-      "Value-Based Pricing",
-      "Pricing Analytics Frameworks"
-    ];
+    return [];
   }
   
-  const gapKeywords = keywordGaps?.map(gap => gap.keyword) || [];
+  // Prioritize selected keywords when available
+  const keywordsToUse = selectedKeywords.length > 0 
+    ? selectedKeywords 
+    : keywordGaps?.map(gap => gap.keyword) || [];
+  
   const contentRecs = seoRecommendations?.content || [];
   
   // Use a Set to avoid duplicate topics
   const topics = new Set<string>();
   
   // Extract topics from keyword gaps
-  if (gapKeywords.length > 0) {
+  if (keywordsToUse.length > 0) {
     // Group keywords by common terms to identify themes
     const keywordGroups: Record<string, string[]> = {};
     
-    gapKeywords.forEach(keyword => {
+    keywordsToUse.forEach(keyword => {
       // Extract potential main terms from each keyword (usually first 2-3 words)
       const words = keyword.split(' ');
       if (words.length >= 2) {
@@ -91,9 +89,9 @@ const generateTopicSuggestions = (
         
         // Generate multiple topic formats based on the main term
         const topicVariations = [
-          `${topicName} Strategies for Revenue Growth`,
+          `${topicName} Strategies for Growth`,
           `${topicName} Optimization Guide`,
-          `${topicName} Analytics Framework`,
+          `${topicName} Framework`,
           `Advanced ${topicName} Tactics`
         ];
         
@@ -107,13 +105,8 @@ const generateTopicSuggestions = (
     contentRecs.forEach(rec => {
       const recommendation = rec.recommendation.toLowerCase();
       
-      // Look for high-priority content recommendations related to pricing
-      if ((recommendation.includes('pricing') || 
-          recommendation.includes('revenue') || 
-          recommendation.includes('strategy') || 
-          recommendation.includes('analytics')) && 
-          rec.priority === 'high') {
-        
+      // Look for high-priority content recommendations
+      if (rec.priority === 'high') {
         // Format the recommendation as a topic
         let topicName = '';
         
@@ -138,25 +131,6 @@ const generateTopicSuggestions = (
     });
   }
   
-  // Default topics to fill in if we don't have enough
-  const defaultTopics = [
-    "Pricing Strategy Optimization",
-    "Revenue Growth Management",
-    "Dynamic Pricing Models",
-    "Value-Based Pricing",
-    "Pricing Analytics Frameworks",
-    "Competitive Pricing Analysis",
-    "Subscription Revenue Optimization",
-    "Pricing Psychology Research"
-  ];
-  
-  // Add default topics if we need more
-  defaultTopics.forEach(topic => {
-    if (topics.size < 8) {
-      topics.add(topic);
-    }
-  });
-  
   return Array.from(topics).slice(0, 8);
 };
 
@@ -168,35 +142,37 @@ const generateTitleSuggestions = (
     onPage: SeoRecommendation[];
     technical: SeoRecommendation[];
     content: SeoRecommendation[];
-  } | null = null
+  } | null = null,
+  selectedKeywords: string[] = []
 ): string[] => {
   if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
     return [
-      `Ultimate Guide to ${topic} for Business Growth`,
-      `How ${topic} Drives Revenue: Proven Strategies`,
-      `${topic}: Benchmarks and Best Practices for 2023`
+      `Guide to ${topic}`,
+      `${topic}: Best Practices`,
+      `Understanding ${topic}`
     ];
   }
+  
+  // Prioritize selected keywords
+  const keywordsToUse = selectedKeywords.length > 0 
+    ? selectedKeywords 
+    : keywordGaps?.map(gap => gap.keyword) || [];
   
   // Use a Set to avoid duplicate titles
   const titles = new Set<string>();
   
   // Find keywords related to the selected topic
-  const relatedKeywords = keywordGaps?.filter(gap => {
-    const keyword = gap.keyword.toLowerCase();
+  const relatedKeywords = keywordsToUse.filter(keyword => {
+    const keywordLower = keyword.toLowerCase();
     const topicWords = topic.toLowerCase().split(' ');
-    return topicWords.some(word => keyword.includes(word) && word.length > 3) || 
-           keyword.includes('pricing') || 
-           keyword.includes('revenue') ||
-           keyword.includes('strategy');
-  }) || [];
+    return topicWords.some(word => keywordLower.includes(word) && word.length > 3);
+  });
   
   // Generate titles from related keywords
-  relatedKeywords.slice(0, 5).forEach(gap => {
-    const keyword = gap.keyword;
+  relatedKeywords.slice(0, 5).forEach(keyword => {
     // Create variations of titles incorporating the keyword
     titles.add(`${topic}: Complete Guide to ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
-    titles.add(`How ${topic} Powers ${keyword.charAt(0).toUpperCase() + keyword.slice(1)} Growth`);
+    titles.add(`How ${topic} Powers Growth`);
   });
   
   // Use SEO content recommendations for title inspiration
@@ -221,11 +197,9 @@ const generateTitleSuggestions = (
   
   // Default title formats if we need more
   const defaultTitles = [
-    `Ultimate Guide to ${topic} for Revenue Growth`,
-    `How ${topic} Drives Profitability: Proven Strategies`,
-    `${topic}: Benchmarks and Best Practices for 2023`,
-    `Implementing ${topic} to Maximize Customer Lifetime Value`,
-    `${topic}: Analytics-Driven Approach for Business Success`
+    `Ultimate Guide to ${topic}`,
+    `${topic}: Best Practices for Success`,
+    `${topic}: Complete Strategy Guide`
   ];
   
   // Add default titles if needed
@@ -254,13 +228,14 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
   const [topics, setTopics] = useState<string[]>([]);
   const [selectedTopic, setSelectedTopic] = useState("");
   const [customTopic, setCustomTopic] = useState("");
-  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
+  const [titleSuggestions, setTitleSuggestions] = useState<{[topic: string]: string[]}>({});
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
-  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
   const [isDataReady, setIsDataReady] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [showCustomTopicInput, setShowCustomTopicInput] = useState(false);
+  const [isEditingTopic, setIsEditingTopic] = useState<string | null>(null);
+  const [editedTopicText, setEditedTopicText] = useState("");
   
   // Check if data is ready for content generation
   useEffect(() => {
@@ -281,6 +256,13 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     checkDataReadiness();
   }, [domain, allKeywords]);
   
+  // Set selected keywords from keyword gaps cache
+  useEffect(() => {
+    if (keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
+      setSelectedKeywords(keywordGapsCache.selectedKeywords);
+    }
+  }, []);
+  
   // Generate initial topic suggestions
   const generateInitialTopics = () => {
     setIsLoadingTopics(true);
@@ -288,12 +270,19 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     try {
       const gaps = keywordGapsCache.data || [];
       const recommendations = recommendationsCache.data;
+      const selectedKeywords = keywordGapsCache.selectedKeywords || [];
       
-      const generatedTopics = generateTopicSuggestions(domain, gaps, recommendations);
+      const generatedTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       setTopics(generatedTopics);
       
+      // Generate titles for each topic
+      const titlesMap: {[topic: string]: string[]} = {};
+      generatedTopics.forEach(topic => {
+        titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+      });
+      
+      setTitleSuggestions(titlesMap);
       setSelectedTopic("");
-      setTitleSuggestions([]);
       setTitle("");
     } catch (error) {
       console.error("Error generating topics:", error);
@@ -303,31 +292,28 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     }
   };
   
-  // Handle topic selection or custom topic creation
-  const handleTopicChange = (topic: string) => {
-    if (topic === "custom") {
-      setShowCustomTopicInput(true);
-      return;
-    }
-    
-    setSelectedTopic(topic);
-    setShowCustomTopicInput(false);
-    generateTitlesForTopic(topic);
-  };
-  
-  // Handle custom topic submission
-  const handleCustomTopicSubmit = () => {
+  // Handle adding a custom topic
+  const handleAddCustomTopic = () => {
     if (!customTopic.trim()) {
       toast.error("Please enter a custom topic");
       return;
     }
     
     // Add the custom topic to the list
-    setTopics(prev => [customTopic, ...prev.filter(t => t !== "custom").slice(0, 7)]);
-    setSelectedTopic(customTopic);
+    const newTopic = customTopic.trim();
+    setTopics(prev => [newTopic, ...prev.slice(0, 7)]);
     
     // Generate titles for the custom topic
-    generateTitlesForTopic(customTopic);
+    const gaps = keywordGapsCache.data || [];
+    const recommendations = recommendationsCache.data;
+    const selectedKeywords = keywordGapsCache.selectedKeywords || [];
+    
+    const titles = generateTitleSuggestions(newTopic, gaps, recommendations, selectedKeywords);
+    
+    setTitleSuggestions(prev => ({
+      ...prev,
+      [newTopic]: titles
+    }));
     
     // Reset the input
     setCustomTopic("");
@@ -336,31 +322,55 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     toast.success("Custom topic created");
   };
   
-  // Generate titles for a topic
-  const generateTitlesForTopic = (topic: string) => {
-    setIsLoadingTitles(true);
+  // Handle topic selection
+  const handleSelectTopic = (topic: string) => {
+    setSelectedTopic(topic);
     
-    try {
-      const gaps = keywordGapsCache.data || [];
-      const recommendations = recommendationsCache.data;
-      
-      const titles = generateTitleSuggestions(topic, gaps, recommendations);
-      setTitleSuggestions(titles);
-      
-      if (titles.length > 0) {
-        setTitle(titles[0]);
-      }
-    } catch (error) {
-      console.error("Error generating titles:", error);
-      toast.error("Failed to generate title suggestions");
-    } finally {
-      setIsLoadingTitles(false);
+    // Set the first title suggestion by default
+    if (titleSuggestions[topic] && titleSuggestions[topic].length > 0) {
+      setTitle(titleSuggestions[topic][0]);
+    } else {
+      setTitle(`${topic}: Complete Guide`);
     }
   };
   
   // Handle title selection
-  const handleTitleSelect = (selectedTitle: string) => {
-    setTitle(selectedTitle);
+  const handleSelectTitle = (title: string) => {
+    setTitle(title);
+  };
+  
+  // Start editing a topic
+  const handleStartEditingTopic = (topic: string) => {
+    setIsEditingTopic(topic);
+    setEditedTopicText(topic);
+  };
+  
+  // Save edited topic
+  const handleSaveEditedTopic = () => {
+    if (!editedTopicText.trim() || !isEditingTopic) return;
+    
+    const newTopic = editedTopicText.trim();
+    
+    // Update topics list
+    setTopics(prev => prev.map(t => t === isEditingTopic ? newTopic : t));
+    
+    // Move title suggestions to the new topic name
+    if (titleSuggestions[isEditingTopic]) {
+      setTitleSuggestions(prev => {
+        const newTitleSuggestions = { ...prev };
+        newTitleSuggestions[newTopic] = newTitleSuggestions[isEditingTopic];
+        delete newTitleSuggestions[isEditingTopic];
+        return newTitleSuggestions;
+      });
+    }
+    
+    // Update selected topic if it was being edited
+    if (selectedTopic === isEditingTopic) {
+      setSelectedTopic(newTopic);
+    }
+    
+    setIsEditingTopic(null);
+    toast.success("Topic updated");
   };
   
   // Regenerate topic suggestions
@@ -370,6 +380,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     try {
       const gaps = keywordGapsCache.data || [];
       const recommendations = recommendationsCache.data;
+      const selectedKeywords = keywordGapsCache.selectedKeywords || [];
       
       const randomSeed = Math.random().toString();
       console.log("Regenerating topics with seed:", randomSeed);
@@ -378,81 +389,34 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       let newTopics = [];
       
       for (let i = 0; i < 3; i++) {
-        const candidateTopics = generateTopicSuggestions(domain, gaps, recommendations);
+        const candidateTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
         newTopics = candidateTopics.filter(topic => !existingTopics.has(topic));
         
         if (newTopics.length >= 5) break;
       }
       
       if (newTopics.length < 5) {
-        newTopics = generateTopicSuggestions(domain, gaps, recommendations);
+        newTopics = generateTopicSuggestions(domain, gaps, recommendations, selectedKeywords);
       }
       
       setTopics(newTopics);
-      toast.success("Generated new topic suggestions");
       
+      // Generate titles for each new topic
+      const titlesMap: {[topic: string]: string[]} = {};
+      newTopics.forEach(topic => {
+        titlesMap[topic] = generateTitleSuggestions(topic, gaps, recommendations, selectedKeywords);
+      });
+      
+      setTitleSuggestions(titlesMap);
       setSelectedTopic("");
-      setTitleSuggestions([]);
       setTitle("");
+      
+      toast.success("Generated new topic suggestions");
     } catch (error) {
       console.error("Error regenerating topics:", error);
       toast.error("Failed to regenerate topic suggestions");
     } finally {
       setIsLoadingTopics(false);
-    }
-  };
-  
-  // Regenerate title suggestions
-  const handleRegenerateTitles = () => {
-    if (!selectedTopic) {
-      toast.error("Please select a topic first");
-      return;
-    }
-    
-    setIsLoadingTitles(true);
-    
-    try {
-      const gaps = keywordGapsCache.data || [];
-      const recommendations = recommendationsCache.data;
-      
-      const randomSeed = Math.random().toString();
-      console.log("Regenerating titles with seed:", randomSeed);
-      
-      const existingTitles = new Set(titleSuggestions);
-      let newTitles = [];
-      
-      for (let i = 0; i < 3; i++) {
-        const candidateTitles = generateTitleSuggestions(selectedTopic, gaps, recommendations);
-        newTitles = candidateTitles.filter(title => !existingTitles.has(title));
-        
-        if (newTitles.length >= 3) break;
-      }
-      
-      if (newTitles.length < 3) {
-        newTitles = generateTitleSuggestions(selectedTopic, gaps, recommendations);
-      }
-      
-      setTitleSuggestions(newTitles);
-      
-      if (newTitles.length > 0) {
-        setTitle(newTitles[0]);
-      }
-      
-      toast.success("Generated new title suggestions");
-    } catch (error) {
-      console.error("Error regenerating titles:", error);
-      toast.error("Failed to regenerate title suggestions");
-    } finally {
-      setIsLoadingTitles(false);
-    }
-  };
-  
-  // Handle keyword tag clicks
-  const handleTagClick = (keyword: string) => {
-    if (selectedKeywords.includes(keyword)) {
-      setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
-    } else {
-      setSelectedKeywords([...selectedKeywords, keyword]);
     }
   };
   
@@ -463,10 +427,12 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       return;
     }
     
-    if (selectedKeywords.length === 0) {
-      toast.error("Please select at least one keyword");
+    if (selectedKeywords.length === 0 && keywordGapsCache.selectedKeywords.length === 0) {
+      toast.error("Please select at least one keyword from the Keyword Gaps card");
       return;
     }
+    
+    const keywordsToUse = selectedKeywords.length > 0 ? selectedKeywords : keywordGapsCache.selectedKeywords;
     
     setIsGenerating(true);
     setGeneratedContent(null);
@@ -475,7 +441,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
       const content = await generateContent(
         domain,
         title,
-        selectedKeywords,
+        keywordsToUse,
         contentType,
         creativity
       );
@@ -562,7 +528,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl">
       <CardHeader>
         <CardTitle>AI Content Generator</CardTitle>
-        <CardDescription>Create expert pricing and revenue management content for Revology Analytics</CardDescription>
+        <CardDescription>Create optimized content using selected keywords from your gaps analysis</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="generate" className="space-y-6">
@@ -573,27 +539,63 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
           
           <TabsContent value="generate" className="space-y-6 pt-2">
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between">
-                  <Label>Topic</Label>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex items-center gap-1 h-7 px-2 text-xs"
-                    onClick={handleRegenerateTopics}
-                    disabled={isLoadingTopics}
-                  >
-                    {isLoadingTopics ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
-                    Regenerate
-                  </Button>
+                  <Label className="text-lg font-medium">Selected Keywords</Label>
+                  <Badge variant="outline">
+                    {keywordGapsCache.selectedKeywords.length || 0}/10
+                  </Badge>
                 </div>
                 
-                {showCustomTopicInput ? (
-                  <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0 ? (
+                    keywordGapsCache.selectedKeywords.map((keyword, idx) => (
+                      <Badge key={idx} className="bg-revology text-white">
+                        {keyword}
+                      </Badge>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground p-2">
+                      No keywords selected. Please select keywords from the Keyword Gaps card.
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-lg font-medium">Topics</Label>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1 h-8 px-2 text-xs border-revology/30 text-revology hover:bg-revology-light/50"
+                      onClick={() => setShowCustomTopicInput(true)}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Topic
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1 h-8 px-2 text-xs"
+                      onClick={handleRegenerateTopics}
+                      disabled={isLoadingTopics}
+                    >
+                      {isLoadingTopics ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
+                      Regenerate
+                    </Button>
+                  </div>
+                </div>
+                
+                {showCustomTopicInput && (
+                  <div className="flex gap-2 mb-4">
                     <Input
                       value={customTopic}
                       onChange={(e) => setCustomTopic(e.target.value)}
@@ -602,144 +604,153 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                     />
                     <Button 
                       size="sm"
-                      onClick={handleCustomTopicSubmit}
+                      onClick={handleAddCustomTopic}
                       disabled={!customTopic.trim()}
+                      className="bg-revology hover:bg-revology-dark"
                     >
                       Add
                     </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCustomTopicInput(false)}
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                ) : (
-                  <Select 
-                    value={selectedTopic} 
-                    onValueChange={handleTopicChange}
-                    disabled={isLoadingTopics}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a topic" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {topics.map((topic, index) => (
-                        <SelectItem key={index} value={topic}>
-                          {topic}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="custom">
-                        <div className="flex items-center gap-1 text-primary">
-                          <Plus className="h-3 w-3" />
-                          Add custom topic
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
                 )}
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Title</Label>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex items-center gap-1 h-7 px-2 text-xs"
-                    onClick={handleRegenerateTitles}
-                    disabled={isLoadingTitles || !selectedTopic}
-                  >
-                    {isLoadingTitles ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
-                    Regenerate
-                  </Button>
-                </div>
                 
-                {selectedTopic && (
-                  <>
-                    {titleSuggestions.length > 0 ? (
-                      <Select 
-                        value={title} 
-                        onValueChange={handleTitleSelect}
-                        disabled={isLoadingTitles}
+                <div className="grid md:grid-cols-2 gap-4 mt-4">
+                  {isLoadingTopics ? (
+                    <div className="col-span-2 flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : topics.length > 0 ? (
+                    topics.map((topic, topicIndex) => (
+                      <Card 
+                        key={topicIndex} 
+                        className={`overflow-hidden transition-all ${selectedTopic === topic ? 'border-revology/50 shadow-md' : ''}`}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a title" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {titleSuggestions.map((suggestion, index) => (
-                            <SelectItem key={index} value={suggestion}>
-                              {suggestion}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input 
-                        placeholder="Custom title" 
-                        value={title} 
-                        onChange={(e) => setTitle(e.target.value)}
-                      />
-                    )}
-                  </>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Content Type</Label>
-                <Select value={contentType} onValueChange={setContentType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select content type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="blog">Blog Post</SelectItem>
-                    <SelectItem value="article">Article</SelectItem>
-                    <SelectItem value="whitepaper">White Paper</SelectItem>
-                    <SelectItem value="casestudy">Case Study</SelectItem>
-                    <SelectItem value="guide">Guide</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Creativity</Label>
-                  <span className="text-xs text-muted-foreground">{creativity}%</span>
-                </div>
-                <Slider
-                  value={[creativity]}
-                  min={0}
-                  max={100}
-                  step={10}
-                  onValueChange={(value) => setCreativity(value[0])}
-                  className="py-2"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground pt-1">
-                  <span>Factual</span>
-                  <span>Creative</span>
+                        <CardHeader className="py-3 px-4">
+                          {isEditingTopic === topic ? (
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                value={editedTopicText}
+                                onChange={(e) => setEditedTopicText(e.target.value)}
+                                className="flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-green-600"
+                                onClick={handleSaveEditedTopic}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base">
+                                {topic}
+                              </CardTitle>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleStartEditingTopic(topic)}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </CardHeader>
+                        <CardContent className="pb-4 px-4">
+                          <div className="space-y-2">
+                            {titleSuggestions[topic] ? (
+                              titleSuggestions[topic].map((topicTitle, titleIndex) => (
+                                <div 
+                                  key={titleIndex}
+                                  className={`p-2 rounded-md cursor-pointer text-sm ${
+                                    selectedTopic === topic && title === topicTitle 
+                                      ? 'bg-revology-light/30 text-revology border border-revology/30' 
+                                      : 'bg-muted/50 hover:bg-muted'
+                                  }`}
+                                  onClick={() => {
+                                    handleSelectTopic(topic);
+                                    handleSelectTitle(topicTitle);
+                                  }}
+                                >
+                                  {topicTitle}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-sm text-muted-foreground">No title suggestions available</div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="col-span-2 text-center py-8 text-muted-foreground">
+                      No topics available. Try selecting keywords from the Keyword Gaps card or add a custom topic.
+                    </div>
+                  )}
                 </div>
               </div>
               
               <Separator className="my-4" />
               
-              <div className="space-y-2">
-                <Label>Target Keywords</Label>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-md">
-                  {allKeywords.slice(0, 30).map((keyword, index) => (
-                    <Badge
-                      key={index}
-                      variant={selectedKeywords.includes(keyword) ? "default" : "outline"}
-                      className="cursor-pointer transition-all hover:shadow"
-                      onClick={() => handleTagClick(keyword)}
-                    >
-                      {keyword}
-                    </Badge>
-                  ))}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Selected Title</Label>
+                  <Input 
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Select a topic and title, or enter a custom title"
+                    className={selectedTopic ? "border-revology/30 focus-visible:ring-revology/20" : ""}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Content Type</Label>
+                  <Select value={contentType} onValueChange={setContentType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select content type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="blog">Blog Post</SelectItem>
+                      <SelectItem value="article">Article</SelectItem>
+                      <SelectItem value="whitepaper">White Paper</SelectItem>
+                      <SelectItem value="casestudy">Case Study</SelectItem>
+                      <SelectItem value="guide">Guide</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Creativity</Label>
+                    <span className="text-xs text-muted-foreground">{creativity}%</span>
+                  </div>
+                  <Slider
+                    value={[creativity]}
+                    min={0}
+                    max={100}
+                    step={10}
+                    onValueChange={(value) => setCreativity(value[0])}
+                    className="py-2"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground pt-1">
+                    <span>Factual</span>
+                    <span>Creative</span>
+                  </div>
                 </div>
               </div>
               
               <Button 
                 className="w-full mt-6 bg-revology hover:bg-revology-dark" 
                 onClick={handleGenerateContent}
-                disabled={isGenerating || !title || selectedKeywords.length === 0}
+                disabled={isGenerating || !title || (keywordGapsCache.selectedKeywords.length === 0)}
               >
                 {isGenerating ? (
                   <>
@@ -841,7 +852,7 @@ const ContentGenerator = ({ domain, allKeywords }: ContentGeneratorProps) => {
                         Edit
                       </Button>
                       <Button 
-                        className="flex items-center gap-1" 
+                        className="flex items-center gap-1 bg-revology hover:bg-revology-dark" 
                         onClick={handleRegenerateContent}
                       >
                         <RefreshCw className="h-4 w-4" />

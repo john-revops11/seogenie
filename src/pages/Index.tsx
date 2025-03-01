@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +43,6 @@ const Index = () => {
     setAnalysisError(null);
   }, [activeTab]);
   
-  // Load saved analysis data from localStorage on initial load
   useEffect(() => {
     try {
       const savedAnalysis = localStorage.getItem('seoAnalysisData');
@@ -63,7 +61,6 @@ const Index = () => {
     }
   }, []);
 
-  // Save current analysis data to localStorage whenever it changes
   useEffect(() => {
     if (analysisComplete && keywordData.length > 0) {
       try {
@@ -126,7 +123,6 @@ const Index = () => {
   };
 
   const handleReset = () => {
-    // Clear the analysis data
     setAnalysisError(null);
     setProgress(0);
     setIsAnalyzing(false);
@@ -135,10 +131,8 @@ const Index = () => {
     setMainDomain("");
     setCompetitorDomains([""]);
     
-    // Clear localStorage
     localStorage.removeItem('seoAnalysisData');
     
-    // Switch to dashboard tab
     setActiveTab("dashboard");
     
     toast.success("Analysis data has been reset");
@@ -224,17 +218,14 @@ const Index = () => {
 
   const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
 
-  // Handle adding a new competitor from the KeywordTable component
   const handleAddCompetitorFromTable = (newCompetitor: string) => {
     if (isAnalyzing) return;
     
-    // Check if already exists
     if (competitorDomains.includes(newCompetitor)) {
       toast.error("This competitor is already in your analysis");
       return;
     }
     
-    // Add the new competitor
     setCompetitorDomains([...competitorDomains, newCompetitor]);
     toast.success(`Added ${newCompetitor} to competitors list`);
   };
@@ -392,6 +383,7 @@ const Index = () => {
                     competitorDomains={validCompetitorDomains} 
                     keywords={keywordData || []}
                     isLoading={isAnalyzing}
+                    onAddCompetitor={handleAddCompetitorFromTable}
                   />
                 </div>
                 
@@ -495,7 +487,6 @@ const Index = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Show persistence indicator if we have saved data */}
         {analysisComplete && (
           <div className="text-xs text-muted-foreground mt-6 text-center">
             Analysis data is automatically saved locally and will persist between tabs

@@ -2,15 +2,18 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Create a cache to store keyword gaps
 export const keywordGapsCache = {
   data: null as KeywordGap[] | null,
   domain: "",
   competitorDomains: [] as string[],
-  keywordsLength: 0
+  keywordsLength: 0,
+  selectedKeywords: [] as string[]
 };
 
 interface KeywordGapCardProps {
@@ -23,6 +26,7 @@ interface KeywordGapCardProps {
 export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading }: KeywordGapCardProps) {
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
 
   // Generate keyword gaps based on keyword data
   useEffect(() => {
@@ -151,6 +155,29 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     generateKeywordGaps();
   }, [domain, competitorDomains, keywords, isLoading]);
 
+  // Handle keyword selection
+  const handleKeywordSelection = (keyword: string) => {
+    const updatedSelection = selectedKeywords.includes(keyword)
+      ? selectedKeywords.filter(k => k !== keyword)
+      : [...selectedKeywords, keyword];
+    
+    // Limit selection to 10 keywords
+    if (updatedSelection.length > 10 && !selectedKeywords.includes(keyword)) {
+      toast.error("You can select a maximum of 10 keywords");
+      return;
+    }
+    
+    setSelectedKeywords(updatedSelection);
+    keywordGapsCache.selectedKeywords = updatedSelection;
+    
+    // Show toast message
+    if (selectedKeywords.includes(keyword)) {
+      toast.info(`Removed "${keyword}" from selection`);
+    } else {
+      toast.success(`Added "${keyword}" to selection`);
+    }
+  };
+
   return (
     <Card className="animate-fade-in">
       <CardHeader>
@@ -158,8 +185,11 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           Keyword Gaps 
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardTitle>
-        <CardDescription>
-          Keywords competitors rank for that you don't
+        <CardDescription className="flex justify-between items-center">
+          <span>Keywords competitors rank for that you don't</span>
+          <Badge variant="outline" className="ml-2">
+            {selectedKeywords.length}/10 selected
+          </Badge>
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -184,6 +214,18 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
                   <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty)}`}>
                     {gap.difficulty} KD
                   </Badge>
+                  <Button 
+                    variant={selectedKeywords.includes(gap.keyword) ? "default" : "outline"}
+                    size="sm"
+                    className={`h-7 w-7 p-0 ${selectedKeywords.includes(gap.keyword) ? 'bg-revology text-white' : ''}`}
+                    onClick={() => handleKeywordSelection(gap.keyword)}
+                  >
+                    {selectedKeywords.includes(gap.keyword) ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <span className="text-xs">+</span>
+                    )}
+                  </Button>
                 </div>
               </div>
             ))}
