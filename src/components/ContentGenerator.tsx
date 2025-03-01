@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Copy, Code, FileText, PenLine, RefreshCw, Sparkles } from "lucide-react";
+import { generateContent } from "@/services/keywordService";
 
-const ContentGenerator = ({ domain }: { domain: string }) => {
+interface ContentGeneratorProps {
+  domain: string;
+  allKeywords?: string[]; // Optional prop for keyword suggestions
+}
+
+const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) => {
   const [title, setTitle] = useState("");
   const [contentType, setContentType] = useState("blog");
-  const [keywords, setKeywords] = useState(["seo tools", "keyword research"]);
+  const [keywords, setKeywords] = useState<string[]>(["seo tools", "keyword research"]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<{
     title: string;
@@ -26,6 +32,17 @@ const ContentGenerator = ({ domain }: { domain: string }) => {
   } | null>(null);
   const [activeTab, setActiveTab] = useState("editor");
   const [creativity, setCreativity] = useState([50]);
+  
+  // Update keywords if allKeywords prop changes
+  useEffect(() => {
+    if (allKeywords.length > 0) {
+      // Use the top 5 keywords from allKeywords if available
+      const topKeywords = allKeywords.slice(0, 5).map(k => k.toLowerCase());
+      if (topKeywords.length > 0) {
+        setKeywords(topKeywords);
+      }
+    }
+  }, [allKeywords]);
   
   const contentTypeOptions = [
     { value: "blog", label: "Blog Post" },
@@ -39,7 +56,7 @@ const ContentGenerator = ({ domain }: { domain: string }) => {
     setKeywords(keywordArray);
   };
   
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!title) {
       toast.error("Please enter a title for your content");
       return;
@@ -47,87 +64,24 @@ const ContentGenerator = ({ domain }: { domain: string }) => {
     
     setIsGenerating(true);
     
-    // Mock API call delay
-    setTimeout(() => {
-      const mockContentGeneration = {
-        title: title,
-        metaDescription: `Discover the best ${keywords.join(", ")} and strategies to improve your SEO performance. Learn how to analyze and optimize your website for better rankings.`,
-        outline: [
-          "Introduction to SEO Tools and Keyword Research",
-          "Why Keyword Research is Critical for SEO Success",
-          "Top 5 SEO Tools for Effective Keyword Analysis",
-          "How to Identify Valuable Keywords for Your Industry",
-          "Implementing Keyword Strategy for Better Rankings",
-          "Measuring and Tracking Keyword Performance",
-          "Conclusion and Next Steps"
-        ],
-        content: `# ${title}
-
-## Introduction to SEO Tools and Keyword Research
-
-In today's competitive digital landscape, having the right **SEO tools** at your disposal can make the difference between online visibility and obscurity. Effective **keyword research** forms the foundation of any successful SEO strategy, allowing businesses to understand what their potential customers are searching for.
-
-## Why Keyword Research is Critical for SEO Success
-
-**Keyword research** isn't just about finding popular search terms; it's about uncovering the specific language your audience uses when looking for solutions. By understanding these patterns, you can create content that directly addresses their needs and questions.
-
-- Identifies customer pain points and questions
-- Reveals new market opportunities
-- Helps prioritize content creation efforts
-- Provides competitive intelligence
-
-## Top 5 SEO Tools for Effective Keyword Analysis
-
-The market offers numerous **SEO tools** designed to simplify and enhance your keyword discovery process:
-
-1. **SEMrush** - Comprehensive keyword data with competitive analysis
-2. **Ahrefs** - In-depth backlink analysis and keyword difficulty metrics
-3. **Moz Keyword Explorer** - Keyword suggestions with opportunity scores
-4. **Google Keyword Planner** - Direct insights from Google's data
-5. **Ubersuggest** - User-friendly interface with content ideas
-
-Each of these tools offers unique features that can help you identify valuable keywords and understand their potential.
-
-## How to Identify Valuable Keywords for Your Industry
-
-Not all keywords are created equal. The most valuable keywords for your business will balance search volume, competition, and relevance:
-
-* **Search Volume**: How many people are searching for this term monthly
-* **Keyword Difficulty**: How hard it will be to rank for this term
-* **Commercial Intent**: How likely searchers are to convert
-* **Relevance**: How closely the keyword matches your offerings
-
-## Implementing Keyword Strategy for Better Rankings
-
-Once you've identified your target keywords, implementation becomes key:
-
-- Incorporate primary keywords in titles, headings, and opening paragraphs
-- Use secondary keywords naturally throughout your content
-- Optimize meta descriptions and URL structures
-- Create topic clusters around related keywords
-- Develop a content calendar based on keyword opportunities
-
-## Measuring and Tracking Keyword Performance
-
-The work doesn't end with implementation. Regular monitoring helps you understand what's working and what needs adjustment:
-
-1. Track ranking positions for target keywords
-2. Monitor organic traffic to optimized pages
-3. Analyze user behavior and engagement metrics
-4. Adjust strategy based on performance data
-
-## Conclusion and Next Steps
-
-**SEO tools** and effective **keyword research** are not one-time tasks but ongoing processes that evolve with your business and the digital landscape. By consistently refining your approach and staying informed about changes in search algorithms, you can maintain and improve your website's visibility.
-
-Ready to take your SEO strategy to the next level? Start by conducting a comprehensive keyword audit and identifying new opportunities for growth.`
-      };
+    try {
+      const content = await generateContent(
+        domain,
+        title,
+        keywords,
+        contentType,
+        creativity[0]
+      );
       
-      setGeneratedContent(mockContentGeneration);
-      setIsGenerating(false);
+      setGeneratedContent(content);
       setActiveTab("preview");
       toast.success("Content successfully generated!");
-    }, 3000);
+    } catch (error) {
+      console.error("Error generating content:", error);
+      toast.error("Failed to generate content. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
   
   const handleCopyContent = () => {
@@ -149,10 +103,15 @@ Ready to take your SEO strategy to the next level? Start by conducting a compreh
     setKeywords(newKeywords);
   };
   
-  const suggestedKeywords = [
-    "seo analysis", "backlink checker", "website ranking", 
-    "content optimization", "meta description", "search engine optimization"
-  ];
+  // Generate suggested keywords based on allKeywords or use defaults
+  const suggestedKeywords = allKeywords.length > 0 
+    ? [...new Set(allKeywords.slice(0, 15))]
+        .filter(kw => !keywords.includes(kw))
+        .slice(0, 6)
+    : [
+        "seo analysis", "backlink checker", "website ranking", 
+        "content optimization", "meta description", "search engine optimization"
+      ];
 
   return (
     <div className="space-y-6 animate-fade-in">
