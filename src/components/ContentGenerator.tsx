@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Copy, Code, FileText, PenLine, RefreshCw, Sparkles } from "lucide-react";
+import { Loader2, Copy, Code, FileText, PenLine, RefreshCw, Sparkles, Edit, Save } from "lucide-react";
 import { generateContent } from "@/services/keywordService";
 
 interface ContentGeneratorProps {
@@ -29,6 +29,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
     metaDescription: string;
     outline: string[];
     content: string;
+    formattedContent?: string; // Added for storing formatted HTML content
   } | null>(null);
   const [activeTab, setActiveTab] = useState("editor");
   const [creativity, setCreativity] = useState([50]);
@@ -38,6 +39,9 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   const [topics, setTopics] = useState<string[]>([]);
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
   const [isLoadingTitles, setIsLoadingTitles] = useState(false);
+  const [isLoadingTopics, setIsLoadingTopics] = useState(false);
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const [editableContent, setEditableContent] = useState("");
   
   useEffect(() => {
     if (allKeywords.length > 0) {
@@ -75,6 +79,8 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   };
   
   const generateTopics = () => {
+    setIsLoadingTopics(true);
+    
     // Generate topics based on pricing and revenue management keywords
     const keywordBased = keywords.slice(0, 3).map(keyword => {
       return `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} Strategies`;
@@ -93,16 +99,22 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
       "Promotional Effectiveness"
     ];
     
-    // Combine topics and ensure we have at least 5
-    let combinedTopics = [...new Set([...keywordBased, ...pricingTopics])];
-    combinedTopics = combinedTopics.slice(0, Math.max(5, keywordBased.length + 2));
-    
-    setTopics(combinedTopics);
-    
-    // Set default selected topic if none is selected
-    if (!selectedTopic && combinedTopics.length > 0) {
-      setSelectedTopic(combinedTopics[0]);
-    }
+    // Simulate API delay
+    setTimeout(() => {
+      // Combine topics and ensure we have at least 5
+      let combinedTopics = [...new Set([...keywordBased, ...pricingTopics])];
+      combinedTopics = combinedTopics.slice(0, Math.max(5, keywordBased.length + 2));
+      
+      setTopics(combinedTopics);
+      setIsLoadingTopics(false);
+      
+      // Set default selected topic if none is selected
+      if (!selectedTopic && combinedTopics.length > 0) {
+        setSelectedTopic(combinedTopics[0]);
+      }
+      
+      toast.success("Generated new topic suggestions");
+    }, 800);
   };
   
   const generateTitleSuggestions = (topic: string) => {
@@ -132,6 +144,8 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
       
       setTitleSuggestions(suggestions.slice(0, 3));
       setIsLoadingTitles(false);
+      
+      toast.success("Generated new title suggestions");
     }, 800); // Simulate loading delay
   };
   
@@ -141,6 +155,30 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
   
   const handleTitleSelect = (value: string) => {
     setTitle(value);
+  };
+  
+  const formatContentWithHtml = (content: string): string => {
+    // Replace Markdown headings with HTML headings
+    let formatted = content
+      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-5 mb-3">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-medium mt-4 mb-2">$1</h3>')
+      // Replace bullet points with styled lists
+      .replace(/^[\*\-] (.*)$/gm, '<li class="ml-6 list-disc mb-1">$1</li>')
+      // Wrap bullet point lists in ul tags
+      .replace(/((?:<li.*?>.*?<\/li>\n?)+)/gs, '<ul class="my-3 space-y-1">$1</ul>')
+      // Replace numbered lists
+      .replace(/^\d+\. (.*)$/gm, '<li class="ml-6 list-decimal mb-1">$1</li>')
+      // Wrap numbered lists in ol tags
+      .replace(/((?:<li class="ml-6 list-decimal.*?>.*?<\/li>\n?)+)/gs, '<ol class="my-3 space-y-1">$1</ol>')
+      // Replace bold text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Replace italic text
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Replace paragraphs (any line that's not a heading, list item, or blank)
+      .replace(/^(?!<h|<li|\s*$)(.+)$/gm, '<p class="my-3">$1</p>');
+    
+    return formatted;
   };
   
   const handleGenerate = async () => {
@@ -160,7 +198,14 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
         creativity[0]
       );
       
-      setGeneratedContent(content);
+      // Format the content with HTML
+      const formattedContent = formatContentWithHtml(content.content);
+      
+      setGeneratedContent({
+        ...content,
+        formattedContent
+      });
+      
       setActiveTab("preview");
       toast.success("Content successfully generated!");
     } catch (error) {
@@ -171,10 +216,72 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
     }
   };
   
+  const handleRegenerateContent = async () => {
+    if (!title) {
+      toast.error("Please enter a title to regenerate content");
+      return;
+    }
+    
+    setIsGenerating(true);
+    toast.info("Regenerating content...");
+    
+    try {
+      // Add a slight randomness to creativity to ensure different results
+      const adjustedCreativity = Math.min(100, Math.max(1, creativity[0] + (Math.random() * 10 - 5)));
+      
+      const content = await generateContent(
+        domain,
+        title,
+        keywords,
+        contentType,
+        adjustedCreativity
+      );
+      
+      // Format the content with HTML
+      const formattedContent = formatContentWithHtml(content.content);
+      
+      setGeneratedContent({
+        ...content,
+        formattedContent
+      });
+      
+      setActiveTab("preview");
+      toast.success("Content successfully regenerated!");
+    } catch (error) {
+      console.error("Error regenerating content:", error);
+      toast.error("Failed to regenerate content. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
   const handleCopyContent = () => {
     if (generatedContent) {
       navigator.clipboard.writeText(generatedContent.content);
       toast.success("Content copied to clipboard");
+    }
+  };
+  
+  const handleEditContent = () => {
+    if (generatedContent) {
+      setEditableContent(generatedContent.content);
+      setIsEditingContent(true);
+    }
+  };
+  
+  const handleSaveEditedContent = () => {
+    if (generatedContent && editableContent) {
+      // Format the edited content
+      const formattedContent = formatContentWithHtml(editableContent);
+      
+      setGeneratedContent({
+        ...generatedContent,
+        content: editableContent,
+        formattedContent
+      });
+      
+      setIsEditingContent(false);
+      toast.success("Content updated successfully");
     }
   };
   
@@ -223,7 +330,23 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
               <div className="space-y-4">
                 {/* Topic Selection Dropdown */}
                 <div className="space-y-2">
-                  <Label htmlFor="topic">Content Topic</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="topic">Content Topic</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={generateTopics}
+                      disabled={isLoadingTopics}
+                      className="h-8"
+                    >
+                      {isLoadingTopics ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      Regenerate
+                    </Button>
+                  </div>
                   <Select value={selectedTopic} onValueChange={handleTopicChange}>
                     <SelectTrigger className="transition-all">
                       <SelectValue placeholder="Select a topic" />
@@ -236,22 +359,35 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedTopic && (
+                  {isLoadingTopics ? (
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Generating topic suggestions...
+                    </p>
+                  ) : selectedTopic ? (
                     <p className="text-xs text-muted-foreground">
                       Selected topic: <span className="font-medium text-foreground">{selectedTopic}</span>
                     </p>
-                  )}
+                  ) : null}
                 </div>
                 
                 {/* Title Selection Dropdown */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="title-suggestions">Suggested Titles</Label>
-                    {isLoadingTitles && (
-                      <span className="text-xs text-muted-foreground flex items-center">
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Loading...
-                      </span>
-                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => selectedTopic && generateTitleSuggestions(selectedTopic)}
+                      disabled={isLoadingTitles || !selectedTopic}
+                      className="h-8"
+                    >
+                      {isLoadingTitles ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      Regenerate
+                    </Button>
                   </div>
                   {titleSuggestions.length > 0 ? (
                     <Select onValueChange={handleTitleSelect}>
@@ -411,7 +547,7 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
             </TabsContent>
             
             <TabsContent value="preview" className="space-y-6">
-              {generatedContent && (
+              {generatedContent && !isEditingContent && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -422,8 +558,8 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                       <Button variant="outline" size="sm" onClick={handleCopyContent}>
                         <Copy className="w-4 h-4 mr-1" /> Copy
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab("editor")}>
-                        <PenLine className="w-4 h-4 mr-1" /> Edit
+                      <Button variant="outline" size="sm" onClick={handleEditContent}>
+                        <Edit className="w-4 h-4 mr-1" /> Edit
                       </Button>
                     </div>
                   </div>
@@ -449,21 +585,64 @@ const ContentGenerator = ({ domain, allKeywords = [] }: ContentGeneratorProps) =
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="p-4 rounded-md border bg-muted/30 prose prose-sm max-w-none">
-                        <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground overflow-auto max-h-[500px]">
-                          {generatedContent.content}
-                        </pre>
+                      <div className="p-4 rounded-md border bg-background shadow-sm prose prose-sm max-w-none dark:prose-invert">
+                        {generatedContent.formattedContent ? (
+                          <div 
+                            className="text-sm text-foreground overflow-auto max-h-[500px]"
+                            dangerouslySetInnerHTML={{ __html: generatedContent.formattedContent }}
+                          />
+                        ) : (
+                          <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground overflow-auto max-h-[500px]">
+                            {generatedContent.content}
+                          </pre>
+                        )}
                       </div>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                      <Button variant="outline" className="transition-all" onClick={() => handleGenerate()}>
-                        <RefreshCw className="w-4 h-4 mr-2" /> Regenerate
+                      <Button variant="outline" className="transition-all" onClick={handleRegenerateContent} disabled={isGenerating}>
+                        {isGenerating ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-2" /> 
+                        )}
+                        Regenerate
                       </Button>
                       <Button className="transition-all">
                         <FileText className="w-4 h-4 mr-2" /> Save Content
                       </Button>
                     </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Content editing mode */}
+              {generatedContent && isEditingContent && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Edit Content</h3>
+                    <Button variant="default" size="sm" onClick={handleSaveEditedContent}>
+                      <Save className="w-4 h-4 mr-1" /> Save Changes
+                    </Button>
+                  </div>
+                  
+                  <Textarea
+                    value={editableContent}
+                    onChange={(e) => setEditableContent(e.target.value)}
+                    className="min-h-[500px] font-mono text-sm"
+                    placeholder="Edit your content here..."
+                  />
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsEditingContent(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveEditedContent}>
+                      <Save className="w-4 h-4 mr-2" /> Save Changes
+                    </Button>
                   </div>
                 </div>
               )}
