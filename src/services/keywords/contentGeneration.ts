@@ -7,7 +7,8 @@ export const generateContent = async (
   keywords: string[],
   contentType: string,
   creativityLevel: number,
-  contentPreferences: string[] = []
+  contentPreferences: string[] = [],
+  ragEnabled: boolean = false
 ): Promise<{
   title: string;
   metaDescription: string;
@@ -18,14 +19,25 @@ export const generateContent = async (
   try {
     console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
     
-    // Use RAG to enhance keywords and get contextual information
-    const ragResults = await enhanceContentWithRAG(title, keywords, contentType);
+    // Only use RAG if it's enabled
+    let ragResults = {
+      relevantKeywords: keywords,
+      relatedTopics: [],
+      contextualExamples: [],
+      structuralRecommendations: []
+    };
     
-    console.log("Enhanced with RAG:", {
-      keywordCount: ragResults.relevantKeywords.length,
-      topicCount: ragResults.relatedTopics.length,
-      exampleCount: ragResults.contextualExamples.length
-    });
+    // Only perform RAG enhancement if enabled
+    if (ragEnabled) {
+      ragResults = await enhanceContentWithRAG(title, keywords, contentType);
+      console.log("Enhanced with RAG:", {
+        keywordCount: ragResults.relevantKeywords.length,
+        topicCount: ragResults.relatedTopics.length,
+        exampleCount: ragResults.contextualExamples.length
+      });
+    } else {
+      console.log("RAG enhancement disabled, using base keywords only");
+    }
     
     const enhancedKeywords = ragResults.relevantKeywords;
     
@@ -227,19 +239,19 @@ export const generateContent = async (
       }
     }
     
-    // Add RAG-enhanced context to the content brief
-    if (ragResults.relatedTopics.length > 0) {
+    // Add RAG-enhanced context to the content brief only if RAG is enabled
+    if (ragEnabled && ragResults.relatedTopics.length > 0) {
       contentBrief += `\n\nConsider including these related topics: ${ragResults.relatedTopics.join(', ')}.`;
     }
     
-    if (ragResults.contextualExamples.length > 0) {
+    if (ragEnabled && ragResults.contextualExamples.length > 0) {
       contentBrief += `\n\nReference these contextual examples where appropriate:`;
       ragResults.contextualExamples.forEach(example => {
         contentBrief += `\n- "${example}"`;
       });
     }
     
-    if (ragResults.structuralRecommendations.length > 0) {
+    if (ragEnabled && ragResults.structuralRecommendations.length > 0) {
       contentBrief += `\n\nFollow these structural recommendations:`;
       ragResults.structuralRecommendations.forEach(rec => {
         contentBrief += `\n- ${rec}`;
@@ -247,7 +259,7 @@ export const generateContent = async (
     }
     
     // Add RAG indicator
-    const wasRagEnhanced = ragResults.relevantKeywords.length > keywords.length;
+    const wasRagEnhanced = ragEnabled && ragResults.relevantKeywords.length > keywords.length;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

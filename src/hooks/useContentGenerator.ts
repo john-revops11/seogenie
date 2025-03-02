@@ -32,13 +32,11 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
   const [ragEnabled, setRagEnabled] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
 
-  // Check if Pinecone is configured and update status
   useEffect(() => {
     const checkPineconeStatus = () => {
       const configured = isPineconeConfigured();
       if (configured) {
         console.log("Pinecone is configured and available for RAG");
-        // Only show this toast once when it becomes available
         if (!ragEnabled) {
           toast.success("Pinecone RAG is available for enhanced content generation", {
             id: "pinecone-available",
@@ -47,24 +45,19 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
         }
       } else {
         console.log("Pinecone is not configured");
-        // If it was enabled but now isn't configured, disable it
         if (ragEnabled) {
           setRagEnabled(false);
         }
       }
     };
     
-    // Check on mount and set up an interval to check occasionally
     checkPineconeStatus();
     
-    // Check every 5 seconds in case the user configures Pinecone in another tab
     const interval = setInterval(checkPineconeStatus, 5000);
     
-    // Clean up interval on unmount
     return () => clearInterval(interval);
   }, [ragEnabled]);
 
-  // Initialize default content preferences
   useEffect(() => {
     if (contentPreferences.length === 0) {
       const defaultPreferences = [
@@ -83,7 +76,6 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   }, []);
 
-  // Load saved preferences
   useEffect(() => {
     try {
       const savedPreferences = localStorage.getItem('contentPreferences');
@@ -95,7 +87,6 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   }, []);
 
-  // Save preferences
   useEffect(() => {
     if (contentPreferences.length > 0) {
       localStorage.setItem('contentPreferences', JSON.stringify(contentPreferences));
@@ -237,7 +228,6 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
       return;
     }
     
-    // Double-check RAG status before generating
     if (ragEnabled && !isPineconeConfigured()) {
       toast.error("Pinecone is not configured. RAG enhancement has been disabled.");
       setRagEnabled(false);
@@ -259,7 +249,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
         contentType, 
         creativity,
         contentPreferences,
-        ragEnabled // Pass the RAG status to the content generation service
+        ragEnabled
       );
       
       setGeneratedContent({
