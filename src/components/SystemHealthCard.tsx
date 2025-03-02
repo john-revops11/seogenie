@@ -74,7 +74,7 @@ const SystemHealthCard = () => {
       Object.keys(newStatus).forEach(key => {
         newStatus[key] = { 
           ...newStatus[key], 
-          status: newStatus[key].enabled ? "checking" as ApiStatus : "disconnected" as ApiStatus 
+          status: newStatus[key].enabled ? "checking" : "disconnected" as ApiStatus 
         };
       });
       return newStatus;
@@ -128,7 +128,7 @@ const SystemHealthCard = () => {
         const isPineconeReady = isPineconeConfigured();
         
         if (isPineconeReady) {
-          const connectionSuccess = await testPineconeConnection('', '');
+          const connectionSuccess = await testPineconeConnection();
           const pineconeErrors = localStorage.getItem('pineconeErrors');
           
           setApiStatus(prev => ({
@@ -281,7 +281,7 @@ const SystemHealthCard = () => {
         }
       } else if (apiId === "pinecone") {
         if (isPineconeConfigured()) {
-          const connectionSuccess = await testPineconeConnection('', '');
+          const connectionSuccess = await testPineconeConnection();
           if (connectionSuccess) {
             setTestResult({
               status: "success",
