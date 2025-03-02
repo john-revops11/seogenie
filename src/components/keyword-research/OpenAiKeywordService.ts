@@ -7,6 +7,9 @@ import { generateTopicSuggestions } from "@/utils/topicGenerator";
 
 export const fetchKeywordsFromOpenAI = async (searchTerm: string): Promise<ResearchKeyword[]> => {
   try {
+    // Get selected model from localStorage or default to gpt-4o
+    const selectedModel = localStorage.getItem('selectedAiModel') || 'gpt-4o';
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -14,7 +17,7 @@ export const fetchKeywordsFromOpenAI = async (searchTerm: string): Promise<Resea
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: selectedModel,
         messages: [
           {
             role: 'system',

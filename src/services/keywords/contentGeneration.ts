@@ -19,6 +19,9 @@ export const generateContent = async (
   try {
     console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
     
+    // Get selected model from localStorage or default to gpt-4o
+    const selectedModel = localStorage.getItem('selectedAiModel') || 'gpt-4o';
+    
     // Only use RAG if it's enabled
     let ragResults = {
       relevantKeywords: keywords,
@@ -268,7 +271,7 @@ export const generateContent = async (
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: selectedModel,
         messages: [
           {
             role: 'system',

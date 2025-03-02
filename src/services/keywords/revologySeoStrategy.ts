@@ -45,6 +45,9 @@ export const generateRevologySeoStrategy = async (
     
     toast.info("Generating SEO strategy based on competitor analysis...");
     
+    // Get selected model from localStorage or default to gpt-4o
+    const selectedModel = localStorage.getItem('selectedAiModel') || 'gpt-4o';
+    
     // Call OpenAI API to generate strategic recommendations
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -53,7 +56,7 @@ export const generateRevologySeoStrategy = async (
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: selectedModel,
         messages: [
           {
             role: 'system',

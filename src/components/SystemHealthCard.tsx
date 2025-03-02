@@ -30,7 +30,9 @@ const API_DETAILS = [
 
 // AI model options for OpenAI
 const AI_MODELS = [
-  { id: "gpt-4o", name: "GPT-4o (Default)", description: "Most capable OpenAI model for content generation" },
+  { id: "gpt-4o-1", name: "GPT-4o-1", description: "Latest and most advanced OpenAI model with enhanced capabilities" },
+  { id: "gpt-4o", name: "GPT-4o", description: "Powerful model for content generation" },
+  { id: "gpt-4-turbo", name: "GPT-4 Turbo", description: "Fast and capable model for most tasks" }, 
   { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Faster, more cost-effective version" },
   { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", description: "Legacy model for basic tasks" }
 ];
