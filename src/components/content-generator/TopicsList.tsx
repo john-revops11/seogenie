@@ -9,6 +9,7 @@ import { toast } from "sonner";
 interface TopicsListProps {
   topics: string[];
   selectedTopic: string;
+  isLoading?: boolean; // Add this prop to match the usage in GeneratorForm.tsx
   onSelectTopic: (topic: string) => void;
   onDeleteTopic: (topic: string) => void;
 }
@@ -16,6 +17,7 @@ interface TopicsListProps {
 export const TopicsList = ({ 
   topics, 
   selectedTopic, 
+  isLoading = false, // Provide a default value
   onSelectTopic, 
   onDeleteTopic 
 }: TopicsListProps) => {
@@ -35,6 +37,14 @@ export const TopicsList = ({
     setIsEditingTopic(null);
     toast.success("Topic updated");
   };
+
+  if (isLoading) {
+    return (
+      <div className="rounded-md border p-4 h-[240px] flex items-center justify-center">
+        <div className="text-sm text-muted-foreground">Loading topics...</div>
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="rounded-md border p-2 h-[240px]">

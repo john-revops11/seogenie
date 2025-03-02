@@ -4,17 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TitleSuggestionsProps {
-  titles: string[];
+  suggestions?: string[]; // Changed from titles to suggestions to match actual usage
+  titles?: string[]; // Keep the original prop for backward compatibility
   selectedTitle: string;
   onSelectTitle: (title: string) => void;
 }
 
 export const TitleSuggestions = ({ 
-  titles, 
+  suggestions, 
+  titles,
   selectedTitle, 
   onSelectTitle 
 }: TitleSuggestionsProps) => {
-  if (!titles || titles.length === 0) {
+  // Use suggestions if provided, otherwise fallback to titles
+  const titleOptions = suggestions || titles || [];
+  
+  if (titleOptions.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-2 text-center">
         Select a topic to see title suggestions
@@ -25,7 +30,7 @@ export const TitleSuggestions = ({
   return (
     <ScrollArea className="rounded-md border p-2 h-[180px]">
       <div className="space-y-2">
-        {titles.map((title, idx) => (
+        {titleOptions.map((title, idx) => (
           <div
             key={idx}
             className={`p-2 rounded-md hover:bg-accent transition-colors cursor-pointer ${
