@@ -1,45 +1,13 @@
 
-import { useState, useEffect } from "react";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { generateContent } from "@/services/keywords/contentGeneration";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
-import { Loader2, RefreshCw, Plus } from "lucide-react";
 import { GeneratorForm } from "./content-generator/GeneratorForm";
-import { keywordGapsCache } from "@/components/KeywordGapCard";
-import KeywordGapCard from "@/components/KeywordGapCard";
-import TopicsList from "./content-generator/TopicsList";
-import TitleSuggestions from "./content-generator/TitleSuggestions";
-
-// Creating a custom hook to extract useKeywordGaps functionality since it's not exported
-const useKeywordGaps = () => {
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
-  
-  const handleSelectKeywords = (keywords: string[]) => {
-    setSelectedKeywords(keywords);
-    keywordGapsCache.selectedKeywords = keywords;
-  };
-  
-  return {
-    keywordGaps: keywordGapsCache.data || [],
-    seoRecommendations: {
-      onPage: [],
-      technical: [],
-      content: [],
-      offPage: [],
-      summary: []
-    }, // Initialize with proper structure
-    selectedKeywords,
-    handleSelectKeywords
-  };
-};
+import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
+import GeneratedContent from "./content-generator/GeneratedContent";
+import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -63,46 +31,32 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   const [isGenerating, setIsGenerating] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
 
-  useEffect(() => {
-    const handleGenerateFromKeyword = (event: any) => {
-      const { primaryKeyword, relatedKeywords } = event.detail;
-      
-      // Set the primary keyword and related keywords
-      if (primaryKeyword) {
-        // Generate an SEO-optimized topic based on the keyword
-        const topicSuggestion = `${primaryKeyword} Guide: Best Practices and Strategies`;
-        setTopics(prev => [...prev, topicSuggestion]);
-        setSelectedTopic(topicSuggestion);
-        
-        // Generate title suggestions
-        const titleSuggestions = [
-          `Ultimate Guide to ${primaryKeyword}: Everything You Need to Know`,
-          `${primaryKeyword} in ${new Date().getFullYear()}: Trends and Insights`,
-          `How to Master ${primaryKeyword} for Your Business`,
-          `The Complete ${primaryKeyword} Playbook for Success`,
-          `${primaryKeyword}: Expert Strategies and Tips`
-        ];
-        
-        setTitleSuggestions(prev => ({ 
-          ...prev, 
-          [topicSuggestion]: titleSuggestions 
-        }));
-        
-        // Set the selected title
-        setTitle(titleSuggestions[0]);
-        
-        // Set selected keywords (combine primary with related)
-        handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
-      }
-    };
+  const handleGenerateFromKeyword = (primaryKeyword: string, relatedKeywords: string[]) => {
+    // Generate an SEO-optimized topic based on the keyword
+    const topicSuggestion = `${primaryKeyword} Guide: Best Practices and Strategies`;
+    setTopics(prev => [...prev, topicSuggestion]);
+    setSelectedTopic(topicSuggestion);
     
-    // Listen for the custom event
-    window.addEventListener('generate-content-from-keyword', handleGenerateFromKeyword);
+    // Generate title suggestions
+    const titleSuggestions = [
+      `Ultimate Guide to ${primaryKeyword}: Everything You Need to Know`,
+      `${primaryKeyword} in ${new Date().getFullYear()}: Trends and Insights`,
+      `How to Master ${primaryKeyword} for Your Business`,
+      `The Complete ${primaryKeyword} Playbook for Success`,
+      `${primaryKeyword}: Expert Strategies and Tips`
+    ];
     
-    return () => {
-      window.removeEventListener('generate-content-from-keyword', handleGenerateFromKeyword);
-    };
-  }, []);
+    setTitleSuggestions(prev => ({ 
+      ...prev, 
+      [topicSuggestion]: titleSuggestions 
+    }));
+    
+    // Set the selected title
+    setTitle(titleSuggestions[0]);
+    
+    // Set selected keywords (combine primary with related)
+    handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
+  };
 
   const handleGenerateTopics = async () => {
     setIsLoadingTopics(true);
@@ -222,45 +176,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     toast.success(`Added custom topic "${topic}"`);
   };
 
-  // Function to render content based on content type
-  const renderContent = () => {
-    if (!generatedContent) return null;
-    
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Content Type: {contentType.charAt(0).toUpperCase() + contentType.slice(1)}</h3>
-          {contentType === "case-study" && (
-            <p className="text-sm text-muted-foreground">
-              Structure: Banner Title, Description, Situation, Obstacles, Action, Results
-            </p>
-          )}
-          {contentType === "white-paper" && (
-            <p className="text-sm text-muted-foreground">
-              Structure: Header, Title, Table of Contents, Executive Summary, Introduction, Main Sections, Conclusion
-            </p>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Outline</h3>
-          <ul className="list-disc pl-5">
-            {generatedContent.outline.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Content</h3>
-          <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <TopicGenerationHandler onGenerateFromKeyword={handleGenerateFromKeyword} />
+      
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -293,15 +212,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       
       {generatedContent && (
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{generatedContent.title}</CardTitle>
-              <CardDescription>{generatedContent.metaDescription}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {renderContent()}
-            </CardContent>
-          </Card>
+          <GeneratedContent 
+            generatedContent={generatedContent} 
+            contentType={contentType} 
+          />
         </div>
       )}
     </div>
