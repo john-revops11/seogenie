@@ -1,10 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GeneratorForm } from "./content-generator/GeneratorForm";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
 import { useContentGenerator } from "@/hooks/useContentGenerator";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import { toast } from "sonner";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -12,6 +14,13 @@ interface ContentGeneratorProps {
 }
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords }) => {
+  // Check if Pinecone config was updated
+  useEffect(() => {
+    // This effect will run whenever the component mounts or re-renders
+    const pineconeConfigured = isPineconeConfigured();
+    console.log("Pinecone configuration status:", pineconeConfigured);
+  }, []);
+
   const {
     topics,
     titleSuggestions,
@@ -38,6 +47,21 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     handleGenerateContent,
     handleAddCustomTopic
   } = useContentGenerator({ domain, allKeywords });
+
+  // Listen for generate-content-from-keyword event
+  useEffect(() => {
+    const handleEvent = (event: CustomEvent<{ primaryKeyword: string, relatedKeywords: string[] }>) => {
+      const { primaryKeyword, relatedKeywords } = event.detail;
+      console.log("Received event to generate content from keyword:", primaryKeyword, relatedKeywords);
+      handleGenerateFromKeyword(primaryKeyword, relatedKeywords);
+    };
+
+    window.addEventListener('generate-content-from-keyword', handleEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('generate-content-from-keyword', handleEvent as EventListener);
+    };
+  }, [handleGenerateFromKeyword]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

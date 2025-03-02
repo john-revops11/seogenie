@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { generateContent } from "@/services/keywords/contentGeneration";
@@ -33,12 +32,37 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
   const [ragEnabled, setRagEnabled] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
 
-  // Check if Pinecone is configured
+  // Check if Pinecone is configured and update status
   useEffect(() => {
-    if (isPineconeConfigured()) {
-      toast.success("Pinecone RAG is available for enhanced content generation");
-    }
-  }, []);
+    const checkPineconeStatus = () => {
+      const configured = isPineconeConfigured();
+      if (configured) {
+        console.log("Pinecone is configured and available for RAG");
+        // Only show this toast once when it becomes available
+        if (!ragEnabled) {
+          toast.success("Pinecone RAG is available for enhanced content generation", {
+            id: "pinecone-available",
+            duration: 3000
+          });
+        }
+      } else {
+        console.log("Pinecone is not configured");
+        // If it was enabled but now isn't configured, disable it
+        if (ragEnabled) {
+          setRagEnabled(false);
+        }
+      }
+    };
+    
+    // Check on mount and set up an interval to check occasionally
+    checkPineconeStatus();
+    
+    // Check every 5 seconds in case the user configures Pinecone in another tab
+    const interval = setInterval(checkPineconeStatus, 5000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(interval);
+  }, [ragEnabled]);
 
   // Initialize default content preferences
   useEffect(() => {
@@ -194,15 +218,29 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
   };
 
   const handleRagToggle = (enabled: boolean) => {
+    if (enabled && !isPineconeConfigured()) {
+      toast.error("Pinecone is not configured. Please configure it in the settings.");
+      return;
+    }
+    
     setRagEnabled(enabled);
     if (enabled) {
-      toast.info("RAG-enhanced content generation enabled");
+      toast.info("RAG-enhanced content generation enabled", {
+        duration: 3000
+      });
     }
   };
 
   const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please select a title");
+      return;
+    }
+    
+    // Double-check RAG status before generating
+    if (ragEnabled && !isPineconeConfigured()) {
+      toast.error("Pinecone is not configured. RAG enhancement has been disabled.");
+      setRagEnabled(false);
       return;
     }
     
@@ -220,7 +258,8 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
         selectedKeywords, 
         contentType, 
         creativity,
-        contentPreferences
+        contentPreferences,
+        ragEnabled // Pass the RAG status to the content generation service
       );
       
       setGeneratedContent({

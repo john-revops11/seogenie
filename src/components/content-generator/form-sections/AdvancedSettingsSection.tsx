@@ -1,10 +1,12 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Settings, ExternalLink } from "lucide-react";
+import { Settings, ExternalLink, CheckCircle, Save } from "lucide-react";
 import RagSettings from "../RagSettings";
-import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import { isPineconeConfigured, configurePinecone, getPineconeConfig } from "@/services/vector/pineconeService";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface AdvancedSettingsSectionProps {
   ragEnabled: boolean;
@@ -15,7 +17,32 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   ragEnabled,
   onRagToggle
 }) => {
-  const isPineconeReady = isPineconeConfigured();
+  const [isPineconeReady, setIsPineconeReady] = useState(isPineconeConfigured());
+  const [showPineconeConfig, setShowPineconeConfig] = useState(false);
+  const [pineconeApiKey, setPineconeApiKey] = useState("");
+  const [pineconeIndex, setPineconeIndex] = useState(getPineconeConfig().index);
+  
+  const handleConfigurePinecone = () => {
+    if (!pineconeApiKey.trim()) {
+      toast.error("Please enter your Pinecone API key");
+      return;
+    }
+    
+    try {
+      configurePinecone(pineconeApiKey, pineconeIndex);
+      setIsPineconeReady(true);
+      setShowPineconeConfig(false);
+      toast.success("Pinecone configured successfully!");
+      
+      // Force a re-check of the RAG state
+      setTimeout(() => {
+        onRagToggle(true);
+      }, 100);
+    } catch (error) {
+      console.error("Error configuring Pinecone:", error);
+      toast.error("Failed to configure Pinecone");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -28,6 +55,85 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
         ragEnabled={ragEnabled && isPineconeReady} 
         onRagToggle={onRagToggle}
       />
+      
+      {!isPineconeReady && !showPineconeConfig && (
+        <div className="text-xs flex items-center justify-between">
+          <span className="text-muted-foreground">
+            Configure your Pinecone settings
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-6 px-2 text-xs flex items-center gap-1"
+            onClick={() => setShowPineconeConfig(true)}
+          >
+            Configure Pinecone
+          </Button>
+        </div>
+      )}
+      
+      {showPineconeConfig && (
+        <div className="p-3 border rounded-md bg-muted/10 space-y-3">
+          <Label className="text-sm">Pinecone Configuration</Label>
+          <div className="space-y-2">
+            <div>
+              <Label htmlFor="pinecone-api-key" className="text-xs">API Key</Label>
+              <Input
+                id="pinecone-api-key"
+                value={pineconeApiKey}
+                onChange={(e) => setPineconeApiKey(e.target.value)}
+                placeholder="Enter your Pinecone API key"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="pinecone-index" className="text-xs">Index Name</Label>
+              <Input
+                id="pinecone-index"
+                value={pineconeIndex}
+                onChange={(e) => setPineconeIndex(e.target.value)}
+                placeholder="content-index"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setShowPineconeConfig(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 text-xs flex items-center gap-1"
+                onClick={handleConfigurePinecone}
+              >
+                <Save className="h-3 w-3" /> Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {isPineconeReady && (
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1 text-green-600">
+            <CheckCircle className="h-3 w-3" />
+            <span>Pinecone configured</span>
+          </div>
+          <Button 
+            variant="link" 
+            size="sm" 
+            className="h-6 p-0 text-xs flex items-center gap-1"
+            onClick={() => setShowPineconeConfig(true)}
+          >
+            Update settings
+          </Button>
+        </div>
+      )}
       
       {!isPineconeReady && (
         <div className="text-xs flex items-center justify-between">

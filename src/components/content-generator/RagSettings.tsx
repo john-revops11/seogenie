@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,12 @@ const RagSettings: React.FC<RagSettingsProps> = ({
   ragEnabled,
   onRagToggle
 }) => {
-  const isPineconeAvailable = isPineconeConfigured();
+  const [isPineconeAvailable, setIsPineconeAvailable] = useState(isPineconeConfigured());
+  
+  // Check Pinecone status whenever the component renders
+  useEffect(() => {
+    setIsPineconeAvailable(isPineconeConfigured());
+  }, []);
   
   const handleToggle = (checked: boolean) => {
     if (checked && !isPineconeAvailable) {

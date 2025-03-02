@@ -12,6 +12,16 @@ const PINECONE_ENVIRONMENT = 'gcp-starter';
 export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX) => {
   PINECONE_API_KEY = apiKey;
   PINECONE_INDEX = index;
+  
+  // Persist configuration in localStorage
+  try {
+    localStorage.setItem('PINECONE_API_KEY', apiKey);
+    localStorage.setItem('PINECONE_INDEX', index);
+    console.log("Pinecone configuration saved to localStorage");
+  } catch (error) {
+    console.error("Error saving Pinecone config to localStorage:", error);
+  }
+  
   return { success: true };
 };
 
@@ -30,6 +40,25 @@ export const getPineconeConfig = () => {
  * Checks if Pinecone is configured
  */
 export const isPineconeConfigured = () => {
+  // Check if we need to load from localStorage (on page refresh)
+  if (PINECONE_API_KEY === '') {
+    try {
+      const savedApiKey = localStorage.getItem('PINECONE_API_KEY');
+      const savedIndex = localStorage.getItem('PINECONE_INDEX');
+      
+      if (savedApiKey) {
+        PINECONE_API_KEY = savedApiKey;
+        console.log("Loaded Pinecone API key from localStorage");
+      }
+      
+      if (savedIndex) {
+        PINECONE_INDEX = savedIndex;
+      }
+    } catch (error) {
+      console.error("Error loading Pinecone config from localStorage:", error);
+    }
+  }
+  
   return PINECONE_API_KEY !== '';
 };
 
