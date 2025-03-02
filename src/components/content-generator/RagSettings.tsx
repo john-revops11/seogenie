@@ -3,8 +3,9 @@ import React from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { Sparkles, AlertCircle, Info } from 'lucide-react';
 import { isPineconeConfigured } from '@/services/vector/pineconeService';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RagSettingsProps {
   ragEnabled: boolean;
@@ -27,7 +28,7 @@ const RagSettings: React.FC<RagSettingsProps> = ({
   
   if (!isPineconeAvailable) {
     return (
-      <div className="p-3 border rounded-md bg-muted/10 space-y-1.5">
+      <div className="p-3 border rounded-md bg-muted/10 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-muted-foreground" />
@@ -40,6 +41,13 @@ const RagSettings: React.FC<RagSettingsProps> = ({
         <p className="text-xs text-muted-foreground">
           Configure Pinecone in Settings to enable RAG-enhanced content generation
         </p>
+        <Alert variant="default" className="bg-muted/40 text-xs">
+          <Info className="h-3.5 w-3.5 mr-2" />
+          <AlertDescription>
+            To enable RAG, go to Settings and add your Pinecone API key. 
+            RAG uses vector databases to enhance content with relevant context from your knowledge base.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
