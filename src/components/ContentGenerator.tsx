@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { generateContent } from "@/services/keywordService";
+import { generateContent } from "@/services/keywords/contentGeneration";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { Loader2, RefreshCw, Plus } from "lucide-react";
 import { GeneratorForm } from "./content-generator/GeneratorForm";
@@ -222,6 +222,43 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     toast.success(`Added custom topic "${topic}"`);
   };
 
+  // Function to render content based on content type
+  const renderContent = () => {
+    if (!generatedContent) return null;
+    
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Content Type: {contentType.charAt(0).toUpperCase() + contentType.slice(1)}</h3>
+          {contentType === "case-study" && (
+            <p className="text-sm text-muted-foreground">
+              Structure: Banner Title, Description, Situation, Obstacles, Action, Results
+            </p>
+          )}
+          {contentType === "white-paper" && (
+            <p className="text-sm text-muted-foreground">
+              Structure: Header, Title, Table of Contents, Executive Summary, Introduction, Main Sections, Conclusion
+            </p>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Outline</h3>
+          <ul className="list-disc pl-5">
+            {generatedContent.outline.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Content</h3>
+          <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6">
@@ -262,19 +299,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
               <CardDescription>{generatedContent.metaDescription}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Outline</h3>
-                <ul className="list-disc pl-5">
-                  {generatedContent.outline.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Content</h3>
-                <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
-              </div>
+              {renderContent()}
             </CardContent>
           </Card>
         </div>

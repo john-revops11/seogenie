@@ -191,10 +191,10 @@ export const GeneratorForm = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="blog">Blog Post</SelectItem>
-                <SelectItem value="article">Article</SelectItem>
-                <SelectItem value="guide">Guide</SelectItem>
                 <SelectItem value="case-study">Case Study</SelectItem>
                 <SelectItem value="white-paper">White Paper</SelectItem>
+                <SelectItem value="article">Article</SelectItem>
+                <SelectItem value="guide">Guide</SelectItem>
               </SelectContent>
             </Select>
           </div>

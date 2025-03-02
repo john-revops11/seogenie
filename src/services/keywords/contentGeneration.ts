@@ -24,22 +24,57 @@ export const generateContent = async (
     
     switch (contentType) {
       case "blog":
-        contentBrief = `Create a comprehensive blog post optimized for SEO that educates readers about ${title}. 
-        Use a conversational but authoritative tone. Include practical examples, data points, and actionable advice.
-        Structure with clear headings (H1, H2, H3), bullet points for clarity, and conclude with actionable next steps.`;
+        contentBrief = `Create a comprehensive blog post optimized for SEO that educates business professionals about ${title}. 
+        Use a professional and informative tone. Include data points, statistics, and real-world examples.
+        Structure with clear headings (H1, H2, H3), bullet points for clarity, short paragraphs, and conclude with actionable next steps.
+        Format: 
+        - Engaging introduction that hooks the reader and clearly states why this topic matters
+        - Key sections with subheadings that explain concepts and provide examples
+        - Strategic use of bold text to emphasize important points
+        - Conclusion summarizing key takeaways with a clear call to action`;
         break;
-      case "landing":
-        contentBrief = `Create landing page copy for ${title} that converts visitors. 
-        Focus on clear value proposition, benefits-oriented content, and persuasive calls-to-action.
-        Use a main heading (H1), subheadings (H2) for sections, concise paragraphs, bullet points for key benefits, and testimonial placeholders.`;
+      case "case-study":
+        contentBrief = `Create a business case study about ${title} that demonstrates real-world impact. 
+        Use a professional tone targeting executives and decision-makers.
+        Structure:
+        - Banner title: Short but impactful title referencing the key theme or solution
+        - Short description: 1-2 lines summarizing the project or outcome
+        - Situation: Detailed background, challenges, and context
+        - Obstacles: The biggest hurdles and their impacts on the business
+        - Action: Detailed methodology and engagement process
+        - Results: Tangible outcomes with specific metrics, KPIs, and improvements
+        End with a clear sense of business value and next steps.`;
         break;
-      case "product":
-        contentBrief = `Create product page content for ${title} that drives conversions.
-        Highlight features and benefits, include technical specifications, and address common objections.
-        Use a main heading (H1) for the product name, subheadings (H2) for sections, and clear structure with persuasive language and multiple calls-to-action.`;
+      case "white-paper":
+        contentBrief = `Create an executive-level white paper about ${title} for business decision-makers.
+        Structure:
+        - Header/Subtitle introducing the topic
+        - Compelling title
+        - Table of contents (formatted as a list)
+        - Executive Summary: Brief overview of the white paper's purpose and key findings
+        - Introduction: Context about industry trends and challenges
+        - Core sections with subheadings covering key aspects of the topic
+        - Implementation or strategy roadmap
+        - Conclusion with key insights and next steps
+        - About section (optional)
+        Use a comprehensive, data-driven approach with formal tone suitable for senior professionals.
+        Include statistics, industry references, and well-structured paragraphs and bullet points.`;
+        break;
+      case "guide":
+        contentBrief = `Create a comprehensive guide about ${title} that serves as an authoritative resource.
+        Format with detailed step-by-step instructions, expert insights, and practical applications.
+        Include introduction explaining the importance of the topic, detailed sections covering all aspects,
+        and a conclusion with implementation recommendations. Use a professional, educational tone with
+        clear headings, bullet points, and numbered lists where appropriate.`;
+        break;
+      case "article":
+        contentBrief = `Create an in-depth article about ${title} that provides analysis and insights.
+        Structure with an engaging introduction, well-researched body sections exploring different angles of the topic,
+        expert perspectives or quotes where relevant, and a conclusion that synthesizes the key points.
+        Use a professional, journalistic tone with clear headings and concise paragraphs.`;
         break;
       default:
-        contentBrief = `Create informative and engaging content about ${title}.
+        contentBrief = `Create informative and engaging content about ${title} for a business audience.
         Balance educational value with readability, and organize with clear structure using proper HTML headings (H1, H2, H3).`;
     }
     
@@ -54,10 +89,11 @@ export const generateContent = async (
         messages: [
           {
             role: 'system',
-            content: `You are an expert SEO content creator for websites about ${domain}.
-            You create high-quality, engaging content that naturally incorporates target keywords.
-            Your content is well-structured with proper HTML formatting, provides value to readers, and helps websites rank in search engines.
-            Use proper heading hierarchy (H1, H2, H3) with semantic HTML, organize content with paragraphs, lists, and appropriate spacing.`
+            content: `You are an expert content creator for ${domain}, specializing in business content creation.
+            You create high-quality, engaging content that naturally incorporates target keywords and follows specific structural guidelines based on content type.
+            Your content is well-structured with proper HTML formatting, provides value to business professionals, and helps websites rank in search engines.
+            Use proper heading hierarchy (H1, H2, H3) with semantic HTML, organize content with paragraphs, lists, and appropriate spacing.
+            Ensure your tone and approach are appropriate for a business audience - professional, data-driven, and actionable.`
           },
           {
             role: 'user',
@@ -71,7 +107,7 @@ export const generateContent = async (
             1. A compelling title (if different from "${title}")
             2. An SEO-optimized meta description (150-160 characters)
             3. A detailed content outline with sections
-            4. The full content (at least 800 words for blog, appropriate length for other formats)
+            4. The full content with proper HTML formatting specific to the selected content type (${contentType})
             
             Make sure the content:
             - Uses proper HTML formatting with correct heading hierarchy (<h1>, <h2>, <h3>, etc.)
@@ -80,7 +116,7 @@ export const generateContent = async (
             - Provides actual value and isn't just keyword stuffing
             - Has a clear structure with proper HTML headings and subheadings
             - Includes a strong introduction and conclusion
-            - Is engaging and tailored to the target audience
+            - Is engaging and tailored to business professionals
             - Uses appropriate paragraph breaks, lists (<ul>, <ol>), and other HTML elements for clarity
             
             Format your response as a JSON object with these keys:
