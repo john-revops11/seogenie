@@ -136,6 +136,9 @@ const Index = () => {
     setCompetitorDomains([""]);
     
     localStorage.removeItem('seoAnalysisData');
+    localStorage.removeItem('dataForSeoErrors');
+    localStorage.removeItem('openAiErrors');
+    localStorage.removeItem('googleKeywordErrors');
     
     setActiveTab("dashboard");
     
@@ -191,6 +194,10 @@ const Index = () => {
         setKeywordData(keywords);
         setProgress(100);
         
+        localStorage.removeItem('dataForSeoErrors');
+        localStorage.removeItem('openAiErrors');
+        localStorage.removeItem('googleKeywordErrors');
+        
         setTimeout(() => {
           setIsAnalyzing(false);
           setAnalysisComplete(true);
@@ -205,6 +212,17 @@ const Index = () => {
       
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       setAnalysisError(errorMessage);
+      
+      if (errorMessage.includes("DataForSEO")) {
+        localStorage.setItem('dataForSeoErrors', errorMessage);
+      }
+      if (errorMessage.includes("OpenAI")) {
+        localStorage.setItem('openAiErrors', errorMessage);
+      }
+      if (errorMessage.includes("Google")) {
+        localStorage.setItem('googleKeywordErrors', errorMessage);
+      }
+      
       toast.error(`Analysis failed: ${errorMessage}`);
       setProgress(0);
     }

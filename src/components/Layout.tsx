@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import SystemHealthCard from "./SystemHealthCard";
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
       <div className="fixed inset-0 bg-grid-black/[0.02] -z-10"></div>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <SystemHealthCard />
         {children}
       </ErrorBoundary>
     </div>
