@@ -59,50 +59,41 @@ export const findKeywordGaps = async (
       competitorDomainNames.forEach(comp => gapsByCompetitor.set(comp, []));
       
       for (const kw of potentialGaps) {
-        // Find the best-ranking competitor for this keyword
-        let bestCompetitor = '';
-        let bestPosition = 100;
-        
+        // Find all competitors that rank for this keyword
         if (kw.competitorRankings) {
           for (const [competitor, position] of Object.entries(kw.competitorRankings)) {
-            if (position !== null && position < bestPosition && competitorDomainNames.includes(competitor)) {
-              bestPosition = position;
-              bestCompetitor = competitor;
+            // Only process competitors that are in our competitor domains list
+            if (position !== null && position <= 30 && competitorDomainNames.includes(competitor)) {
+              // Calculate opportunity based on search volume and competition
+              let opportunity: 'high' | 'medium' | 'low' = 'medium';
+              
+              // High opportunity: High volume, low competition
+              if (kw.monthly_search > 500 && kw.competition_index < 30) {
+                opportunity = 'high';
+              } 
+              // Low opportunity: Low volume, high competition
+              else if (kw.monthly_search < 100 && kw.competition_index > 60) {
+                opportunity = 'low';
+              }
+              
+              const gap: KeywordGap = {
+                keyword: kw.keyword,
+                volume: kw.monthly_search,
+                difficulty: kw.competition_index,
+                opportunity: opportunity,
+                competitor: competitor,
+                rank: position,
+                isTopOpportunity: false
+              };
+              
+              // Add to the competitor's gaps array
+              const competitorGaps = gapsByCompetitor.get(competitor) || [];
+              if (competitorGaps.length < 50) { // Limit to 50 per competitor
+                competitorGaps.push(gap);
+                gapsByCompetitor.set(competitor, competitorGaps);
+              }
             }
           }
-        }
-        
-        // Skip if we couldn't find a relevant competitor
-        if (!bestCompetitor) continue;
-        
-        // Calculate opportunity based on search volume and competition
-        let opportunity: 'high' | 'medium' | 'low' = 'medium';
-        
-        // High opportunity: High volume, low competition
-        if (kw.monthly_search > 500 && kw.competition_index < 30) {
-          opportunity = 'high';
-        } 
-        // Low opportunity: Low volume, high competition
-        else if (kw.monthly_search < 100 && kw.competition_index > 60) {
-          opportunity = 'low';
-        }
-        
-        const gap: KeywordGap = {
-          keyword: kw.keyword,
-          volume: kw.monthly_search,
-          difficulty: kw.competition_index,
-          opportunity: opportunity,
-          competitor: bestCompetitor,
-          rank: bestPosition,
-          // Add a flag to identify if this is a top opportunity
-          isTopOpportunity: false
-        };
-        
-        // Add to the competitor's gaps array
-        const competitorGaps = gapsByCompetitor.get(bestCompetitor) || [];
-        if (competitorGaps.length < 50) { // Limit to 50 per competitor
-          competitorGaps.push(gap);
-          gapsByCompetitor.set(bestCompetitor, competitorGaps);
         }
       }
       
@@ -132,6 +123,7 @@ export const findKeywordGaps = async (
       });
       
       console.log("Returning directly identified gaps:", directGaps.length);
+      console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
       return directGaps;
     }
     

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { findKeywordGaps } from "@/services/keywordService";
 
 export const keywordGapsCache = {
   data: null as KeywordGap[] | null,
@@ -81,8 +82,8 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
 
   useEffect(() => {
-    const generateKeywordGaps = () => {
-      if (isLoading || keywords.length === 0) return;
+    const generateKeywordGaps = async () => {
+      if (isLoading || !keywords || keywords.length === 0) return;
       
       if (
         keywordGapsCache.data &&
@@ -97,121 +98,37 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       setLoading(true);
       
       try {
-        const competitorKeywordGaps: KeywordGap[] = [];
+        console.log(`Generating keyword gaps for ${domain} vs`, competitorDomains);
         
-        const getDomainName = (url: string) => {
-          try {
-            return new URL(url).hostname.replace(/^www\./, '');
-          } catch (e) {
-            return url;
-          }
-        };
+        const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
         
-        const mainDomainName = getDomainName(domain);
-        const competitorNames = competitorDomains.map(getDomainName);
-        
-        keywords.forEach(kw => {
-          const ranks: Record<string, number> = {};
+        if (gaps && gaps.length > 0) {
+          console.log(`Found ${gaps.length} keyword gaps`);
           
-          if (kw.ranks) {
-            Object.keys(kw.ranks).forEach(domainKey => {
-              if (kw.ranks[domainKey] && kw.ranks[domainKey] <= 20) {
-                ranks[getDomainName(domainKey)] = kw.ranks[domainKey];
-              }
-            });
-          } else if (kw.competitorRankings) {
-            Object.keys(kw.competitorRankings).forEach(domainKey => {
-              if (kw.competitorRankings[domainKey] && kw.competitorRankings[domainKey] <= 20) {
-                ranks[domainKey] = kw.competitorRankings[domainKey];
-              }
-            });
-            
-            if (kw.position && kw.position <= 20) {
-              ranks[mainDomainName] = kw.position;
+          const gapsByCompetitor = new Map<string, number>();
+          gaps.forEach(gap => {
+            if (gap.competitor) {
+              gapsByCompetitor.set(gap.competitor, (gapsByCompetitor.get(gap.competitor) || 0) + 1);
             }
-          }
+          });
+          console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
           
-          const mainDomainRanks = ranks[mainDomainName];
-          const hasCompetitorRanking = competitorNames.some(comp => ranks[comp] && ranks[comp] <= 20);
+          keywordGapsCache.data = gaps;
+          keywordGapsCache.domain = domain;
+          keywordGapsCache.competitorDomains = [...competitorDomains];
+          keywordGapsCache.keywordsLength = keywords.length;
           
-          if ((!mainDomainRanks || mainDomainRanks > 20) && hasCompetitorRanking) {
-            let bestCompetitor = '';
-            let bestRank = 100;
-            
-            competitorNames.forEach(comp => {
-              if (ranks[comp] && ranks[comp] < bestRank) {
-                bestRank = ranks[comp];
-                bestCompetitor = comp;
-              }
-            });
-            
-            if (bestCompetitor) {
-              let opportunity: 'high' | 'medium' | 'low' = 'medium';
-              const difficultyValue = kw.difficulty || kw.competition_index || 0;
-              
-              if (difficultyValue < 30) {
-                opportunity = 'high';
-              } else if (difficultyValue > 60) {
-                opportunity = 'low';
-              }
-              
-              competitorKeywordGaps.push({
-                keyword: kw.keyword,
-                volume: kw.volume || kw.monthly_search || 0,
-                difficulty: difficultyValue,
-                opportunity: opportunity,
-                competitor: bestCompetitor,
-                rank: ranks[bestCompetitor]
-              });
-            }
-          }
-        });
-        
-        const keywordsByCompetitor = new Map<string, KeywordGap[]>();
-        
-        competitorKeywordGaps.forEach(gap => {
-          if (!keywordsByCompetitor.has(gap.competitor!)) {
-            keywordsByCompetitor.set(gap.competitor!, []);
-          }
-          keywordsByCompetitor.get(gap.competitor!)!.push(gap);
-        });
-        
-        let allKeywords: KeywordGap[] = [];
-        keywordsByCompetitor.forEach((gaps, competitor) => {
-          const prioritizedGaps = prioritizeKeywords(gaps);
-          const topGaps = prioritizedGaps.slice(0, 20);
-          allKeywords = [...allKeywords, ...topGaps];
-        });
-        
-        const finalSortedGaps = allKeywords.sort((a, b) => {
-          const intents = {
-            'informational': 1,
-            'navigational': 2,
-            'commercial': 3,
-            'transactional': 4
-          };
-          
-          const intentA = categorizeKeywordIntent(a.keyword, a.difficulty, a.volume);
-          const intentB = categorizeKeywordIntent(b.keyword, b.difficulty, b.volume);
-          
-          const intentPriorityA = intents[intentA] || 5;
-          const intentPriorityB = intents[intentB] || 5;
-          
-          if (intentPriorityA !== intentPriorityB) {
-            return intentPriorityA - intentPriorityB;
-          }
-          
-          return b.volume - a.volume;
-        });
-        
-        keywordGapsCache.data = finalSortedGaps;
-        keywordGapsCache.domain = domain;
-        keywordGapsCache.competitorDomains = [...competitorDomains];
-        keywordGapsCache.keywordsLength = keywords.length;
-        
-        setKeywordGaps(finalSortedGaps);
+          setKeywordGaps(gaps);
+          toast.success(`Found ${gaps.length} keyword gaps for analysis`);
+        } else {
+          console.warn("No keyword gaps found or service returned empty array");
+          setKeywordGaps([]);
+          toast.warning("No keyword gaps found between your domain and competitors");
+        }
       } catch (error) {
         console.error("Error generating keyword gaps:", error);
+        toast.error(`Failed to generate keyword gaps: ${(error as Error).message}`);
+        setKeywordGaps([]);
       } finally {
         setLoading(false);
       }
@@ -333,11 +250,16 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           Keyword Gaps 
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardTitle>
-        <CardDescription className="flex justify-between items-center">
+        <CardDescription>
           <span>Keywords competitors rank for that you don't</span>
-          <Badge variant="outline" className="ml-2">
-            {selectedKeywords.length}/10 selected
-          </Badge>
+          <div className="mt-1 flex justify-between items-center">
+            <Badge variant="outline" className="text-xs">
+              {competitorDomains.length} competitors analyzed
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {selectedKeywords.length}/10 selected
+            </Badge>
+          </div>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
