@@ -9,3 +9,6 @@ export * from './keywords/seoRecommendations';
 
 // Export new specialized functions for Revology Analytics
 export * from './keywords/revologySeoStrategy';
+
+// Export vector database services
+export * from './vector/pineconeService';

@@ -8,6 +8,7 @@ import { GeneratorForm } from "./content-generator/GeneratorForm";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -30,7 +31,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   } | null>(null);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [ragEnabled, setRagEnabled] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
+
+  // Check Pinecone configuration on mount
+  useEffect(() => {
+    if (isPineconeConfigured()) {
+      toast.success("Pinecone RAG is available for enhanced content generation");
+    }
+  }, []);
 
   // Listen for content preference events from settings
   useEffect(() => {
@@ -173,6 +182,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     });
   };
 
+  const handleRagToggle = (enabled: boolean) => {
+    setRagEnabled(enabled);
+    if (enabled) {
+      toast.info("RAG-enhanced content generation enabled");
+    }
+  };
+
   const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please select a title");
@@ -181,6 +197,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     
     setIsGenerating(true);
     try {
+      // Display a message about RAG if it's enabled
+      if (ragEnabled && isPineconeConfigured()) {
+        toast.info("Using RAG to enhance content with related keywords and context", {
+          duration: 3000
+        });
+      }
+      
       const result = await generateContent(
         domain, 
         title, 
@@ -245,6 +268,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
               onRegenerateTopics={handleRegenerateTopics}
               onGenerateContent={handleGenerateContent}
               onCustomTopicAdd={handleAddCustomTopic}
+              ragEnabled={ragEnabled}
+              onRagToggle={handleRagToggle}
             />
           </CardContent>
         </Card>

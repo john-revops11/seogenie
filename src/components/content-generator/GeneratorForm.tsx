@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +18,15 @@ import {
   Sparkles, 
   FileText, 
   Plus,
-  CheckCircle2
+  CheckCircle2,
+  Settings
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { TopicsList } from "./TopicsList";
 import { TitleSuggestions } from "./TitleSuggestions";
+import { RagSettings } from "./RagSettings";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 interface GeneratorFormProps {
   topics: string[];
@@ -47,6 +49,8 @@ interface GeneratorFormProps {
   onRegenerateTopics: () => void;
   onGenerateContent: () => void;
   onCustomTopicAdd: (topic: string) => void;
+  ragEnabled?: boolean;
+  onRagToggle?: (enabled: boolean) => void;
 }
 
 export const GeneratorForm: React.FC<GeneratorFormProps> = ({
@@ -69,10 +73,13 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   onGenerateTopics,
   onRegenerateTopics,
   onGenerateContent,
-  onCustomTopicAdd
+  onCustomTopicAdd,
+  ragEnabled = false,
+  onRagToggle = () => {}
 }) => {
   const [newTopic, setNewTopic] = useState("");
   const [activeTab, setActiveTab] = useState("topics");
+  const isPineconeReady = isPineconeConfigured();
 
   const handleAddCustomTopic = () => {
     if (newTopic.trim() === "") {
@@ -97,9 +104,10 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 mb-4">
+        <TabsList className="grid grid-cols-3 mb-4">
           <TabsTrigger value="topics">1. Topics & Title</TabsTrigger>
           <TabsTrigger value="settings">2. Content Settings</TabsTrigger>
+          <TabsTrigger value="advanced">3. Advanced</TabsTrigger>
         </TabsList>
         
         <TabsContent value="topics" className="space-y-6">
@@ -278,6 +286,25 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="advanced" className="space-y-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <Label className="text-base">Advanced Settings</Label>
+              <Settings className="w-4 h-4 text-muted-foreground" />
+            </div>
+            
+            <RagSettings 
+              enabled={ragEnabled && isPineconeReady} 
+              onToggle={onRagToggle}
+            />
+            
+            <div className="text-xs text-muted-foreground">
+              These advanced settings help improve content quality and keyword organization
+              by leveraging additional tools and technologies.
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
       
       <Button 
@@ -290,7 +317,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
         ) : (
           <>
             <FileText className="w-4 h-4 mr-2" />
-            Generate Content
+            Generate Content {ragEnabled && isPineconeReady ? '(RAG-Enhanced)' : ''}
           </>
         )}
       </Button>

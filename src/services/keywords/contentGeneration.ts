@@ -1,5 +1,6 @@
 
 import { OPENAI_API_KEY } from './apiConfig';
+import { enhanceContentWithRAG } from '@/utils/rag/contentRag';
 
 export const generateContent = async (
   domain: string,
@@ -16,6 +17,17 @@ export const generateContent = async (
 }> => {
   try {
     console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
+    
+    // Use RAG to enhance keywords and get contextual information
+    const ragResults = await enhanceContentWithRAG(title, keywords, contentType);
+    
+    console.log("Enhanced with RAG:", {
+      keywordCount: ragResults.relevantKeywords.length,
+      topicCount: ragResults.relatedTopics.length,
+      exampleCount: ragResults.contextualExamples.length
+    });
+    
+    const enhancedKeywords = ragResults.relevantKeywords;
     
     const creativity = creativityLevel / 100; // Convert to 0-1 scale
     const temperature = 0.5 + (creativity * 0.5); // Range from 0.5 to 1.0
@@ -98,6 +110,25 @@ export const generateContent = async (
       }
     }
     
+    // Add RAG-enhanced context to the content brief
+    if (ragResults.relatedTopics.length > 0) {
+      contentBrief += `\n\nConsider including these related topics: ${ragResults.relatedTopics.join(', ')}.`;
+    }
+    
+    if (ragResults.contextualExamples.length > 0) {
+      contentBrief += `\n\nReference these contextual examples where appropriate:`;
+      ragResults.contextualExamples.forEach(example => {
+        contentBrief += `\n- "${example}"`;
+      });
+    }
+    
+    if (ragResults.structuralRecommendations.length > 0) {
+      contentBrief += `\n\nFollow these structural recommendations:`;
+      ragResults.structuralRecommendations.forEach(rec => {
+        contentBrief += `\n- ${rec}`;
+      });
+    }
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -130,7 +161,7 @@ export const generateContent = async (
             role: 'user',
             content: `${contentBrief}
             
-            The content should target the following keywords: ${keywords.join(', ')}
+            The content should target the following keywords: ${enhancedKeywords.join(', ')}
             
             Domain: ${domain}
             
