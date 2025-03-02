@@ -1,18 +1,21 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Zap } from "lucide-react";
+import { Loader2, Search, Zap, Target } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { OPENAI_API_KEY } from "@/services/keywords/apiConfig";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
+import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
 
 interface KeywordResearchProps {
   domain: string;
+  competitorDomains: string[];
+  keywords: any[];
   onGenerateContent: (keyword: string, relatedKeywords: string[]) => void;
+  onRunSeoStrategy?: () => void;
 }
 
 interface ResearchKeyword {
@@ -24,7 +27,6 @@ interface ResearchKeyword {
   relatedKeywords: string[];
 }
 
-// Sample data for when the API is unavailable
 const getSampleKeywords = (searchTerm: string): ResearchKeyword[] => {
   const baseKeywords = [
     {
@@ -77,14 +79,20 @@ const getSampleKeywords = (searchTerm: string): ResearchKeyword[] => {
     }
   ];
   
-  // Return between 4-6 keywords for realistic results
   return baseKeywords.slice(0, Math.floor(Math.random() * 3) + 4);
 };
 
-const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) => {
+const KeywordResearch = ({ 
+  domain, 
+  competitorDomains, 
+  keywords: existingKeywords, 
+  onGenerateContent,
+  onRunSeoStrategy
+}: KeywordResearchProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [keywords, setKeywords] = useState<ResearchKeyword[]>([]);
+  const [isRunningSeoStrategy, setIsRunningSeoStrategy] = useState(false);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -94,7 +102,6 @@ const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) =>
 
     setIsSearching(true);
     try {
-      // Try to generate keyword research with OpenAI
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -165,7 +172,6 @@ const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) =>
         toast.success(`Found ${parsedData.keywords.length} keyword opportunities`);
       } catch (apiError) {
         console.error("Error with OpenAI API, using sample data:", apiError);
-        // Use sample data if OpenAI API fails
         const sampleKeywords = getSampleKeywords(searchTerm);
         setKeywords(sampleKeywords);
         toast.success(`Generated ${sampleKeywords.length} keyword ideas for "${searchTerm}"`);
@@ -175,7 +181,6 @@ const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) =>
       console.error("Error researching keywords:", error);
       toast.error(`Research failed: ${(error as Error).message}`);
       
-      // Fallback to sample data on any error
       const sampleKeywords = getSampleKeywords(searchTerm);
       setKeywords(sampleKeywords);
       toast.info("Using sample data for demonstration purposes");
@@ -185,14 +190,31 @@ const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) =>
   };
 
   const handleGenerateContent = (keyword: string, relatedKeywords: string[]) => {
-    // Generate initial topic suggestion based on the selected keyword
     const initialTopics = generateTopicSuggestions(domain, [], null, [keyword, ...relatedKeywords]);
     
-    // Call the parent component's handler with keyword data
     onGenerateContent(keyword, relatedKeywords);
     
-    // Show success toast with more specific message
     toast.success(`Preparing to generate content for "${keyword}" - switched to Content tab`);
+  };
+
+  const handleRunRevologySeoStrategy = async () => {
+    if (!domain || competitorDomains.length === 0 || existingKeywords.length === 0) {
+      toast.error("Please run a domain analysis first to collect competitor data");
+      return;
+    }
+
+    setIsRunningSeoStrategy(true);
+    try {
+      await runRevologySeoActions(domain, competitorDomains, existingKeywords);
+      if (onRunSeoStrategy) {
+        onRunSeoStrategy();
+      }
+    } catch (error) {
+      console.error("Error running SEO strategy:", error);
+      toast.error(`Failed to run SEO strategy: ${(error as Error).message}`);
+    } finally {
+      setIsRunningSeoStrategy(false);
+    }
   };
 
   const getDifficultyColor = (difficulty: number) => {
@@ -204,8 +226,33 @@ const KeywordResearch = ({ domain, onGenerateContent }: KeywordResearchProps) =>
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Keyword Research</CardTitle>
-        <CardDescription>Discover relevant keywords and content opportunities</CardDescription>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <CardTitle>Keyword Research</CardTitle>
+            <CardDescription>Discover relevant keywords and content opportunities</CardDescription>
+          </div>
+          {domain && competitorDomains.length > 0 && existingKeywords.length > 0 && (
+            <Button 
+              variant="danger" 
+              size="sm"
+              onClick={handleRunRevologySeoStrategy}
+              disabled={isRunningSeoStrategy}
+              className="whitespace-nowrap"
+            >
+              {isRunningSeoStrategy ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  Running Strategy...
+                </>
+              ) : (
+                <>
+                  <Target className="w-4 h-4 mr-1" /> 
+                  Run SEO Strategy for Revology
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2">

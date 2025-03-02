@@ -14,11 +14,13 @@ import {
   ChevronLeft, 
   ChevronRight, 
   ExternalLink,
-  PlusCircle
+  PlusCircle,
+  Target
 } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
 
 interface KeywordTableProps {
   domain: string;
@@ -43,6 +45,8 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
   const [newCompetitor, setNewCompetitor] = useState("");
   const [showCompetitorInput, setShowCompetitorInput] = useState(false);
   
+  const [isRunningSeoStrategy, setIsRunningSeoStrategy] = useState(false);
+
   useEffect(() => {
     setFilteredKeywords(keywords);
     setCurrentPage(1);
@@ -259,6 +263,24 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
     );
   };
 
+  const handleRunRevologySeoStrategy = async () => {
+    if (!domain || competitorDomains.length === 0 || keywords.length === 0) {
+      toast.error("Please ensure you have domain and competitor data first");
+      return;
+    }
+
+    setIsRunningSeoStrategy(true);
+    try {
+      await runRevologySeoActions(domain, competitorDomains, keywords);
+      toast.success("SEO strategy for Revology Analytics completed successfully");
+    } catch (error) {
+      console.error("Error running SEO strategy:", error);
+      toast.error(`Failed to run SEO strategy: ${(error as Error).message}`);
+    } finally {
+      setIsRunningSeoStrategy(false);
+    }
+  };
+
   return (
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl overflow-hidden">
       <CardHeader>
@@ -269,7 +291,29 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
               Comparing {domain} with {competitorDomains.length} competitor{competitorDomains.length !== 1 ? 's' : ''}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {domain && competitorDomains.length > 0 && keywords.length > 0 && (
+              <Button 
+                variant="danger"
+                size="sm"
+                className="transition-all whitespace-nowrap"
+                onClick={handleRunRevologySeoStrategy}
+                disabled={isLoading || isRunningSeoStrategy}
+              >
+                {isRunningSeoStrategy ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Running Strategy...
+                  </>
+                ) : (
+                  <>
+                    <Target className="h-4 w-4 mr-1" />
+                    Run Revology SEO Strategy
+                  </>
+                )}
+              </Button>
+            )}
+            
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

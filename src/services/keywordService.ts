@@ -6,3 +6,6 @@ export * from './keywords/domainAnalysis';
 export * from './keywords/contentGeneration';
 export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
+
+// Export new specialized functions for Revology Analytics
+export * from './keywords/revologySeoStrategy';

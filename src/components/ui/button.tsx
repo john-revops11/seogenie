@@ -22,6 +22,7 @@ const buttonVariants = cva(
         revology: "bg-revology text-white hover:bg-revology-dark",
         success: "bg-green-600 text-white hover:bg-green-700",
         warning: "bg-amber-500 text-white hover:bg-amber-600",
+        danger: "bg-red-600 text-white hover:bg-red-700",
       },
       size: {
         default: "h-10 px-4 py-2",
