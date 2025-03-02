@@ -136,7 +136,8 @@ export const findKeywordGaps = async (
     console.log("Using OpenAI to analyze keyword gaps");
     toast.info("Using AI to analyze and identify keyword gaps");
     
-    if (!OPENAI_API_KEY || OPENAI_API_KEY === "") {
+    // Fix the string comparison - using typeof check instead of direct comparison
+    if (!OPENAI_API_KEY || typeof OPENAI_API_KEY !== 'string' || OPENAI_API_KEY.trim() === "") {
       console.error("OPENAI_API_KEY is not set");
       toast.error("OpenAI API key is missing. Using basic gap analysis instead.");
       
