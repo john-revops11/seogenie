@@ -1,12 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, X, Wifi, WifiOff, AlertTriangle, Cog, LoaderCircle, PlayCircle, PowerOff } from "lucide-react";
+import { Check, X, Wifi, WifiOff, AlertTriangle, Cog, LoaderCircle, PlayCircle, PowerOff, Database } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
 
 // API names and their descriptions
 const API_DETAILS = [
@@ -24,6 +26,11 @@ const API_DETAILS = [
     id: "googleKeyword", 
     name: "Google Keyword", 
     description: "Alternative source for keyword data" 
+  },
+  {
+    id: "pinecone",
+    name: "Pinecone",
+    description: "Vector database for RAG (Retrieval-Augmented Generation)"
   }
 ];
 
@@ -53,6 +60,7 @@ const SystemHealthCard = () => {
     dataforseo: { status: "checking", lastChecked: null, enabled: true },
     openai: { status: "checking", lastChecked: null, enabled: true },
     googleKeyword: { status: "checking", lastChecked: null, enabled: true },
+    pinecone: { status: "checking", lastChecked: null, enabled: isPineconeConfigured() },
   });
   const [checking, setChecking] = useState(false);
   const [selectedApiForTest, setSelectedApiForTest] = useState<string>("dataforseo");
@@ -123,6 +131,37 @@ const SystemHealthCard = () => {
           }
         }));
       }
+      
+      // Check Pinecone API status if enabled
+      if (apiStatus.pinecone.enabled) {
+        const isPineconeReady = isPineconeConfigured();
+        
+        if (isPineconeReady) {
+          // Test the actual connection
+          const connectionSuccess = await testPineconeConnection();
+          const pineconeErrors = localStorage.getItem('pineconeErrors');
+          
+          setApiStatus(prev => ({
+            ...prev,
+            pinecone: {
+              ...prev.pinecone,
+              status: connectionSuccess ? "connected" : "error",
+              lastChecked: new Date(),
+              errorMessage: pineconeErrors || undefined
+            }
+          }));
+        } else {
+          setApiStatus(prev => ({
+            ...prev,
+            pinecone: {
+              ...prev.pinecone,
+              status: "disconnected",
+              lastChecked: new Date(),
+              errorMessage: "Not configured"
+            }
+          }));
+        }
+      }
     } catch (error) {
       console.error("Error checking API health:", error);
     } finally {
@@ -165,6 +204,17 @@ const SystemHealthCard = () => {
           return newStates;
         });
       }
+      
+      // Special handling for Pinecone - check if it's configured
+      const isPineconeReady = isPineconeConfigured();
+      setApiStatus(prev => ({
+        ...prev,
+        pinecone: {
+          ...prev.pinecone,
+          enabled: isPineconeReady,
+          status: isPineconeReady ? "checking" : "disconnected" as ApiStatus
+        }
+      }));
     } catch (error) {
       console.error("Error loading API states:", error);
     }
@@ -246,6 +296,28 @@ const SystemHealthCard = () => {
           setTestResult({ 
             status: "success", 
             message: "Test successful: Google Keyword API is responding correctly." 
+          });
+        }
+      } else if (apiId === "pinecone") {
+        // For Pinecone, we'll make an actual test call
+        if (isPineconeConfigured()) {
+          const connectionSuccess = await testPineconeConnection();
+          if (connectionSuccess) {
+            setTestResult({
+              status: "success",
+              message: "Test successful: Pinecone API is responding correctly and connected to your index."
+            });
+          } else {
+            const errorMessage = localStorage.getItem('pineconeErrors') || "Unknown error";
+            setTestResult({
+              status: "error",
+              message: `Test failed: Pinecone API returned an error. ${errorMessage}`
+            });
+          }
+        } else {
+          setTestResult({
+            status: "error",
+            message: "Test failed: Pinecone is not configured. Configure it in Advanced Settings first."
           });
         }
       }
@@ -344,7 +416,14 @@ const SystemHealthCard = () => {
   };
   
   // Render status icon for each API
-  const renderStatusIcon = (status: ApiStatus) => {
+  const renderStatusIcon = (status: ApiStatus, apiId: string) => {
+    if (apiId === "pinecone") {
+      if (status === "connected") return <Database className="h-4 w-4 text-green-500" />;
+      if (status === "disconnected") return <Database className="h-4 w-4 text-slate-400" />;
+      if (status === "error") return <Database className="h-4 w-4 text-red-500" />;
+      return <LoaderCircle className="h-4 w-4 animate-spin text-slate-400" />;
+    }
+    
     switch(status) {
       case "connected":
         return <Wifi className="h-4 w-4 text-green-500" />;

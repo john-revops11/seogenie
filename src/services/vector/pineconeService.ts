@@ -17,6 +17,15 @@ export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX
   try {
     localStorage.setItem('PINECONE_API_KEY', apiKey);
     localStorage.setItem('PINECONE_INDEX', index);
+    
+    // Mark Pinecone as configured in the system health
+    const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
+    apiEnabledStates.pinecone = true;
+    localStorage.setItem('apiEnabledStates', JSON.stringify(apiEnabledStates));
+    
+    // Clear any previous errors
+    localStorage.removeItem('pineconeErrors');
+    
     console.log("Pinecone configuration saved to localStorage");
   } catch (error) {
     console.error("Error saving Pinecone config to localStorage:", error);
@@ -29,6 +38,24 @@ export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX
  * Retrieve the current Pinecone API configuration
  */
 export const getPineconeConfig = () => {
+  // If we haven't loaded from localStorage yet, do so now
+  if (PINECONE_API_KEY === '') {
+    try {
+      const savedApiKey = localStorage.getItem('PINECONE_API_KEY');
+      const savedIndex = localStorage.getItem('PINECONE_INDEX');
+      
+      if (savedApiKey) {
+        PINECONE_API_KEY = savedApiKey;
+      }
+      
+      if (savedIndex) {
+        PINECONE_INDEX = savedIndex;
+      }
+    } catch (error) {
+      console.error("Error loading Pinecone config from localStorage:", error);
+    }
+  }
+  
   return {
     apiKey: PINECONE_API_KEY ? PINECONE_API_KEY.substring(0, 5) + '...' : '',
     index: PINECONE_INDEX,
@@ -60,6 +87,42 @@ export const isPineconeConfigured = () => {
   }
   
   return PINECONE_API_KEY !== '';
+};
+
+/**
+ * Test the Pinecone configuration with a simple API call
+ */
+export const testPineconeConnection = async (): Promise<boolean> => {
+  if (!isPineconeConfigured()) {
+    console.error("Cannot test Pinecone connection: Not configured");
+    return false;
+  }
+  
+  try {
+    // Check if we can connect to the Pinecone index
+    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io/describe_index_stats`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Api-Key': PINECONE_API_KEY
+      },
+      body: JSON.stringify({})
+    });
+    
+    if (response.ok) {
+      localStorage.removeItem('pineconeErrors');
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.error(`Pinecone API error: ${response.status} - ${errorText}`);
+      localStorage.setItem('pineconeErrors', errorText);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error testing Pinecone connection:", error);
+    localStorage.setItem('pineconeErrors', (error as Error).message);
+    return false;
+  }
 };
 
 /**

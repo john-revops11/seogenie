@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Settings, ExternalLink, CheckCircle, Save } from "lucide-react";
 import RagSettings from "../RagSettings";
@@ -22,6 +22,11 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   const [pineconeApiKey, setPineconeApiKey] = useState("");
   const [pineconeIndex, setPineconeIndex] = useState(getPineconeConfig().index);
   
+  useEffect(() => {
+    // Re-check Pinecone configuration on component mount
+    setIsPineconeReady(isPineconeConfigured());
+  }, []);
+  
   const handleConfigurePinecone = () => {
     if (!pineconeApiKey.trim()) {
       toast.error("Please enter your Pinecone API key");
@@ -29,9 +34,35 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
     }
     
     try {
-      configurePinecone(pineconeApiKey, pineconeIndex);
+      const result = configurePinecone(pineconeApiKey, pineconeIndex);
       setIsPineconeReady(true);
       setShowPineconeConfig(false);
+      
+      // Save the API integration to localStorage for system health
+      const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
+      apiEnabledStates.pinecone = true;
+      localStorage.setItem('apiEnabledStates', JSON.stringify(apiEnabledStates));
+      
+      // Simulate API integration update
+      const apiIntegrations = JSON.parse(localStorage.getItem('apiIntegrations') || '[]');
+      const existingIndex = apiIntegrations.findIndex((api: any) => api.name === 'Pinecone');
+      
+      if (existingIndex >= 0) {
+        apiIntegrations[existingIndex] = { 
+          name: 'Pinecone', 
+          key: pineconeApiKey.substring(0, 5) + '...',
+          index: pineconeIndex
+        };
+      } else {
+        apiIntegrations.push({ 
+          name: 'Pinecone', 
+          key: pineconeApiKey.substring(0, 5) + '...',
+          index: pineconeIndex
+        });
+      }
+      
+      localStorage.setItem('apiIntegrations', JSON.stringify(apiIntegrations));
+      
       toast.success("Pinecone configured successfully!");
       
       // Force a re-check of the RAG state
