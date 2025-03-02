@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,6 @@ const API_DETAILS = [
 
 // AI model options for OpenAI
 const AI_MODELS = [
-  { id: "gpt-4o-1", name: "GPT-4o-1", description: "Latest and most advanced OpenAI model with enhanced capabilities" },
   { id: "gpt-4o", name: "GPT-4o", description: "Powerful model for content generation" },
   { id: "gpt-4-turbo", name: "GPT-4 Turbo", description: "Fast and capable model for most tasks" }, 
   { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Faster, more cost-effective version" },
