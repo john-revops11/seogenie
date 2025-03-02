@@ -3,6 +3,23 @@ import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
 import { OPENAI_API_KEY } from './apiConfig';
 
+// Validate OpenAI API key to ensure it's properly formatted
+function validateOpenAIKey(): boolean {
+  if (!OPENAI_API_KEY || typeof OPENAI_API_KEY !== 'string' || OPENAI_API_KEY.trim() === "") {
+    console.error("OPENAI_API_KEY is not set or invalid");
+    return false;
+  }
+  
+  // Basic format validation for OpenAI API keys
+  const openAIKeyPattern = /^sk-[a-zA-Z0-9]{48,}$/;
+  if (!openAIKeyPattern.test(OPENAI_API_KEY.trim())) {
+    console.error("OPENAI_API_KEY format appears invalid");
+    return false;
+  }
+  
+  return true;
+}
+
 export const findKeywordGaps = async (
   mainDomain: string,
   competitorDomains: string[],
@@ -136,10 +153,10 @@ export const findKeywordGaps = async (
     console.log("Using OpenAI to analyze keyword gaps");
     toast.info("Using AI to analyze and identify keyword gaps");
     
-    // Fix the string comparison - using typeof check instead of direct comparison
-    if (!OPENAI_API_KEY || typeof OPENAI_API_KEY !== 'string' || OPENAI_API_KEY.trim() === "") {
-      console.error("OPENAI_API_KEY is not set");
-      toast.error("OpenAI API key is missing. Using basic gap analysis instead.");
+    // Validate OpenAI API key before making the API call
+    if (!validateOpenAIKey()) {
+      console.error("OPENAI_API_KEY validation failed");
+      toast.error("OpenAI API key is missing or invalid. Using basic gap analysis instead.");
       
       // Return basic gaps without AI analysis
       return potentialGaps.map(kw => ({
@@ -148,6 +165,7 @@ export const findKeywordGaps = async (
         difficulty: kw.competition_index,
         opportunity: 'medium',
         competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
+        rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
         isTopOpportunity: false
       }));
     }
@@ -155,6 +173,8 @@ export const findKeywordGaps = async (
     // Ensure we're requesting up to 50 gaps per competitor
     const minGapsPerCompetitor = 50;
     const adjustedGapCount = minGapsPerCompetitor * competitorDomains.length;
+    
+    console.log(`Making OpenAI API request with key: ${OPENAI_API_KEY.substring(0, 10)}...`);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -222,7 +242,7 @@ export const findKeywordGaps = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`OpenAI API error (${response.status}):`, errorText);
-      toast.error(`AI analysis failed: ${response.status}. Using basic gap analysis instead.`);
+      toast.error(`AI analysis failed: ${response.status} - ${errorText.substring(0, 100)}. Using basic gap analysis instead.`);
       
       // Return basic gaps without AI analysis if OpenAI fails
       return potentialGaps.map(kw => ({
@@ -231,6 +251,7 @@ export const findKeywordGaps = async (
         difficulty: kw.competition_index,
         opportunity: 'medium',
         competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
+        rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
         isTopOpportunity: false
       }));
     }
@@ -253,6 +274,7 @@ export const findKeywordGaps = async (
           difficulty: kw.competition_index,
           opportunity: 'medium',
           competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
+          rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
           isTopOpportunity: false
         }));
       }
@@ -279,6 +301,7 @@ export const findKeywordGaps = async (
         difficulty: kw.competition_index,
         opportunity: 'medium',
         competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
+        rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
         isTopOpportunity: false
       }));
     }
