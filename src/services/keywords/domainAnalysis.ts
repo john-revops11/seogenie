@@ -81,21 +81,25 @@ export const analyzeDomains = async (
     let useRealData = true;
     
     try {
+      toast.info(`Fetching keyword data for ${mainDomain}...`, { duration: 3000, id: "fetch-main-domain" });
       mainKeywords = await fetchDomainKeywords(formattedMainDomain);
+      
       if (!mainKeywords.length) {
         console.warn(`No real keywords found for ${formattedMainDomain}, using mock data`);
         useRealData = false;
-        toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`);
+        toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`, { id: "no-keywords" });
+      } else {
+        toast.success(`Found ${mainKeywords.length} keywords for ${mainDomain}`, { id: "keywords-found" });
       }
     } catch (error) {
       console.warn(`Error fetching real keywords for ${formattedMainDomain}, using mock data:`, error);
       useRealData = false;
-      toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`);
+      toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`, { id: "api-error" });
     }
     
     // If API failed, use mock data for demo purposes
     if (!useRealData) {
-      toast.info("Using demo data for this session - all API services returned errors");
+      toast.info("Using demo data for this session - all API services returned errors", { id: "using-demo-data" });
       mainKeywords = generateMockKeywords(formattedMainDomain);
       
       // Log the mock data we're using
@@ -209,8 +213,11 @@ export const analyzeDomains = async (
       });
     });
     
+    const keywords = Array.from(keywordMap.values());
+    toast.success(`Analysis complete: Found ${keywords.length} total keywords for comparison`);
+    
     return {
-      keywords: Array.from(keywordMap.values()),
+      keywords: keywords,
       success: true
     };
   } catch (error) {

@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { 
   KeywordData, 
@@ -102,10 +103,11 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
   }
 };
 
-// New function to fetch DataForSEO API
+// Fetch keywords from DataForSEO API with improved error handling
 export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl}`);
+    toast.info(`Trying DataForSEO API for ${domainUrl}...`, { id: "dataforseo-api" });
     
     // Create authorization string with the right password for domain analysis
     const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
@@ -125,7 +127,9 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
         "Authorization": `Basic ${encodedCredentials}`,
         "Content-Type": "application/json"
       },
-      body: requestBody
+      body: requestBody,
+      // Add a timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000)
     });
 
     // Check for API errors
@@ -177,16 +181,19 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
     }
     
     console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
+    toast.success(`DataForSEO: Found ${keywords.length} keywords for ${domainUrl}`, { id: "dataforseo-success" });
     return keywords;
   } catch (error) {
     console.error(`Error fetching DataForSEO keywords for ${domainUrl}:`, error);
+    toast.warning(`DataForSEO API failed: ${(error as Error).message}`, { id: "dataforseo-error" });
     throw error;
   }
 };
 
-// Function to fetch keywords using Google Keyword Insight API
+// Function to fetch keywords using Google Keyword Insight API with proper error handling
 export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
+    toast.info(`Trying Google Keyword API for ${domainUrl}...`, { id: "google-api" });
     const queryParams = new URLSearchParams({
       url: domainUrl,
       lang: 'en'
@@ -199,7 +206,9 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       headers: {
         "x-rapidapi-host": GOOGLE_KEYWORD_API_HOST,
         "x-rapidapi-key": API_KEY
-      }
+      },
+      // Add a timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000)
     });
 
     // Check for API errors
@@ -216,7 +225,7 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
     }
 
     // Transform the API response to our KeywordData format
-    return data.keywords.map(item => ({
+    const keywords = data.keywords.map(item => ({
       keyword: item.keyword,
       monthly_search: item.volume,
       competition: getCompetitionLabel(item.difficulty),
@@ -225,8 +234,12 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       position: item.current_rank,
       rankingUrl: null,
     }));
+    
+    toast.success(`Google API: Found ${keywords.length} keywords for ${domainUrl}`, { id: "google-success" });
+    return keywords;
   } catch (error) {
     console.error(`Error fetching Google keywords for ${domainUrl}:`, error);
+    toast.warning(`Google Keyword API failed: ${(error as Error).message}`, { id: "google-error" });
     throw error;
   }
 };
@@ -256,6 +269,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   
   // Fall back to the original API
   try {
+    toast.info(`Trying fallback API for ${domainUrl}...`, { id: "fallback-api" });
     const queryParams = new URLSearchParams({
       url: domainUrl,
       place_id: "2840", // Updated to use US location code
@@ -270,7 +284,9 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       headers: {
         "x-rapidapi-host": API_HOST,
         "x-rapidapi-key": API_KEY
-      }
+      },
+      // Add a timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000)
     });
 
     // Check for API errors
@@ -293,7 +309,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     }
 
     // Transform the API response to our KeywordData format
-    return data.data.map(item => ({
+    const keywords = data.data.map(item => ({
       keyword: item.keyword,
       monthly_search: item.monthly_search,
       competition: item.competition,
@@ -302,8 +318,12 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       position: null,
       rankingUrl: null,
     }));
+    
+    toast.success(`Fallback API: Found ${keywords.length} keywords for ${domainUrl}`, { id: "fallback-success" });
+    return keywords;
   } catch (error) {
     console.error(`Error fetching domain keywords for ${domainUrl}:`, error);
+    toast.error(`All keyword APIs failed for ${domainUrl}. Using mock data.`, { id: "all-apis-failed" });
     throw error;
   }
 };

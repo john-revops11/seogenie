@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { generateContent } from "@/services/keywords/contentGeneration";
@@ -32,6 +33,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
   const [ragEnabled, setRagEnabled] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
 
+  // Check Pinecone configuration status periodically
   useEffect(() => {
     const checkPineconeStatus = () => {
       const configured = isPineconeConfigured();
@@ -58,6 +60,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     return () => clearInterval(interval);
   }, [ragEnabled]);
 
+  // Initialize default content preferences
   useEffect(() => {
     if (contentPreferences.length === 0) {
       const defaultPreferences = [
@@ -76,6 +79,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   }, []);
 
+  // Load saved content preferences from localStorage
   useEffect(() => {
     try {
       const savedPreferences = localStorage.getItem('contentPreferences');
@@ -87,12 +91,14 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   }, []);
 
+  // Save content preferences to localStorage when changed
   useEffect(() => {
     if (contentPreferences.length > 0) {
       localStorage.setItem('contentPreferences', JSON.stringify(contentPreferences));
     }
   }, [contentPreferences]);
 
+  // Generate content based on a primary keyword and related keywords
   const handleGenerateFromKeyword = (primaryKeyword: string, relatedKeywords: string[]) => {
     const topicSuggestion = `${primaryKeyword} Guide: Best Practices and Strategies`;
     setTopics(prev => [...prev, topicSuggestion]);
@@ -114,12 +120,32 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     setTitle(titleSuggestions[0]);
     
     handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
+    
+    toast.success(`Added "${primaryKeyword}" as primary keyword with ${relatedKeywords.length} related keywords`);
   };
 
+  // Generate topic suggestions based on domain and keywords
   const handleGenerateTopics = async () => {
     setIsLoadingTopics(true);
     try {
+      if (!domain) {
+        toast.error("Please enter a domain before generating topics");
+        setIsLoadingTopics(false);
+        return;
+      }
+      
+      if (!allKeywords || allKeywords.length === 0) {
+        toast.warning("No keywords available. Topics may be less relevant.");
+      }
+      
       const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
+      
+      if (newTopics.length === 0) {
+        toast.warning("Could not generate topics. Try adding keywords or analyzing your domain first.");
+        setIsLoadingTopics(false);
+        return;
+      }
+      
       setTopics(newTopics);
       
       const newTitleSuggestions: {[topic: string]: string[]} = {};
@@ -143,6 +169,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   };
 
+  // Regenerate topic suggestions with different seed data
   const handleRegenerateTopics = async () => {
     setIsLoadingTopics(true);
     try {
@@ -170,15 +197,18 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   };
 
+  // Select a topic from the generated topics
   const handleSelectTopic = (topic: string) => {
     setSelectedTopic(topic);
     setTitle(titleSuggestions[topic]?.[0] || "");
   };
 
+  // Select a title for the selected topic
   const handleSelectTitle = (title: string) => {
     setTitle(title);
   };
 
+  // Delete a topic from the list
   const handleDeleteTopic = (topic: string) => {
     setTopics(prev => prev.filter(t => t !== topic));
     const { [topic]: removed, ...rest } = titleSuggestions;
@@ -190,14 +220,17 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     toast.success(`Deleted topic "${topic}"`);
   };
 
+  // Change the content type (blog, article, etc.)
   const handleContentTypeChange = (value: string) => {
     setContentType(value);
   };
 
+  // Change the creativity level for content generation
   const handleCreativityChange = (value: number) => {
     setCreativity(value);
   };
 
+  // Toggle content preferences
   const handleContentPreferenceToggle = (preference: string) => {
     setContentPreferences(prev => {
       if (prev.includes(preference)) {
@@ -208,6 +241,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     });
   };
 
+  // Toggle RAG enhancement for content generation
   const handleRagToggle = (enabled: boolean) => {
     if (enabled && !isPineconeConfigured()) {
       toast.error("Pinecone is not configured. Please configure it in the settings.");
@@ -222,6 +256,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   };
 
+  // Generate content based on current settings
   const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please select a title");
@@ -270,6 +305,7 @@ export const useContentGenerator = ({ domain, allKeywords }: UseContentGenerator
     }
   };
 
+  // Add a custom topic to the list
   const handleAddCustomTopic = (topic: string) => {
     setTopics(prev => [...prev, topic]);
     setTitleSuggestions(prev => ({
