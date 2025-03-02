@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { generateContent } from "@/services/keywords/contentGeneration";
@@ -21,6 +21,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   const [title, setTitle] = useState<string>("");
   const [contentType, setContentType] = useState<string>("blog");
   const [creativity, setCreativity] = useState<number>(50);
+  const [contentPreferences, setContentPreferences] = useState<string[]>([]);
   const [generatedContent, setGeneratedContent] = useState<{
     title: string;
     metaDescription: string;
@@ -30,6 +31,26 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
+
+  // Listen for content preference events from settings
+  useEffect(() => {
+    // Try to load saved preferences
+    try {
+      const savedPreferences = localStorage.getItem('contentPreferences');
+      if (savedPreferences) {
+        setContentPreferences(JSON.parse(savedPreferences));
+      }
+    } catch (error) {
+      console.error("Error loading saved preferences:", error);
+    }
+  }, []);
+
+  // Save preferences when changed
+  useEffect(() => {
+    if (contentPreferences.length > 0) {
+      localStorage.setItem('contentPreferences', JSON.stringify(contentPreferences));
+    }
+  }, [contentPreferences]);
 
   const handleGenerateFromKeyword = (primaryKeyword: string, relatedKeywords: string[]) => {
     // Generate an SEO-optimized topic based on the keyword
@@ -142,6 +163,16 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     setCreativity(value);
   };
 
+  const handleContentPreferenceToggle = (preference: string) => {
+    setContentPreferences(prev => {
+      if (prev.includes(preference)) {
+        return prev.filter(p => p !== preference);
+      } else {
+        return [...prev, preference];
+      }
+    });
+  };
+
   const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please select a title");
@@ -150,7 +181,14 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     
     setIsGenerating(true);
     try {
-      const result = await generateContent(domain, title, selectedKeywords, contentType, creativity);
+      const result = await generateContent(
+        domain, 
+        title, 
+        selectedKeywords, 
+        contentType, 
+        creativity,
+        contentPreferences
+      );
       setGeneratedContent(result);
       toast.success("Content generated successfully!");
     } catch (error) {
@@ -194,6 +232,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
               title={title}
               contentType={contentType}
               creativity={creativity}
+              contentPreferences={contentPreferences}
               isLoadingTopics={isLoadingTopics}
               isGenerating={isGenerating}
               onTopicSelect={handleSelectTopic}
@@ -201,6 +240,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
               onTopicDelete={handleDeleteTopic}
               onContentTypeChange={handleContentTypeChange}
               onCreativityChange={handleCreativityChange}
+              onContentPreferenceToggle={handleContentPreferenceToggle}
               onGenerateTopics={handleGenerateTopics}
               onRegenerateTopics={handleRegenerateTopics}
               onGenerateContent={handleGenerateContent}

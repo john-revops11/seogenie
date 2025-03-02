@@ -1,25 +1,40 @@
 
-import { useState } from "react";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { 
+  RefreshCcw, 
+  Sparkles, 
+  FileText, 
+  Plus,
+  CheckCircle2
+} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Plus } from "lucide-react";
-import { keywordGapsCache } from "@/components/KeywordGapCard";
-import TopicsList from "./TopicsList";
-import TitleSuggestions from "./TitleSuggestions";
+import { TopicsList } from "./TopicsList";
+import { TitleSuggestions } from "./TitleSuggestions";
 
 interface GeneratorFormProps {
   topics: string[];
-  titleSuggestions: {[topic: string]: string[]};
+  titleSuggestions: { [topic: string]: string[] };
   selectedTopic: string;
   selectedKeywords: string[];
   title: string;
   contentType: string;
   creativity: number;
+  contentPreferences: string[];
   isLoadingTopics: boolean;
   isGenerating: boolean;
   onTopicSelect: (topic: string) => void;
@@ -27,13 +42,14 @@ interface GeneratorFormProps {
   onTopicDelete: (topic: string) => void;
   onContentTypeChange: (value: string) => void;
   onCreativityChange: (value: number) => void;
+  onContentPreferenceToggle: (preference: string) => void;
   onGenerateTopics: () => void;
   onRegenerateTopics: () => void;
   onGenerateContent: () => void;
   onCustomTopicAdd: (topic: string) => void;
 }
 
-export const GeneratorForm = ({
+export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   topics,
   titleSuggestions,
   selectedTopic,
@@ -41,6 +57,7 @@ export const GeneratorForm = ({
   title,
   contentType,
   creativity,
+  contentPreferences,
   isLoadingTopics,
   isGenerating,
   onTopicSelect,
@@ -48,196 +65,235 @@ export const GeneratorForm = ({
   onTopicDelete,
   onContentTypeChange,
   onCreativityChange,
+  onContentPreferenceToggle,
   onGenerateTopics,
   onRegenerateTopics,
   onGenerateContent,
   onCustomTopicAdd
-}: GeneratorFormProps) => {
-  const [customTopic, setCustomTopic] = useState("");
-  const [showCustomTopicInput, setShowCustomTopicInput] = useState(false);
+}) => {
+  const [newTopic, setNewTopic] = useState("");
+  const [activeTab, setActiveTab] = useState("topics");
 
   const handleAddCustomTopic = () => {
-    if (!customTopic.trim()) {
-      toast.error("Please enter a custom topic");
+    if (newTopic.trim() === "") {
+      toast.error("Please enter a topic");
       return;
     }
     
-    onCustomTopicAdd(customTopic);
-    setCustomTopic("");
-    setShowCustomTopicInput(false);
+    onCustomTopicAdd(newTopic);
+    setNewTopic("");
   };
-  
+
+  const availableContentPreferences = [
+    "Include meta descriptions",
+    "Focus on H1/H2 tags",
+    "Use bullet points",
+    "Add internal links",
+    "Add tables for data",
+    "Include statistics",
+    "Add FAQ section"
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-lg font-medium">Selected Keywords</Label>
-          <Badge variant="outline">
-            {keywordGapsCache.selectedKeywords?.length || 0}/10
-          </Badge>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="topics">1. Topics & Title</TabsTrigger>
+          <TabsTrigger value="settings">2. Content Settings</TabsTrigger>
+        </TabsList>
         
-        <div className="flex flex-wrap gap-2 mb-4">
-          {keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0 ? (
-            keywordGapsCache.selectedKeywords.map((keyword, idx) => (
-              <Badge key={idx} className="bg-revology text-white">
-                {keyword}
-              </Badge>
-            ))
-          ) : (
-            <div className="text-sm text-muted-foreground p-2">
-              No keywords selected. Please select keywords from the Keyword Gaps card.
-            </div>
-          )}
-        </div>
-        
-        {/* Button to generate topics */}
-        {keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0 && topics.length === 0 && (
-          <Button 
-            onClick={onGenerateTopics}
-            className="w-full bg-revology hover:bg-revology-dark"
-            disabled={isLoadingTopics}
-          >
-            {isLoadingTopics ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating SEO Topics...
-              </>
-            ) : (
-              <>
-                Generate SEO Topics Based on Keyword Gaps
-              </>
-            )}
-          </Button>
-        )}
-      </div>
-      
-      {/* Only show topics section if we have topics or if user has selected keywords */}
-      {(topics.length > 0 || keywordGapsCache.selectedKeywords?.length > 0) && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-revology-dark">SEO Content Topics</h3>
-            <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex items-center gap-1 h-8 px-2 text-xs border-revology/30 text-revology hover:bg-revology-light/50"
-                onClick={() => setShowCustomTopicInput(true)}
-              >
-                <Plus className="h-3 w-3" />
-                Add Topic
-              </Button>
-              {topics.length > 0 && (
+        <TabsContent value="topics" className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-base">SEO-Optimized Topics</Label>
+              <div className="flex items-center gap-2">
                 <Button 
-                  size="sm" 
                   variant="outline" 
-                  className="flex items-center gap-1 h-8 px-2 text-xs border-revology/30 text-revology hover:bg-revology-light/50"
-                  onClick={onRegenerateTopics}
-                  disabled={isLoadingTopics}
+                  size="sm" 
+                  onClick={onGenerateTopics}
+                  disabled={isLoadingTopics || selectedKeywords.length === 0}
                 >
-                  <RefreshCw className={`h-3 w-3 ${isLoadingTopics ? 'animate-spin' : ''}`} />
-                  Refresh
+                  Generate Topics
                 </Button>
-              )}
+                {topics.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={onRegenerateTopics} 
+                    disabled={isLoadingTopics}
+                  >
+                    <RefreshCcw className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-          
-          {/* Show custom topic input when needed */}
-          {showCustomTopicInput && (
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Enter a custom topic..."
-                value={customTopic}
-                onChange={(e) => setCustomTopic(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleAddCustomTopic} size="sm" className="bg-revology hover:bg-revology-dark">
-                Add
-              </Button>
-            </div>
-          )}
-          
-          {/* Display topics */}
-          {topics.length > 0 && (
-            <TopicsList
-              topics={topics}
-              selectedTopic={selectedTopic}
-              onSelectTopic={onTopicSelect}
-              onDeleteTopic={onTopicDelete}
-            />
-          )}
-          
-          {/* Title suggestions */}
-          {selectedTopic && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-revology-dark">Title Suggestions</h3>
-              <TitleSuggestions
-                titles={titleSuggestions[selectedTopic] || []}
-                selectedTitle={title}
-                onSelectTitle={onTitleSelect}
-              />
-            </div>
-          )}
-          
-          {/* Content type selection */}
-          <div className="space-y-2">
-            <Label htmlFor="content-type">Content Type</Label>
-            <Select 
-              value={contentType} 
-              onValueChange={onContentTypeChange}
-            >
-              <SelectTrigger id="content-type">
-                <SelectValue placeholder="Select content type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="blog">Blog Post</SelectItem>
-                <SelectItem value="case-study">Case Study</SelectItem>
-                <SelectItem value="white-paper">White Paper</SelectItem>
-                <SelectItem value="article">Article</SelectItem>
-                <SelectItem value="guide">Guide</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Creativity slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Creativity</Label>
-              <span className="text-sm text-muted-foreground">{creativity}%</span>
-            </div>
-            <Slider
-              value={[creativity]}
-              onValueChange={(values) => onCreativityChange(values[0])}
-              min={0}
-              max={100}
-              step={10}
-              className="py-4"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Factual</span>
-              <span>Creative</span>
-            </div>
-          </div>
-          
-          {/* Generate button */}
-          <Button
-            className="w-full bg-revology hover:bg-revology-dark mt-4"
-            onClick={onGenerateContent}
-            disabled={isGenerating || !title}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Content...
-              </>
+            
+            {selectedKeywords.length > 0 ? (
+              <div className="space-y-1">
+                <div className="text-sm text-muted-foreground">
+                  Selected keywords: 
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {selectedKeywords.map(keyword => (
+                    <Badge key={keyword} variant="secondary">
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             ) : (
-              'Generate Content'
+              <div className="text-sm text-muted-foreground">
+                Select keywords from the dashboard to generate topic ideas
+              </div>
             )}
-          </Button>
-        </div>
-      )}
+          </div>
+          
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input 
+                value={newTopic} 
+                onChange={(e) => setNewTopic(e.target.value)}
+                placeholder="Add custom topic..."
+                disabled={isLoadingTopics}
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleAddCustomTopic}
+              disabled={isLoadingTopics || !newTopic.trim()}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add
+            </Button>
+          </div>
+          
+          <TopicsList 
+            topics={topics} 
+            selectedTopic={selectedTopic}
+            isLoading={isLoadingTopics}
+            onSelectTopic={onTopicSelect}
+            onDeleteTopic={onTopicDelete}
+          />
+          
+          {selectedTopic && titleSuggestions[selectedTopic] && (
+            <TitleSuggestions 
+              suggestions={titleSuggestions[selectedTopic]} 
+              selectedTitle={title}
+              onSelectTitle={onTitleSelect}
+            />
+          )}
+          
+          <Textarea 
+            placeholder="Custom title (optional)" 
+            value={title}
+            onChange={(e) => onTitleSelect(e.target.value)}
+            className="h-20"
+          />
+        </TabsContent>
+        
+        <TabsContent value="settings" className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="content-type">Content Type</Label>
+              <Select 
+                value={contentType} 
+                onValueChange={onContentTypeChange}
+              >
+                <SelectTrigger id="content-type">
+                  <SelectValue placeholder="Select content type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="blog">Blog Post</SelectItem>
+                  <SelectItem value="article">Article</SelectItem>
+                  <SelectItem value="white-paper">White Paper</SelectItem>
+                  <SelectItem value="case-study">Case Study</SelectItem>
+                  <SelectItem value="guide">Guide</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="creativity-slider">Creativity Level: {creativity}%</Label>
+                <Sparkles className={`w-4 h-4 ${creativity > 50 ? 'text-amber-500' : 'text-gray-400'}`} />
+              </div>
+              <Slider 
+                id="creativity-slider"
+                value={[creativity]} 
+                min={0} 
+                max={100}
+                step={5}
+                onValueChange={(values) => onCreativityChange(values[0])}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Factual</span>
+                <span>Balanced</span>
+                <span>Creative</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2 pt-4">
+              <Label>Content Preferences</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {availableContentPreferences.map(preference => (
+                  <Badge
+                    key={preference}
+                    variant={contentPreferences.includes(preference) ? "default" : "outline"}
+                    className={`cursor-pointer flex items-center justify-between gap-1 ${
+                      contentPreferences.includes(preference) 
+                        ? 'bg-primary hover:bg-primary/90' 
+                        : 'hover:bg-primary/10'
+                    }`}
+                    onClick={() => onContentPreferenceToggle(preference)}
+                  >
+                    {preference}
+                    {contentPreferences.includes(preference) && (
+                      <CheckCircle2 className="w-3 h-3" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Select preferences to customize your generated content
+              </p>
+            </div>
+          </div>
+          
+          <Card className="bg-muted/30 border-dashed">
+            <CardContent className="p-4">
+              <div className="text-sm">
+                <strong>Selected topic:</strong> {selectedTopic || "None selected"}
+              </div>
+              <div className="text-sm mt-1">
+                <strong>Title:</strong> {title || "None set"}
+              </div>
+              <div className="text-sm mt-1">
+                <strong>Content type:</strong> {contentType.charAt(0).toUpperCase() + contentType.slice(1)}
+              </div>
+              {contentPreferences.length > 0 && (
+                <div className="text-sm mt-1">
+                  <strong>Preferences:</strong> {contentPreferences.join(', ')}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      <Button 
+        className="w-full" 
+        onClick={onGenerateContent}
+        disabled={isGenerating || !title}
+      >
+        {isGenerating ? (
+          <>Generating Content...</>
+        ) : (
+          <>
+            <FileText className="w-4 h-4 mr-2" />
+            Generate Content
+          </>
+        )}
+      </Button>
     </div>
   );
 };
-
-export default GeneratorForm;

@@ -6,7 +6,8 @@ export const generateContent = async (
   title: string,
   keywords: string[],
   contentType: string,
-  creativityLevel: number
+  creativityLevel: number,
+  contentPreferences: string[] = []
 ): Promise<{
   title: string;
   metaDescription: string;
@@ -78,6 +79,25 @@ export const generateContent = async (
         Balance educational value with readability, and organize with clear structure using proper HTML headings (H1, H2, H3).`;
     }
     
+    // Add content preferences to the brief
+    if (contentPreferences && contentPreferences.length > 0) {
+      contentBrief += `\n\nPlease incorporate the following content preferences: ${contentPreferences.join(', ')}.`;
+      
+      // Add specific instructions for each preference
+      if (contentPreferences.includes('Focus on H1/H2 tags')) {
+        contentBrief += `\nEnsure proper heading hierarchy with a clear H1 title and logical H2 sections.`;
+      }
+      if (contentPreferences.includes('Include meta descriptions')) {
+        contentBrief += `\nCreate a compelling meta description that includes primary keywords.`;
+      }
+      if (contentPreferences.includes('Use bullet points')) {
+        contentBrief += `\nUtilize bullet points to break down complex information and improve readability.`;
+      }
+      if (contentPreferences.includes('Add internal links')) {
+        contentBrief += `\nSuggest potential internal linking opportunities within the content.`;
+      }
+    }
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -92,7 +112,18 @@ export const generateContent = async (
             content: `You are an expert content creator for ${domain}, specializing in business content creation.
             You create high-quality, engaging content that naturally incorporates target keywords and follows specific structural guidelines based on content type.
             Your content is well-structured with proper HTML formatting, provides value to business professionals, and helps websites rank in search engines.
-            Use proper heading hierarchy (H1, H2, H3) with semantic HTML, organize content with paragraphs, lists, and appropriate spacing.
+            
+            IMPORTANT HTML FORMATTING RULES:
+            1. Use semantic HTML with proper hierarchy: <h1> for main title (only one per document), <h2> for major sections, <h3> for subsections
+            2. Wrap each paragraph in <p> tags
+            3. Use <ul> and <li> for unordered lists, <ol> and <li> for ordered lists
+            4. Use <strong> or <b> to emphasize important points
+            5. Use <em> or <i> for italicized text
+            6. Break content into logical sections with appropriate headings
+            7. Ensure each heading has relevant content below it
+            8. Do not use deprecated HTML tags
+            9. Each block of content should be wrapped in appropriate HTML tags
+            
             Ensure your tone and approach are appropriate for a business audience - professional, data-driven, and actionable.`
           },
           {
