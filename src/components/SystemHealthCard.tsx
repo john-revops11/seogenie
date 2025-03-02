@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
 
-// API names and their descriptions
 const API_DETAILS = [
   { 
     id: "dataforseo", 
@@ -34,7 +32,6 @@ const API_DETAILS = [
   }
 ];
 
-// AI model options for OpenAI
 const AI_MODELS = [
   { id: "gpt-4o", name: "GPT-4o", description: "Powerful model for content generation" },
   { id: "gpt-4-turbo", name: "GPT-4 Turbo", description: "Fast and capable model for most tasks" }, 
@@ -69,11 +66,9 @@ const SystemHealthCard = () => {
   });
   const [selectedModel, setSelectedModel] = useState<string>("gpt-4o");
 
-  // Function to check APIs health
   const checkApiHealth = async () => {
     setChecking(true);
     
-    // Start with all APIs in checking state
     setApiStatus(prev => {
       const newStatus = { ...prev };
       Object.keys(newStatus).forEach(key => {
@@ -86,7 +81,6 @@ const SystemHealthCard = () => {
     });
     
     try {
-      // Check DataForSEO API status if enabled
       if (apiStatus.dataforseo.enabled) {
         await new Promise(resolve => setTimeout(resolve, 800));
         
@@ -102,7 +96,6 @@ const SystemHealthCard = () => {
         }));
       }
       
-      // Check OpenAI API status if enabled
       if (apiStatus.openai.enabled) {
         await new Promise(resolve => setTimeout(resolve, 600));
         const openAiErrors = localStorage.getItem('openAiErrors');
@@ -117,7 +110,6 @@ const SystemHealthCard = () => {
         }));
       }
       
-      // Check Google Keyword API status if enabled
       if (apiStatus.googleKeyword.enabled) {
         await new Promise(resolve => setTimeout(resolve, 700));
         const googleKeywordErrors = localStorage.getItem('googleKeywordErrors');
@@ -132,13 +124,11 @@ const SystemHealthCard = () => {
         }));
       }
       
-      // Check Pinecone API status if enabled
       if (apiStatus.pinecone.enabled) {
         const isPineconeReady = isPineconeConfigured();
         
         if (isPineconeReady) {
-          // Test the actual connection
-          const connectionSuccess = await testPineconeConnection();
+          const connectionSuccess = await testPineconeConnection('', '');
           const pineconeErrors = localStorage.getItem('pineconeErrors');
           
           setApiStatus(prev => ({
@@ -169,7 +159,6 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Save API enabled states to localStorage
   const saveApiStates = (newStates: ApiStatusState) => {
     try {
       const enabledStates = Object.keys(newStates).reduce((acc, key) => {
@@ -183,7 +172,6 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Load API enabled states from localStorage
   const loadApiStates = () => {
     try {
       const savedStates = localStorage.getItem('apiEnabledStates');
@@ -205,7 +193,6 @@ const SystemHealthCard = () => {
         });
       }
       
-      // Special handling for Pinecone - check if it's configured
       const isPineconeReady = isPineconeConfigured();
       setApiStatus(prev => ({
         ...prev,
@@ -220,7 +207,6 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Save selected model to localStorage
   const saveSelectedModel = (model: string) => {
     try {
       localStorage.setItem('selectedAiModel', model);
@@ -229,7 +215,6 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Load selected model from localStorage
   const loadSelectedModel = () => {
     try {
       const savedModel = localStorage.getItem('selectedAiModel');
@@ -241,15 +226,12 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Test specific API
   const testApi = async (apiId: string) => {
     setTestResult({ status: "loading" });
     
     try {
-      // Simulate API test (in a real app, this would make an actual API call)
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Check if API is enabled
       if (!apiStatus[apiId].enabled) {
         setTestResult({ 
           status: "error", 
@@ -258,7 +240,6 @@ const SystemHealthCard = () => {
         return;
       }
       
-      // Different test results based on API
       if (apiId === "dataforseo") {
         const hasErrors = localStorage.getItem('dataForSeoErrors');
         if (hasErrors) {
@@ -299,9 +280,8 @@ const SystemHealthCard = () => {
           });
         }
       } else if (apiId === "pinecone") {
-        // For Pinecone, we'll make an actual test call
         if (isPineconeConfigured()) {
-          const connectionSuccess = await testPineconeConnection();
+          const connectionSuccess = await testPineconeConnection('', '');
           if (connectionSuccess) {
             setTestResult({
               status: "success",
@@ -322,7 +302,6 @@ const SystemHealthCard = () => {
         }
       }
       
-      // Update the API status after testing
       checkApiHealth();
     } catch (error) {
       setTestResult({ 
@@ -332,7 +311,6 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Toggle API enabled state
   const toggleApiEnabled = (apiId: string) => {
     setApiStatus(prev => {
       const newStates = { 
@@ -344,42 +322,36 @@ const SystemHealthCard = () => {
         }
       };
       
-      // Save the new states to localStorage
       saveApiStates(newStates);
+      
+      if (!apiStatus[apiId].enabled) {
+        checkApiHealth();
+      }
       
       return newStates;
     });
-    
-    // If enabling an API, check its health immediately
-    if (!apiStatus[apiId].enabled) {
-      checkApiHealth();
-    }
   };
 
-  // Handle model selection change
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
     saveSelectedModel(value);
   };
 
-  // Check API health on component mount and load saved states
   useEffect(() => {
     loadApiStates();
     loadSelectedModel();
     checkApiHealth();
     
-    // Set up periodic health check every 5 minutes
     const intervalId = setInterval(checkApiHealth, 5 * 60 * 1000);
     
     return () => clearInterval(intervalId);
   }, []);
 
-  // Calculate overall system health
   const calculateOverallHealth = (): "healthy" | "degraded" | "critical" => {
     const enabledApis = Object.entries(apiStatus).filter(([_, data]) => data.enabled);
     
     if (enabledApis.length === 0) {
-      return "critical"; // All APIs disabled
+      return "critical";
     }
     
     const statuses = enabledApis.map(([_, data]) => data.status);
@@ -393,17 +365,14 @@ const SystemHealthCard = () => {
     }
     
     if (statuses.filter(status => status === "error").length >= Math.ceil(enabledApis.length / 2)) {
-      return "critical"; // More than half of enabled APIs have errors
+      return "critical";
     }
     
     return "degraded";
   };
-  
-  const systemHealth = calculateOverallHealth();
-  
-  // Show health status icon
+
   const renderHealthIcon = () => {
-    switch(systemHealth) {
+    switch(calculateOverallHealth()) {
       case "healthy":
         return <Check className="h-4 w-4 text-green-500" />;
       case "degraded":
@@ -414,8 +383,7 @@ const SystemHealthCard = () => {
         return <LoaderCircle className="h-4 w-4 animate-spin" />;
     }
   };
-  
-  // Render status icon for each API
+
   const renderStatusIcon = (status: ApiStatus, apiId: string) => {
     if (apiId === "pinecone") {
       if (status === "connected") return <Database className="h-4 w-4 text-green-500" />;
@@ -436,7 +404,6 @@ const SystemHealthCard = () => {
     }
   };
 
-  // Render test result icon
   const renderTestResultIcon = () => {
     switch(testResult.status) {
       case "success":
