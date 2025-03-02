@@ -267,6 +267,11 @@ const Index = () => {
     setShowApiForm(false);
   };
 
+  const handleRunSeoStrategy = () => {
+    toast.success("SEO strategy execution initiated for Revology Analytics");
+    // Any additional logic for SEO strategy execution would go here
+  };
+
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
@@ -327,7 +332,10 @@ const Index = () => {
                 
                 <KeywordResearch 
                   domain={mainDomain || "example.com"}
-                  onGenerateContent={handleGenerateContentFromKeyword} 
+                  competitorDomains={validCompetitorDomains}
+                  keywords={keywordData || []}
+                  onGenerateContent={handleGenerateContentFromKeyword}
+                  onRunSeoStrategy={handleRunSeoStrategy}
                 />
               </div>
             ) : !analysisComplete ? (
@@ -423,7 +431,10 @@ const Index = () => {
                 
                 <KeywordResearch 
                   domain={mainDomain || "example.com"}
-                  onGenerateContent={handleGenerateContentFromKeyword} 
+                  competitorDomains={validCompetitorDomains}
+                  keywords={[]}
+                  onGenerateContent={handleGenerateContentFromKeyword}
+                  onRunSeoStrategy={handleRunSeoStrategy}
                 />
               </div>
             ) : (
@@ -459,7 +470,10 @@ const Index = () => {
                 
                 <KeywordResearch 
                   domain={mainDomain}
-                  onGenerateContent={handleGenerateContentFromKeyword} 
+                  competitorDomains={validCompetitorDomains}
+                  keywords={keywordData || []}
+                  onGenerateContent={handleGenerateContentFromKeyword}
+                  onRunSeoStrategy={handleRunSeoStrategy}
                 />
               </div>
             )}
