@@ -158,7 +158,7 @@ const SystemHealthCard = () => {
               newStates[key] = {
                 ...newStates[key],
                 enabled: enabledStates[key],
-                status: enabledStates[key] ? newStates[key].status : "disconnected"
+                status: enabledStates[key] ? newStates[key].status : "disconnected" as ApiStatus
               };
             }
           });
@@ -268,7 +268,7 @@ const SystemHealthCard = () => {
         [apiId]: {
           ...prev[apiId],
           enabled: !prev[apiId].enabled,
-          status: !prev[apiId].enabled ? "checking" : "disconnected"
+          status: !prev[apiId].enabled ? "checking" as ApiStatus : "disconnected" as ApiStatus
         }
       };
       
@@ -489,7 +489,6 @@ const SystemHealthCard = () => {
                         checked={apiStatus[api.id]?.enabled || false}
                         onCheckedChange={() => toggleApiEnabled(api.id)}
                         className="data-[state=checked]:bg-green-500"
-                        size="sm"
                       />
                       <Label 
                         htmlFor={`${api.id}-switch`}
