@@ -3,25 +3,22 @@ import React from 'react';
 
 const CaseStudyStyles: React.FC = () => {
   return (
-    <style jsx global>{`
+    <style dangerouslySetInnerHTML={{
+      __html: `
       .case-study-section {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
         margin: 1.5rem 0;
       }
       
       .left-column, .right-column {
-        flex: 1;
-        min-width: 250px;
+        margin-bottom: 1.5rem;
         padding: 1.5rem;
         background-color: rgba(0, 0, 0, 0.02);
         border-radius: 0.5rem;
       }
       
       .case-study-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        display: flex;
+        flex-direction: column;
         gap: 1.5rem;
         margin: 1.5rem 0;
       }
@@ -49,7 +46,7 @@ const CaseStudyStyles: React.FC = () => {
         color: #2563eb;
         margin-bottom: 0.75rem;
       }
-    `}</style>
+    `}} />
   );
 };
 

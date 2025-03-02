@@ -60,6 +60,7 @@ export const generateContent = async (
             <h3>Fragmented Client Background</h3>
             <p>[Describe the client's structure and challenges in 3-4 sentences]</p>
           </div>
+          
           <div class="right-column">
             <h3>Business Structure</h3>
             <p>[Describe the business organization and growth in 3-4 sentences]</p>
@@ -79,14 +80,17 @@ export const generateContent = async (
             <h3>[Challenge 1]</h3>
             <p>[Details about challenge 1 in 3-4 sentences]</p>
           </div>
+          
           <div class="grid-item">
             <h3>[Challenge 2]</h3>
             <p>[Details about challenge 2 in 3-4 sentences]</p>
           </div>
+          
           <div class="grid-item">
             <h3>[Challenge 3]</h3>
             <p>[Details about challenge 3 in 3-4 sentences]</p>
           </div>
+          
           <div class="grid-item">
             <h3>[Challenge 4]</h3>
             <p>[Details about challenge 4 in 3-4 sentences]</p>
@@ -141,7 +145,25 @@ export const generateContent = async (
         <div class="results-section">
           <h3>Ongoing Partnership and [Focus Area]</h3>
           <p>[Describe partnership outcomes and future focus in 4-6 sentences]</p>
-        </div>`;
+        </div>
+        
+        Please follow this example format for the Case Study:
+        
+        Case Study SaaS: Portfolio Pricing Optimization at New Platform Launch
+        Industry: SaaS | Area: Pricing and Revenue Growth Management
+        In collaboration with EBITDA Catalyst, Revology's strategic partner for driving value creation for mid-market Private Equity.
+        
+        Fragmented Client Background
+        The client, a mid-sized Private-Equity held SaaS solution provider, experienced rapid growth through organic expansion and a series of strategic add-on acquisitions. Each business unit developed its own pricing strategy, resulting in a lack of uniformity and inefficiencies across the organization. This fragmentation made it challenging to maintain consistent pricing practices and optimize revenue effectively.
+        
+        Business Structure
+        This expansion led to a complex business structure with multiple independently operated business units.
+        
+        Crowded Market Challenges
+        The client faced a crowded market where competitors aggressively vied for market share based on features and value. Despite benefiting from secular growth trends, the company faced significant risks of engaging in a "race to the bottom" in pricing, which would have eroded margins if not managed carefully.
+        
+        Legacy Platform Issues
+        The client was preparing to launch a new flagship platform to consolidate its legacy software solutions, which had become a costly drain on resources. The existing structure had inefficiencies, such as inconsistent customer transaction recording and an over-reliance on Excel for analytics, which limited the company's ability to monitor and optimize pricing effectively.`;
         break;
       case "white-paper":
         contentBrief = `Create an executive-level white paper about ${title} for business decision-makers.

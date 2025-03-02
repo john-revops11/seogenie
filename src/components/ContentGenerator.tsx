@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -233,7 +234,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
         contentPreferences
       );
       
-      setGeneratedContent(result);
+      // Ensure ragEnhanced is always defined
+      setGeneratedContent({
+        ...result,
+        ragEnhanced: result.ragEnhanced || false
+      });
       
       // Display appropriate toast message based on RAG usage
       if (result.ragEnhanced) {
