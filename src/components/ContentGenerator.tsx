@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -15,6 +14,14 @@ interface ContentGeneratorProps {
   allKeywords: string[];
 }
 
+interface GeneratedContentType {
+  title: string;
+  metaDescription: string;
+  outline: string[];
+  content: string;
+  ragEnhanced: boolean;
+}
+
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords }) => {
   const [topics, setTopics] = useState<string[]>([]);
   const [titleSuggestions, setTitleSuggestions] = useState<{[topic: string]: string[]}>({});
@@ -23,26 +30,18 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   const [contentType, setContentType] = useState<string>("blog");
   const [creativity, setCreativity] = useState<number>(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<{
-    title: string;
-    metaDescription: string;
-    outline: string[];
-    content: string;
-    ragEnhanced?: boolean;
-  } | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContentType | null>(null);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [ragEnabled, setRagEnabled] = useState(false);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
 
-  // Check Pinecone configuration on mount
   useEffect(() => {
     if (isPineconeConfigured()) {
       toast.success("Pinecone RAG is available for enhanced content generation");
     }
   }, []);
 
-  // Select all content preferences by default on first load
   useEffect(() => {
     if (contentPreferences.length === 0) {
       const defaultPreferences = [
@@ -57,14 +56,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       
       setContentPreferences(defaultPreferences);
       
-      // Save to localStorage
       localStorage.setItem('contentPreferences', JSON.stringify(defaultPreferences));
     }
   }, []);
 
-  // Listen for content preference events from settings
   useEffect(() => {
-    // Try to load saved preferences
     try {
       const savedPreferences = localStorage.getItem('contentPreferences');
       if (savedPreferences) {
@@ -75,7 +71,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     }
   }, []);
 
-  // Save preferences when changed
   useEffect(() => {
     if (contentPreferences.length > 0) {
       localStorage.setItem('contentPreferences', JSON.stringify(contentPreferences));
@@ -83,12 +78,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   }, [contentPreferences]);
 
   const handleGenerateFromKeyword = (primaryKeyword: string, relatedKeywords: string[]) => {
-    // Generate an SEO-optimized topic based on the keyword
     const topicSuggestion = `${primaryKeyword} Guide: Best Practices and Strategies`;
     setTopics(prev => [...prev, topicSuggestion]);
     setSelectedTopic(topicSuggestion);
     
-    // Generate title suggestions
     const titleSuggestions = [
       `Ultimate Guide to ${primaryKeyword}: Everything You Need to Know`,
       `${primaryKeyword} in ${new Date().getFullYear()}: Trends and Insights`,
@@ -102,10 +95,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       [topicSuggestion]: titleSuggestions 
     }));
     
-    // Set the selected title
     setTitle(titleSuggestions[0]);
     
-    // Set selected keywords (combine primary with related)
     handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
   };
 
@@ -115,7 +106,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
       setTopics(newTopics);
       
-      // Generate title suggestions for each topic
       const newTitleSuggestions: {[topic: string]: string[]} = {};
       newTopics.forEach(topic => {
         newTitleSuggestions[topic] = [
@@ -143,7 +133,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
       setTopics(newTopics);
       
-      // Generate title suggestions for each topic
       const newTitleSuggestions: {[topic: string]: string[]} = {};
       newTopics.forEach(topic => {
         newTitleSuggestions[topic] = [
@@ -218,7 +207,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     
     setIsGenerating(true);
     try {
-      // Display a message about RAG if it's enabled
       if (ragEnabled && isPineconeConfigured()) {
         toast.info("Using RAG to enhance content with related keywords and context", {
           duration: 3000
@@ -234,13 +222,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
         contentPreferences
       );
       
-      // Ensure ragEnhanced is always defined
       setGeneratedContent({
         ...result,
         ragEnhanced: result.ragEnhanced || false
       });
       
-      // Display appropriate toast message based on RAG usage
       if (result.ragEnhanced) {
         toast.success("Content generated successfully with RAG enhancement!");
       } else {

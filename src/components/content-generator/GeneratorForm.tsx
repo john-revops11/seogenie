@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { TopicsList } from "./TopicsList";
 import { TitleSuggestions } from "./TitleSuggestions";
-import { RagSettings } from "./RagSettings";
+// Fix the import to use default import instead of named import
+import RagSettings from "./RagSettings";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 interface GeneratorFormProps {
