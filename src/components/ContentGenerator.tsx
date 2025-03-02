@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -28,6 +27,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     metaDescription: string;
     outline: string[];
     content: string;
+    ragEnhanced?: boolean;
   } | null>(null);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -38,6 +38,26 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   useEffect(() => {
     if (isPineconeConfigured()) {
       toast.success("Pinecone RAG is available for enhanced content generation");
+    }
+  }, []);
+
+  // Select all content preferences by default on first load
+  useEffect(() => {
+    if (contentPreferences.length === 0) {
+      const defaultPreferences = [
+        "Include meta descriptions",
+        "Focus on H1/H2 tags",
+        "Use bullet points",
+        "Add internal links",
+        "Add tables for data",
+        "Include statistics",
+        "Add FAQ section"
+      ];
+      
+      setContentPreferences(defaultPreferences);
+      
+      // Save to localStorage
+      localStorage.setItem('contentPreferences', JSON.stringify(defaultPreferences));
     }
   }, []);
 
@@ -212,8 +232,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
         creativity,
         contentPreferences
       );
+      
       setGeneratedContent(result);
-      toast.success("Content generated successfully!");
+      
+      // Display appropriate toast message based on RAG usage
+      if (result.ragEnhanced) {
+        toast.success("Content generated successfully with RAG enhancement!");
+      } else {
+        toast.success("Content generated successfully!");
+      }
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error(`Failed to generate content: ${(error as Error).message}`);

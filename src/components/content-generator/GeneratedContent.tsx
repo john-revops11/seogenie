@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Save, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit2, Save, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import CaseStudyStyles from "./CaseStudyStyles";
 
 interface GeneratedContentProps {
   generatedContent: {
@@ -11,6 +13,7 @@ interface GeneratedContentProps {
     metaDescription: string;
     outline: string[];
     content: string;
+    ragEnhanced: boolean;
   };
   contentType: string;
 }
@@ -197,10 +200,20 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{generatedContent.title}</CardTitle>
-        <CardDescription>{generatedContent.metaDescription}</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>{generatedContent.title}</CardTitle>
+            <CardDescription>{generatedContent.metaDescription}</CardDescription>
+          </div>
+          {generatedContent.ragEnhanced && (
+            <Badge variant="outline" className="flex items-center gap-1 border-amber-500 text-amber-600">
+              <Sparkles className="h-3 w-3" /> RAG Enhanced
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {contentType === "case-study" && <CaseStudyStyles />}
         {renderContent()}
       </CardContent>
     </Card>

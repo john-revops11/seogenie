@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,16 +81,6 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   const [activeTab, setActiveTab] = useState("topics");
   const isPineconeReady = isPineconeConfigured();
 
-  const handleAddCustomTopic = () => {
-    if (newTopic.trim() === "") {
-      toast.error("Please enter a topic");
-      return;
-    }
-    
-    onCustomTopicAdd(newTopic);
-    setNewTopic("");
-  };
-
   const availableContentPreferences = [
     "Include meta descriptions",
     "Focus on H1/H2 tags",
@@ -100,6 +90,24 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
     "Include statistics",
     "Add FAQ section"
   ];
+
+  useEffect(() => {
+    if (contentPreferences.length === 0) {
+      availableContentPreferences.forEach(preference => {
+        onContentPreferenceToggle(preference);
+      });
+    }
+  }, []);
+
+  const handleAddCustomTopic = () => {
+    if (newTopic.trim() === "") {
+      toast.error("Please enter a topic");
+      return;
+    }
+    
+    onCustomTopicAdd(newTopic);
+    setNewTopic("");
+  };
 
   return (
     <div className="space-y-6">

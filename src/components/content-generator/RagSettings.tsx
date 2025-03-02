@@ -52,6 +52,11 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
                 Setup Required
               </Badge>
             )}
+            {enabled && isPineconeReady && (
+              <Badge variant="success" className="text-xs bg-green-600 text-white">
+                Active
+              </Badge>
+            )}
             <Switch
               id="rag-toggle"
               checked={enabled && isPineconeReady}
