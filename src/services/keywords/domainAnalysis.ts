@@ -281,7 +281,7 @@ async function generateKeywordsWithAI(domain: string): Promise<KeywordData[]> {
     // Import from apiConfig to access OPENAI_API_KEY
     const { OPENAI_API_KEY } = await import('./apiConfig');
     
-    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your-openai-api-key') {
+    if (!OPENAI_API_KEY) {
       throw new Error("OpenAI API key is not configured");
     }
     
