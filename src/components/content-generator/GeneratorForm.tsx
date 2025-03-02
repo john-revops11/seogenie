@@ -305,8 +305,8 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
             </div>
             
             <RagSettings 
-              enabled={ragEnabled && isPineconeReady} 
-              onToggle={onRagToggle}
+              ragEnabled={ragEnabled && isPineconeReady} 
+              onRagToggle={onRagToggle}
             />
             
             <div className="text-xs text-muted-foreground">
