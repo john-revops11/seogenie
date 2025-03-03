@@ -80,18 +80,31 @@ const checkPineconeHealth = async (
     const isPineconeReady = isPineconeConfigured();
     
     if (isPineconeReady) {
-      const connectionSuccess = await testPineconeConnection();
-      const pineconeErrors = localStorage.getItem('pineconeErrors');
-      
-      setApiStatus(prev => ({
-        ...prev,
-        pinecone: {
-          ...prev.pinecone,
-          status: connectionSuccess ? "connected" : "error",
-          lastChecked: new Date(),
-          errorMessage: pineconeErrors || undefined
-        }
-      }));
+      try {
+        const connectionSuccess = await testPineconeConnection();
+        const pineconeErrors = localStorage.getItem('pineconeErrors');
+        
+        setApiStatus(prev => ({
+          ...prev,
+          pinecone: {
+            ...prev.pinecone,
+            status: connectionSuccess ? "connected" : "error",
+            lastChecked: new Date(),
+            errorMessage: pineconeErrors || undefined
+          }
+        }));
+      } catch (error) {
+        console.error("Error testing Pinecone connection:", error);
+        setApiStatus(prev => ({
+          ...prev,
+          pinecone: {
+            ...prev.pinecone,
+            status: "error",
+            lastChecked: new Date(),
+            errorMessage: (error as Error).message
+          }
+        }));
+      }
     } else {
       setApiStatus(prev => ({
         ...prev,

@@ -1,22 +1,26 @@
-
 import { OPENAI_API_KEY } from '../keywords/apiConfig';
 
 // This would ideally come from environment variables
 let PINECONE_API_KEY = '';
 let PINECONE_INDEX = 'content-index';
-const PINECONE_ENVIRONMENT = 'gcp-starter';
+let PINECONE_HOST = '';
+let PINECONE_REGION = 'us-east-1';
 
 /**
  * Sets the Pinecone API configuration
  */
-export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX) => {
+export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX, host: string = '', region: string = 'us-east-1') => {
   PINECONE_API_KEY = apiKey;
   PINECONE_INDEX = index;
+  PINECONE_HOST = host;
+  PINECONE_REGION = region;
   
   // Persist configuration in localStorage
   try {
     localStorage.setItem('PINECONE_API_KEY', apiKey);
     localStorage.setItem('PINECONE_INDEX', index);
+    localStorage.setItem('PINECONE_HOST', host);
+    localStorage.setItem('PINECONE_REGION', region);
     
     // Mark Pinecone as configured in the system health
     const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
@@ -43,6 +47,8 @@ export const getPineconeConfig = () => {
     try {
       const savedApiKey = localStorage.getItem('PINECONE_API_KEY');
       const savedIndex = localStorage.getItem('PINECONE_INDEX');
+      const savedHost = localStorage.getItem('PINECONE_HOST');
+      const savedRegion = localStorage.getItem('PINECONE_REGION');
       
       if (savedApiKey) {
         PINECONE_API_KEY = savedApiKey;
@@ -50,6 +56,14 @@ export const getPineconeConfig = () => {
       
       if (savedIndex) {
         PINECONE_INDEX = savedIndex;
+      }
+      
+      if (savedHost) {
+        PINECONE_HOST = savedHost;
+      }
+      
+      if (savedRegion) {
+        PINECONE_REGION = savedRegion;
       }
     } catch (error) {
       console.error("Error loading Pinecone config from localStorage:", error);
@@ -59,7 +73,8 @@ export const getPineconeConfig = () => {
   return {
     apiKey: PINECONE_API_KEY ? PINECONE_API_KEY.substring(0, 5) + '...' : '',
     index: PINECONE_INDEX,
-    environment: PINECONE_ENVIRONMENT
+    host: PINECONE_HOST,
+    region: PINECONE_REGION
   };
 };
 
@@ -72,6 +87,8 @@ export const isPineconeConfigured = () => {
     try {
       const savedApiKey = localStorage.getItem('PINECONE_API_KEY');
       const savedIndex = localStorage.getItem('PINECONE_INDEX');
+      const savedHost = localStorage.getItem('PINECONE_HOST');
+      const savedRegion = localStorage.getItem('PINECONE_REGION');
       
       if (savedApiKey) {
         PINECONE_API_KEY = savedApiKey;
@@ -80,6 +97,14 @@ export const isPineconeConfigured = () => {
       
       if (savedIndex) {
         PINECONE_INDEX = savedIndex;
+      }
+      
+      if (savedHost) {
+        PINECONE_HOST = savedHost;
+      }
+      
+      if (savedRegion) {
+        PINECONE_REGION = savedRegion;
       }
     } catch (error) {
       console.error("Error loading Pinecone config from localStorage:", error);
@@ -100,7 +125,7 @@ export const testPineconeConnection = async (): Promise<boolean> => {
   
   try {
     // Check if we can connect to the Pinecone index
-    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io/describe_index_stats`, {
+    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_REGION}.svc.${PINECONE_REGION}.pinecone.io/describe_index_stats`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -167,7 +192,12 @@ export const upsertToPinecone = async (
   }
 
   try {
-    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io/vectors/upsert`, {
+    // Use host if provided, otherwise construct from index and environment
+    const apiUrl = PINECONE_HOST 
+      ? `${PINECONE_HOST}/vectors/upsert`
+      : `https://${PINECONE_INDEX}-${PINECONE_REGION}.svc.${PINECONE_REGION}.pinecone.io/vectors/upsert`;
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -211,7 +241,12 @@ export const queryPinecone = async (
   }
 
   try {
-    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io/query`, {
+    // Use host if provided, otherwise construct from index and environment
+    const apiUrl = PINECONE_HOST 
+      ? `${PINECONE_HOST}/query`
+      : `https://${PINECONE_INDEX}-${PINECONE_REGION}.svc.${PINECONE_REGION}.pinecone.io/query`;
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
