@@ -14,4 +14,4 @@ export * from './keywords/revologySeoStrategy';
 export * from './vector/pineconeService';
 
 // Export RAG utilities
-export * from '../utils/rag/contentRag';
+export * from '../utils/rag';
