@@ -1,6 +1,6 @@
 
 import { ApiStatusState } from "../types";
-import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
+import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/connection";
 
 export const checkApiHealth = async (
   apiStatus: ApiStatusState,

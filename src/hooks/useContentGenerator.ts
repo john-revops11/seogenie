@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { generateContent } from "@/services/keywords/contentGeneration";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
-import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import { isPineconeConfigured } from "@/services/vector/config";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 
 export interface GeneratedContentType {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Zap, Database } from "lucide-react";
 import { toast } from "sonner";
-import { isPineconeConfigured, getPineconeConfig, configurePinecone } from "@/services/vector/pineconeService";
+import { isPineconeConfigured, getPineconeConfig, configurePinecone } from "@/services/vector/config";
 
 interface ApiSettingsFormProps {
   onAddNewApi: (apiName: string, apiKey: string) => void;
@@ -26,7 +25,6 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
     index: ""
   });
 
-  // Load saved API integrations on component mount
   useEffect(() => {
     try {
       const savedIntegrations = localStorage.getItem('apiIntegrations');
@@ -34,7 +32,6 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
         setApiIntegrations(JSON.parse(savedIntegrations));
       }
       
-      // Check Pinecone configuration
       const pineconeConfigured = isPineconeConfigured();
       const pineconeConfig = getPineconeConfig();
       
@@ -54,7 +51,6 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
       return;
     }
     
-    // Update local state
     const newIntegration = { 
       name: newApiName, 
       key: newApiKey.substring(0, 5) + '...'
@@ -63,13 +59,10 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
     const updatedIntegrations = [...apiIntegrations, newIntegration];
     setApiIntegrations(updatedIntegrations);
     
-    // Save to localStorage
     localStorage.setItem('apiIntegrations', JSON.stringify(updatedIntegrations));
     
-    // Call the prop function
     onAddNewApi(newApiName, newApiKey);
     
-    // Update system health
     const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
     apiEnabledStates[newApiName.toLowerCase().replace(/\s+/g, '')] = true;
     localStorage.setItem('apiEnabledStates', JSON.stringify(apiEnabledStates));
@@ -84,7 +77,6 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
   const handleSaveSettings = () => {
     toast.success("Settings saved successfully!");
     
-    // This would normally save all settings to a backend
     localStorage.setItem('settingsSaved', 'true');
   };
 
