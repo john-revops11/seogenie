@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Settings, ExternalLink, CheckCircle, Save } from "lucide-react";
@@ -25,6 +24,11 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   const [pineconeRegion, setPineconeRegion] = useState(getPineconeConfig().region || "us-east-1");
   
   useEffect(() => {
+    // Pre-populate with the provided values
+    setPineconeApiKey("pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797");
+    setPineconeHost("https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io");
+    setPineconeRegion("us-east-1");
+    
     // Re-check Pinecone configuration on component mount
     setIsPineconeReady(isPineconeConfigured());
   }, []);
