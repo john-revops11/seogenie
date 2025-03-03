@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Settings, ExternalLink, CheckCircle, Save } from "lucide-react";
 import RagSettings from "../RagSettings";
@@ -20,19 +21,6 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   const [showPineconeConfig, setShowPineconeConfig] = useState(false);
   const [pineconeApiKey, setPineconeApiKey] = useState("");
   const [pineconeIndex, setPineconeIndex] = useState(getPineconeConfig().index);
-  const [pineconeHost, setPineconeHost] = useState(getPineconeConfig().host || "");
-  const [pineconeRegion, setPineconeRegion] = useState(getPineconeConfig().region || "us-east-1");
-  
-  useEffect(() => {
-    // Pre-populate with the provided values
-    setPineconeApiKey("pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797");
-    setPineconeHost("https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io");
-    setPineconeIndex("llama-text-embed-v2-index");
-    setPineconeRegion("us-east-1");
-    
-    // Re-check Pinecone configuration on component mount
-    setIsPineconeReady(isPineconeConfigured());
-  }, []);
   
   const handleConfigurePinecone = () => {
     if (!pineconeApiKey.trim()) {
@@ -41,44 +29,9 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
     }
     
     try {
-      const result = configurePinecone(
-        pineconeApiKey, 
-        pineconeIndex, 
-        pineconeHost, 
-        pineconeRegion
-      );
+      configurePinecone(pineconeApiKey, pineconeIndex);
       setIsPineconeReady(true);
       setShowPineconeConfig(false);
-      
-      // Save the API integration to localStorage for system health
-      const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
-      apiEnabledStates.pinecone = true;
-      localStorage.setItem('apiEnabledStates', JSON.stringify(apiEnabledStates));
-      
-      // Simulate API integration update
-      const apiIntegrations = JSON.parse(localStorage.getItem('apiIntegrations') || '[]');
-      const existingIndex = apiIntegrations.findIndex((api: any) => api.name === 'Pinecone');
-      
-      if (existingIndex >= 0) {
-        apiIntegrations[existingIndex] = { 
-          name: 'Pinecone', 
-          key: pineconeApiKey.substring(0, 5) + '...',
-          index: pineconeIndex,
-          host: pineconeHost,
-          region: pineconeRegion
-        };
-      } else {
-        apiIntegrations.push({ 
-          name: 'Pinecone', 
-          key: pineconeApiKey.substring(0, 5) + '...',
-          index: pineconeIndex,
-          host: pineconeHost,
-          region: pineconeRegion
-        });
-      }
-      
-      localStorage.setItem('apiIntegrations', JSON.stringify(apiIntegrations));
-      
       toast.success("Pinecone configured successfully!");
       
       // Force a re-check of the RAG state
@@ -140,26 +93,6 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
                 value={pineconeIndex}
                 onChange={(e) => setPineconeIndex(e.target.value)}
                 placeholder="content-index"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <Label htmlFor="pinecone-host" className="text-xs">Host URL (Optional)</Label>
-              <Input
-                id="pinecone-host"
-                value={pineconeHost}
-                onChange={(e) => setPineconeHost(e.target.value)}
-                placeholder="https://your-index.svc.region.pinecone.io"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <Label htmlFor="pinecone-region" className="text-xs">Region</Label>
-              <Input
-                id="pinecone-region"
-                value={pineconeRegion}
-                onChange={(e) => setPineconeRegion(e.target.value)}
-                placeholder="us-east-1"
                 className="h-8 text-sm"
               />
             </div>

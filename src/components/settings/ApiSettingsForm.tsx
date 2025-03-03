@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,9 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Zap, Database } from "lucide-react";
+import { Plus, Search, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { isPineconeConfigured, getPineconeConfig, configurePinecone } from "@/services/vector/config";
 
 interface ApiSettingsFormProps {
   onAddNewApi: (apiName: string, apiKey: string) => void;
@@ -18,32 +18,6 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
   const [showApiForm, setShowApiForm] = useState(false);
   const [newApiName, setNewApiName] = useState("");
   const [newApiKey, setNewApiKey] = useState("");
-  const [apiIntegrations, setApiIntegrations] = useState<any[]>([]);
-  const [pineconeSettings, setPineconeSettings] = useState({
-    isConfigured: false,
-    apiKey: "",
-    index: ""
-  });
-
-  useEffect(() => {
-    try {
-      const savedIntegrations = localStorage.getItem('apiIntegrations');
-      if (savedIntegrations) {
-        setApiIntegrations(JSON.parse(savedIntegrations));
-      }
-      
-      const pineconeConfigured = isPineconeConfigured();
-      const pineconeConfig = getPineconeConfig();
-      
-      setPineconeSettings({
-        isConfigured: pineconeConfigured,
-        apiKey: "",  // We don't display the full API key for security
-        index: pineconeConfig.index
-      });
-    } catch (error) {
-      console.error("Error loading API integrations:", error);
-    }
-  }, []);
 
   const handleAddNewApi = () => {
     if (!newApiName.trim() || !newApiKey.trim()) {
@@ -51,33 +25,11 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
       return;
     }
     
-    const newIntegration = { 
-      name: newApiName, 
-      key: newApiKey.substring(0, 5) + '...'
-    };
-    
-    const updatedIntegrations = [...apiIntegrations, newIntegration];
-    setApiIntegrations(updatedIntegrations);
-    
-    localStorage.setItem('apiIntegrations', JSON.stringify(updatedIntegrations));
-    
     onAddNewApi(newApiName, newApiKey);
-    
-    const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
-    apiEnabledStates[newApiName.toLowerCase().replace(/\s+/g, '')] = true;
-    localStorage.setItem('apiEnabledStates', JSON.stringify(apiEnabledStates));
     
     setNewApiName("");
     setNewApiKey("");
     setShowApiForm(false);
-    
-    toast.success(`${newApiName} API added successfully!`);
-  };
-
-  const handleSaveSettings = () => {
-    toast.success("Settings saved successfully!");
-    
-    localStorage.setItem('settingsSaved', 'true');
   };
 
   return (
@@ -126,38 +78,6 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
                 </div>
               </div>
             </Card>
-            
-            {pineconeSettings.isConfigured && (
-              <Card className="p-4 border-dashed hover:border-revology/30 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Database className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Pinecone</h3>
-                    <p className="text-xs text-muted-foreground">Vector database for RAG</p>
-                    <p className="text-xs text-green-600 mt-1">Index: {pineconeSettings.index}</p>
-                  </div>
-                </div>
-              </Card>
-            )}
-            
-            {apiIntegrations.map((api, index) => (
-              api.name !== "Pinecone" && (
-                <Card key={index} className="p-4 border-dashed hover:border-revology/30 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
-                      <Search className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{api.name}</h3>
-                      <p className="text-xs text-muted-foreground">Custom API integration</p>
-                      <p className="text-xs text-green-600 mt-1">Key: {api.key}</p>
-                    </div>
-                  </div>
-                </Card>
-              )
-            ))}
           </div>
           
           {showApiForm ? (
@@ -245,12 +165,7 @@ const ApiSettingsForm = ({ onAddNewApi }: ApiSettingsFormProps) => {
           </div>
         </div>
         
-        <Button 
-          className="transition-all bg-revology hover:bg-revology-dark" 
-          onClick={handleSaveSettings}
-        >
-          Save Settings
-        </Button>
+        <Button className="transition-all bg-revology hover:bg-revology-dark">Save Settings</Button>
       </CardContent>
     </Card>
   );

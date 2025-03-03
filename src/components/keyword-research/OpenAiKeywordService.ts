@@ -78,7 +78,7 @@ export const fetchKeywordsFromOpenAI = async (searchTerm: string): Promise<Resea
     toast.success(`Found ${parsedData.keywords.length} keyword opportunities`);
     return parsedData.keywords;
   } catch (apiError) {
-    console.error("Error with AI API, using sample data:", apiError);
+    console.error("Error with OpenAI API, using sample data:", apiError);
     const sampleKeywords = getSampleKeywords(searchTerm);
     toast.success(`Generated ${sampleKeywords.length} keyword ideas for "${searchTerm}"`);
     toast.info("Using sample data for demonstration purposes");
