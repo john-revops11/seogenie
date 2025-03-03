@@ -1,0 +1,84 @@
+
+import { enhanceContentWithRAG } from '@/utils/rag/contentRag';
+import { createContentBrief, addContentPreferencesToBrief, addRagContextToBrief } from './contentBriefs';
+import { callOpenAiApi, createSystemPrompt, createUserPrompt } from './openaiClient';
+import { GeneratedContent, RagResults } from './contentTypes';
+
+/**
+ * Generate content with the provided parameters and options
+ */
+export const generateContent = async (
+  domain: string,
+  title: string,
+  keywords: string[],
+  contentType: string,
+  creativityLevel: number,
+  contentPreferences: string[] = [],
+  ragEnabled: boolean = false
+): Promise<GeneratedContent> => {
+  try {
+    console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
+    
+    // Only use RAG if it's enabled
+    let ragResults: RagResults = {
+      relevantKeywords: keywords,
+      relatedTopics: [],
+      contextualExamples: [],
+      structuralRecommendations: []
+    };
+    
+    // Only perform RAG enhancement if enabled
+    if (ragEnabled) {
+      ragResults = await enhanceContentWithRAG(title, keywords, contentType);
+      console.log("Enhanced with RAG:", {
+        keywordCount: ragResults.relevantKeywords.length,
+        topicCount: ragResults.relatedTopics.length,
+        exampleCount: ragResults.contextualExamples.length
+      });
+    } else {
+      console.log("RAG enhancement disabled, using base keywords only");
+    }
+    
+    const enhancedKeywords = ragResults.relevantKeywords;
+    
+    const creativity = creativityLevel / 100; // Convert to 0-1 scale
+    const temperature = 0.5 + (creativity * 0.5); // Range from 0.5 to 1.0
+    
+    // Create a content brief based on the type of content
+    let contentBrief = createContentBrief(contentType as any, title, domain);
+    
+    // Add content preferences to the brief
+    contentBrief = addContentPreferencesToBrief(contentBrief, contentPreferences);
+    
+    // Add RAG-enhanced context to the content brief only if RAG is enabled
+    contentBrief = addRagContextToBrief(contentBrief, ragResults, ragEnabled);
+    
+    // Add RAG indicator
+    const wasRagEnhanced = ragEnabled && ragResults.relevantKeywords.length > keywords.length;
+    
+    // Create prompts for OpenAI
+    const systemPrompt = createSystemPrompt(domain);
+    const userPrompt = createUserPrompt(
+      contentBrief, 
+      enhancedKeywords, 
+      domain, 
+      title, 
+      contentType, 
+      wasRagEnhanced
+    );
+    
+    // Call OpenAI API
+    const result = await callOpenAiApi(systemPrompt, userPrompt, temperature);
+    
+    return {
+      title: result.title || title,
+      metaDescription: result.metaDescription,
+      outline: result.outline,
+      content: result.content,
+      ragEnhanced: result.ragEnhanced || wasRagEnhanced
+    };
+  } catch (error) {
+    console.error("Error generating content:", error);
+    throw new Error(`Failed to generate content: ${(error as Error).message}`);
+  }
+};

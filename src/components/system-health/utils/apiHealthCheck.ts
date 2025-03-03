@@ -1,120 +1,65 @@
+import { ApiHealth, ApiStatus, ApiStatusItem } from '../types';
+import { testPineconeConnection } from '@/services/vector/connection';
 
-import { ApiStatusState } from "../types";
-import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/connection";
+const getDefaultApiStatus = (): ApiStatus => ({
+  mainApiStatus: {
+    name: 'Main API',
+    status: 'unknown',
+    lastChecked: null,
+  },
+  googleApiStatus: {
+    name: 'Google API',
+    status: 'unknown',
+    lastChecked: null,
+  },
+  dataForSeoApiStatus: {
+    name: 'DataForSEO API',
+    status: 'unknown',
+    lastChecked: null,
+  },
+  pineconeApiStatus: {
+    name: 'Pinecone API',
+    status: 'unknown',
+    lastChecked: null,
+  },
+});
 
-export const checkApiHealth = async (
-  apiStatus: ApiStatusState,
-  setApiStatus: React.Dispatch<React.SetStateAction<ApiStatusState>>,
-  setChecking: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> => {
-  setChecking(true);
-  
-  setApiStatus(prev => {
-    const newStatus = { ...prev };
-    Object.keys(newStatus).forEach(key => {
-      newStatus[key] = { 
-        ...newStatus[key], 
-        status: newStatus[key].enabled ? "checking" : "disconnected" as const
-      };
-    });
-    return newStatus;
-  });
-  
-  try {
-    if (apiStatus.dataforseo.enabled) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const dataForSeoErrors = localStorage.getItem('dataForSeoErrors');
-      setApiStatus(prev => ({
-        ...prev,
-        dataforseo: {
-          ...prev.dataforseo,
-          status: dataForSeoErrors ? "error" : "connected",
-          lastChecked: new Date(),
-          errorMessage: dataForSeoErrors ? "API key or rate limit issues" : undefined
-        }
-      }));
-    }
-    
-    if (apiStatus.openai.enabled) {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      const openAiErrors = localStorage.getItem('openAiErrors');
-      setApiStatus(prev => ({
-        ...prev,
-        openai: {
-          ...prev.openai,
-          status: openAiErrors ? "error" : "connected",
-          lastChecked: new Date(),
-          errorMessage: openAiErrors ? "API key or rate limit issues" : undefined
-        }
-      }));
-    }
-    
-    if (apiStatus.googleKeyword.enabled) {
-      await new Promise(resolve => setTimeout(resolve, 700));
-      const googleKeywordErrors = localStorage.getItem('googleKeywordErrors');
-      setApiStatus(prev => ({
-        ...prev,
-        googleKeyword: {
-          ...prev.googleKeyword,
-          status: googleKeywordErrors ? "error" : "disconnected",
-          lastChecked: new Date(),
-          errorMessage: googleKeywordErrors ? "Authentication error" : "Not connected"
-        }
-      }));
-    }
-    
-    await checkPineconeHealth(apiStatus, setApiStatus);
-  } catch (error) {
-    console.error("Error checking API health:", error);
-  } finally {
-    setChecking(false);
+const updateApiHealth = (status: ApiStatus, setApiHealth: React.Dispatch<React.SetStateAction<ApiHealth>>): void => {
+  const operationalCount = Object.values(status).filter(api => api.status === 'operational').length;
+  const totalApis = Object.keys(status).length;
+  const healthPercentage = (operationalCount / totalApis) * 100;
+
+  let health: ApiHealth = 'unhealthy';
+  if (healthPercentage === 100) {
+    health = 'healthy';
+  } else if (healthPercentage >= 50) {
+    health = 'degraded';
   }
+
+  setApiHealth(health);
 };
 
-const checkPineconeHealth = async (
-  apiStatus: ApiStatusState,
-  setApiStatus: React.Dispatch<React.SetStateAction<ApiStatusState>>
+/**
+ * Check API statuses at app initialization
+ */
+export const initializeApiStatusCheck = async (
+  setApiStatus: React.Dispatch<React.SetStateAction<ApiStatus>>,
+  setApiHealth: React.Dispatch<React.SetStateAction<ApiHealth>>
 ): Promise<void> => {
-  if (apiStatus.pinecone.enabled) {
-    const isPineconeReady = isPineconeConfigured();
+  try {
+    const storedStatus = localStorage.getItem('apiStatus');
+    const status = storedStatus ? JSON.parse(storedStatus) : getDefaultApiStatus();
     
-    if (isPineconeReady) {
-      try {
-        const connectionSuccess = await testPineconeConnection();
-        const pineconeErrors = localStorage.getItem('pineconeErrors');
-        
-        setApiStatus(prev => ({
-          ...prev,
-          pinecone: {
-            ...prev.pinecone,
-            status: connectionSuccess ? "connected" : "error",
-            lastChecked: new Date(),
-            errorMessage: pineconeErrors || undefined
-          }
-        }));
-      } catch (error) {
-        console.error("Error testing Pinecone connection:", error);
-        setApiStatus(prev => ({
-          ...prev,
-          pinecone: {
-            ...prev.pinecone,
-            status: "error",
-            lastChecked: new Date(),
-            errorMessage: (error as Error).message
-          }
-        }));
-      }
-    } else {
-      setApiStatus(prev => ({
-        ...prev,
-        pinecone: {
-          ...prev.pinecone,
-          status: "disconnected",
-          lastChecked: new Date(),
-          errorMessage: "Not configured"
-        }
-      }));
+    // Ensure Pinecone status is checked on initialization
+    if (status.pineconeApiStatus) {
+      const isPineconeWorking = await testPineconeConnection();
+      status.pineconeApiStatus.status = isPineconeWorking ? 'operational' : 'down';
+      status.pineconeApiStatus.lastChecked = new Date().toISOString();
     }
+    
+    setApiStatus(status);
+    updateApiHealth(status, setApiHealth);
+  } catch (error) {
+    console.error('Error initializing API status check:', error);
   }
 };
