@@ -29,6 +29,7 @@ import Layout from "@/components/Layout";
 import { analyzeDomains } from "@/services/keywordService";
 import KeywordTable from "@/components/KeywordTable";
 import KeywordResearch from "@/components/KeywordResearch";
+import ApiIntegrationManager from "@/components/ApiIntegrationManager";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -532,80 +533,7 @@ const Index = () => {
                 
                 <Separator />
                 
-                <div className="space-y-3">
-                  <Label>API Integrations</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="p-4 border-dashed hover:border-revology/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Search className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">DataForSEO</h3>
-                          <p className="text-xs text-muted-foreground">Keyword research API</p>
-                        </div>
-                      </div>
-                    </Card>
-                    
-                    <Card className="p-4 border-dashed hover:border-revology/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <Zap className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">OpenAI</h3>
-                          <p className="text-xs text-muted-foreground">AI content generation</p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                  
-                  {showApiForm ? (
-                    <div className="space-y-3 p-4 border rounded-lg border-revology/20 bg-muted/10 mt-4">
-                      <h3 className="font-medium">Add New API Integration</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <Label htmlFor="new-api-name">API Name</Label>
-                          <Input 
-                            id="new-api-name" 
-                            placeholder="e.g., Ahrefs, SEMrush" 
-                            value={newApiName}
-                            onChange={(e) => setNewApiName(e.target.value)}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="new-api-key">API Key</Label>
-                          <Input 
-                            id="new-api-key" 
-                            type="password"
-                            placeholder="Enter your API key" 
-                            value={newApiKey}
-                            onChange={(e) => setNewApiKey(e.target.value)}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button onClick={handleAddNewApi} className="bg-revology hover:bg-revology-dark">
-                            Add API
-                          </Button>
-                          <Button variant="outline" onClick={() => setShowApiForm(false)}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      className="mt-2 w-full"
-                      onClick={() => setShowApiForm(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add New API Integration
-                    </Button>
-                  )}
-                </div>
+                <ApiIntegrationManager />
                 
                 <Separator />
                 

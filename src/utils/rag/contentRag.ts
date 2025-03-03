@@ -1,11 +1,16 @@
 
-import { retrieveSimilarDocuments, isPineconeConfigured } from '@/services/vector/pineconeService';
+import { retrieveSimilarDocuments, isPineconeConfigured, testPineconeConnection } from '@/services/vector/pineconeService';
+import { toast } from 'sonner';
 
 interface RagResult {
   relevantKeywords: string[];
   relatedTopics: string[];
   contextualExamples: string[];
   structuralRecommendations: string[];
+  pineconeInfo?: {
+    vectorCount: number;
+    dimension: number;
+  }
 }
 
 /**
@@ -102,10 +107,26 @@ export const enhanceContentWithRAG = async (
   // If Pinecone is not configured, return base keywords
   if (!isPineconeConfigured()) {
     console.log("Pinecone not configured, using base keywords only");
+    toast.error("Pinecone RAG is not configured. Using base keywords only.");
     return defaultResult;
   }
   
   try {
+    // Test Pinecone connection first
+    const testResult = await testPineconeConnection();
+    
+    if (!testResult.success) {
+      console.error("Pinecone connection test failed:", testResult.message);
+      toast.error(`RAG enhancement failed: ${testResult.message}`);
+      return defaultResult;
+    }
+    
+    // Add Pinecone info to the result
+    defaultResult.pineconeInfo = {
+      vectorCount: testResult.data?.totalVectorCount || 0,
+      dimension: testResult.data?.dimension || 0
+    };
+    
     // Create a comprehensive query combining title and keywords
     const query = `${title} ${baseKeywords.join(' ')}`;
     
@@ -132,10 +153,12 @@ export const enhanceContentWithRAG = async (
       relevantKeywords: uniqueKeywords,
       relatedTopics: extractTopicsFromDocuments(similarDocuments),
       contextualExamples: extractExamplesFromDocuments(similarDocuments),
-      structuralRecommendations: getStructuralRecommendations(contentType, similarDocuments)
+      structuralRecommendations: getStructuralRecommendations(contentType, similarDocuments),
+      pineconeInfo: defaultResult.pineconeInfo
     };
   } catch (error) {
     console.error("Error enhancing content with RAG:", error);
+    toast.error(`RAG enhancement failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     return defaultResult;
   }
 };

@@ -1,17 +1,73 @@
 
 import { OPENAI_API_KEY } from '../keywords/apiConfig';
 
-// This would ideally come from environment variables
+// Pinecone configuration info
 let PINECONE_API_KEY = '';
-let PINECONE_INDEX = 'content-index';
-const PINECONE_ENVIRONMENT = 'gcp-starter';
+let PINECONE_INDEX = 'revology-rag-llm';
+let PINECONE_ENVIRONMENT = 'aped-4627-b74a'; 
+let PINECONE_CLOUD = 'AWS';
+let PINECONE_REGION = 'us-east-1';
+let PINECONE_TYPE = 'Dense';
+let PINECONE_CAPACITY_MODE = 'Serverless';
+let PINECONE_DIMENSION = 1536;
+
+// Try to load configuration from localStorage on initialization
+try {
+  const savedConfig = localStorage.getItem('pineconeConfig');
+  if (savedConfig) {
+    const config = JSON.parse(savedConfig);
+    PINECONE_API_KEY = config.apiKey || '';
+    PINECONE_INDEX = config.index || 'revology-rag-llm';
+    PINECONE_ENVIRONMENT = config.environment || 'aped-4627-b74a';
+    PINECONE_CLOUD = config.cloud || 'AWS';
+    PINECONE_REGION = config.region || 'us-east-1';
+    PINECONE_TYPE = config.type || 'Dense';
+    PINECONE_CAPACITY_MODE = config.capacityMode || 'Serverless';
+    PINECONE_DIMENSION = config.dimension || 1536;
+  }
+} catch (error) {
+  console.error("Error loading Pinecone config from localStorage:", error);
+}
 
 /**
  * Sets the Pinecone API configuration
  */
-export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX) => {
+export const configurePinecone = (
+  apiKey: string, 
+  index: string = PINECONE_INDEX,
+  environment: string = PINECONE_ENVIRONMENT,
+  cloud: string = PINECONE_CLOUD,
+  region: string = PINECONE_REGION,
+  type: string = PINECONE_TYPE,
+  capacityMode: string = PINECONE_CAPACITY_MODE,
+  dimension: number = PINECONE_DIMENSION
+) => {
   PINECONE_API_KEY = apiKey;
   PINECONE_INDEX = index;
+  PINECONE_ENVIRONMENT = environment;
+  PINECONE_CLOUD = cloud;
+  PINECONE_REGION = region;
+  PINECONE_TYPE = type;
+  PINECONE_CAPACITY_MODE = capacityMode;
+  PINECONE_DIMENSION = dimension;
+  
+  // Save config to localStorage
+  try {
+    const config = {
+      apiKey,
+      index,
+      environment,
+      cloud,
+      region,
+      type,
+      capacityMode,
+      dimension
+    };
+    localStorage.setItem('pineconeConfig', JSON.stringify(config));
+  } catch (error) {
+    console.error("Error saving Pinecone config to localStorage:", error);
+  }
+  
   return { success: true };
 };
 
@@ -22,8 +78,20 @@ export const getPineconeConfig = () => {
   return {
     apiKey: PINECONE_API_KEY ? PINECONE_API_KEY.substring(0, 5) + '...' : '',
     index: PINECONE_INDEX,
-    environment: PINECONE_ENVIRONMENT
+    environment: PINECONE_ENVIRONMENT,
+    cloud: PINECONE_CLOUD,
+    region: PINECONE_REGION,
+    type: PINECONE_TYPE,
+    capacityMode: PINECONE_CAPACITY_MODE,
+    dimension: PINECONE_DIMENSION
   };
+};
+
+/**
+ * Returns the full Pinecone host URL
+ */
+export const getPineconeHostUrl = () => {
+  return `https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io`;
 };
 
 /**
@@ -31,6 +99,42 @@ export const getPineconeConfig = () => {
  */
 export const isPineconeConfigured = () => {
   return PINECONE_API_KEY !== '';
+};
+
+/**
+ * Test Pinecone connection
+ */
+export const testPineconeConnection = async () => {
+  if (!isPineconeConfigured()) {
+    return { success: false, message: "Pinecone API key not configured" };
+  }
+  
+  try {
+    const response = await fetch(`${getPineconeHostUrl()}/describe_index_stats`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Api-Key': PINECONE_API_KEY
+      },
+      body: JSON.stringify({ filter: {} })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Pinecone API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return { 
+      success: true, 
+      data,
+      message: "Successfully connected to Pinecone"
+    };
+  } catch (error) {
+    return { 
+      success: false, 
+      message: `Failed to connect to Pinecone: ${(error as Error).message}`
+    };
+  }
 };
 
 /**
@@ -75,7 +179,7 @@ export const upsertToPinecone = async (
   }
 
   try {
-    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io/vectors/upsert`, {
+    const response = await fetch(`${getPineconeHostUrl()}/vectors/upsert`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,7 +223,7 @@ export const queryPinecone = async (
   }
 
   try {
-    const response = await fetch(`https://${PINECONE_INDEX}-${PINECONE_ENVIRONMENT}.svc.${PINECONE_ENVIRONMENT}.pinecone.io/query`, {
+    const response = await fetch(`${getPineconeHostUrl()}/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

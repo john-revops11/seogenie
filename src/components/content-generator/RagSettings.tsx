@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -9,9 +9,10 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { InfoIcon, Sparkles } from "lucide-react";
+import { InfoIcon, Sparkles, Activity, Database } from "lucide-react";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 import PineconeConfigForm from "./PineconeConfigForm";
+import { toast } from "sonner";
 
 interface RagSettingsProps {
   enabled: boolean;
@@ -20,7 +21,81 @@ interface RagSettingsProps {
 
 export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const isPineconeReady = isPineconeConfigured();
+  const [isPineconeReady, setIsPineconeReady] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  
+  // Check Pinecone status initially and when component mounts
+  useEffect(() => {
+    checkPineconeStatus();
+  }, []);
+  
+  const checkPineconeStatus = async () => {
+    setIsChecking(true);
+    try {
+      // Check if Pinecone is configured
+      const isPineconeConfig = isPineconeConfigured();
+      
+      if (isPineconeConfig) {
+        // Try to make a test request to verify the connection
+        try {
+          const response = await fetch(`https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io/describe_index_stats`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Api-Key': 'pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797'
+            },
+            body: JSON.stringify({ filter: {} })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.info("Loaded Pinecone API key from localStorage");
+            console.info("Pinecone connection successful:", data);
+            setIsPineconeReady(true);
+            
+            if (!enabled && isPineconeConfig) {
+              toast.info("Pinecone RAG is available for enhanced content generation");
+            }
+          } else {
+            console.error("Pinecone API error:", response.status);
+            setIsPineconeReady(false);
+          }
+        } catch (error) {
+          console.error("Error connecting to Pinecone:", error);
+          setIsPineconeReady(false);
+        }
+      } else {
+        setIsPineconeReady(false);
+      }
+    } catch (error) {
+      console.error("Error checking Pinecone status:", error);
+      setIsPineconeReady(false);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+  
+  const handleToggle = (checked: boolean) => {
+    if (checked && !isPineconeReady) {
+      // If trying to enable RAG but Pinecone is not ready
+      toast.error("Please configure Pinecone API before enabling RAG");
+      return;
+    }
+    
+    onToggle(checked);
+    
+    if (checked) {
+      toast.success("RAG-enhanced content generation enabled");
+    } else {
+      toast.info("Standard content generation mode activated");
+    }
+  };
+  
+  const handleConfigSuccess = () => {
+    setIsPineconeReady(true);
+    checkPineconeStatus();
+    toast.success("Pinecone configured successfully!");
+  };
   
   return (
     <div className="space-y-4">
@@ -47,24 +122,36 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
             </TooltipProvider>
           </div>
           <div className="flex items-center gap-2">
-            {!isPineconeReady && (
+            {isChecking ? (
+              <Badge variant="outline" className="text-xs animate-pulse">
+                <Activity className="h-3 w-3 mr-1" />
+                Checking...
+              </Badge>
+            ) : !isPineconeReady ? (
               <Badge variant="outline" className="text-xs">
+                <Database className="h-3 w-3 mr-1" />
                 Setup Required
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                Ready
               </Badge>
             )}
             <Switch
               id="rag-toggle"
               checked={enabled && isPineconeReady}
-              onCheckedChange={onToggle}
-              disabled={!isPineconeReady}
+              onCheckedChange={handleToggle}
+              disabled={!isPineconeReady || isChecking}
             />
           </div>
         </div>
         
         <p className="text-xs text-muted-foreground pl-6">
-          {isPineconeReady
-            ? "Organize keywords using vector similarity search for improved content quality."
-            : "Configure Pinecone to enable RAG-enhanced content generation."}
+          {isChecking 
+            ? "Checking Pinecone connection status..."
+            : isPineconeReady
+              ? "Organize keywords using vector similarity search for improved content quality."
+              : "Configure Pinecone to enable RAG-enhanced content generation."}
         </p>
       </div>
       
@@ -77,7 +164,7 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
       
       {isExpanded && (
         <div className="pl-6 pt-2">
-          <PineconeConfigForm />
+          <PineconeConfigForm onConfigSuccess={handleConfigSuccess} />
         </div>
       )}
     </div>
