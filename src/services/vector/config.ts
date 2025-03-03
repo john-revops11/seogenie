@@ -39,9 +39,6 @@ export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX
     localStorage.removeItem(STORAGE_KEYS.ERRORS);
     
     console.log("Pinecone configuration saved to localStorage");
-    
-    // Test the connection immediately after configuration
-    testPineconeConnection();
   } catch (error) {
     console.error("Error saving Pinecone config to localStorage:", error);
   }
@@ -154,8 +151,8 @@ export const getPineconeApiUrl = (endpoint: string = '') => {
  */
 export const getPineconeApiKey = () => PINECONE_API_KEY;
 
-// Export the test connection function
-export { testPineconeConnection } from './connection';
-
 // Export the storage keys for use in other modules
 export { STORAGE_KEYS };
+
+// Note: testPineconeConnection is now imported from the connection module
+// to avoid circular dependencies

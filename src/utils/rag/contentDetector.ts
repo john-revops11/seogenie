@@ -14,3 +14,8 @@ export const isRagEnhancedContent = (content: string): boolean => {
   
   return hasStructuredHeadings && (hasCitations || hasDataPoints);
 };
+
+// Make sure exports are consistent
+export const contentDetectorUtils = {
+  isRagEnhancedContent
+};

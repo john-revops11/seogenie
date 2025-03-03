@@ -60,3 +60,8 @@ export const testPineconeConnection = async (): Promise<boolean> => {
 
 // Export Pinecone configuration check function for other modules to use
 export { isPineconeConfigured } from './config';
+
+// Export test connection function for use in other modules
+export const connectionUtils = {
+  testPineconeConnection
+};
