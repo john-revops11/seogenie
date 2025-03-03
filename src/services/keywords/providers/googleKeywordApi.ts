@@ -30,7 +30,7 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
         "x-rapidapi-key": API_KEY
       },
       // Add a timeout to prevent hanging requests
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(15000) // Increased timeout for potentially slow API
     });
 
     // Check for API errors

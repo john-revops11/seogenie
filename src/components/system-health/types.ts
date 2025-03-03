@@ -1,11 +1,12 @@
 
-export type ApiStatusType = "success" | "warning" | "error" | "checking";
+export type ApiStatusType = "success" | "warning" | "error" | "checking" | "connected" | "disconnected" | "idle";
 
 export interface ApiStatus {
   status: ApiStatusType;
   enabled: boolean;
   errorMessage?: string;
   description?: string;
+  lastChecked?: Date;
 }
 
 export interface ApiStatusState {
@@ -37,5 +38,58 @@ export const API_DETAILS = [
     id: "google-ads",
     name: "Google Ads API",
     description: "Keyword volume and CPC data"
+  }
+];
+
+export interface ApiToggleProps {
+  apiId: string;
+  apiStatus: ApiStatusState;
+  toggleApiEnabled: (apiId: string) => void;
+}
+
+export interface ApiStatusBadgeProps {
+  apiId: string;
+  apiStatus: ApiStatusState;
+}
+
+export type TestResultStatus = "idle" | "loading" | "success" | "error";
+
+export interface TestResultState {
+  status: TestResultStatus;
+  message?: string;
+}
+
+export interface ApiTestingProps {
+  apiStatus: ApiStatusState;
+  selectedApiForTest: string;
+  setSelectedApiForTest: (api: string) => void;
+  testResult: TestResultState;
+  testApi: (apiId: string) => void;
+  selectedModel: string;
+  handleModelChange: (model: string) => void;
+}
+
+export interface ApiHealth {
+  overallStatus: ApiStatusType;
+  activeApiCount: number;
+  totalApiCount: number;
+  lastUpdated: Date | null;
+}
+
+export const AI_MODELS = [
+  {
+    id: "gpt-4",
+    name: "GPT-4",
+    description: "Most powerful model for complex tasks, but slower and more expensive"
+  },
+  {
+    id: "gpt-3.5-turbo",
+    name: "GPT-3.5 Turbo",
+    description: "Good balance of quality and speed for most tasks"
+  },
+  {
+    id: "gemini-pro",
+    name: "Gemini Pro",
+    description: "Google's alternative AI model with strong overall capabilities"
   }
 ];
