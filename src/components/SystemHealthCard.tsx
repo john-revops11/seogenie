@@ -23,7 +23,7 @@ const SystemHealthCard = () => {
     dataforseo: { status: "checking" as ApiStatusType, lastChecked: null, enabled: true },
     openai: { status: "checking" as ApiStatusType, lastChecked: null, enabled: true },
     googleKeyword: { status: "checking" as ApiStatusType, lastChecked: null, enabled: true },
-    googleAds: { status: "checking" as ApiStatusType, lastChecked: null, enabled: isGoogleAdsConfigured() },
+    "google-ads": { status: "checking" as ApiStatusType, lastChecked: null, enabled: isGoogleAdsConfigured() },
     pinecone: { status: "checking" as ApiStatusType, lastChecked: null, enabled: isPineconeConfigured() },
   });
   const [checking, setChecking] = useState(false);

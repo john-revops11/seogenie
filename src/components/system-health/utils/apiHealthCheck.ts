@@ -1,7 +1,7 @@
 
 import { ApiStatusState, ApiStatusType } from "../types";
-import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
-import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/googleAds/googleAdsClient";
+import { isPineconeConfigured, testPineconeConnection, STORAGE_KEYS } from "@/services/vector/pineconeService";
+import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/providers/googleAdsApi";
 
 export const checkApiHealth = async (
   apiStatus: ApiStatusState,

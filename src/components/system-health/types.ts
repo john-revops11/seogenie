@@ -33,6 +33,11 @@ export const API_DETAILS = [
     id: "google-ads",
     name: "Google Ads API",
     description: "Keyword volume and CPC data"
+  },
+  {
+    id: "googleKeyword",
+    name: "Google Keyword API",
+    description: "Keyword insights and suggestions"
   }
 ];
 
