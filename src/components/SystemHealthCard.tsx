@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
-import { ApiStatusState, TestResultState } from "./system-health/types";
+import { ApiStatusState, TestResultState, ApiStatus } from "./system-health/types";
 import { checkApiHealth, loadApiStates, loadSelectedModel, saveApiStates, saveSelectedModel, testApi } from "./system-health/utils";
 import { CollapsedCard } from "./system-health/CollapsedCard";
 import { ExpandedCard } from "./system-health/ExpandedCard";
@@ -11,10 +11,10 @@ const SystemHealthCard = () => {
   const [expanded, setExpanded] = useState(false);
   const [showTesting, setShowTesting] = useState(false);
   const [apiStatus, setApiStatus] = useState<ApiStatusState>({
-    dataforseo: { status: "checking", lastChecked: null, enabled: true },
-    openai: { status: "checking", lastChecked: null, enabled: true },
-    googleKeyword: { status: "checking", lastChecked: null, enabled: true },
-    pinecone: { status: "checking", lastChecked: null, enabled: isPineconeConfigured() },
+    dataforseo: { status: "checking" as ApiStatus, lastChecked: null, enabled: true },
+    openai: { status: "checking" as ApiStatus, lastChecked: null, enabled: true },
+    googleKeyword: { status: "checking" as ApiStatus, lastChecked: null, enabled: true },
+    pinecone: { status: "checking" as ApiStatus, lastChecked: null, enabled: isPineconeConfigured() },
   });
   const [checking, setChecking] = useState(false);
   const [selectedApiForTest, setSelectedApiForTest] = useState<string>("dataforseo");
@@ -38,7 +38,7 @@ const SystemHealthCard = () => {
         [apiId]: {
           ...prev[apiId],
           enabled: !prev[apiId].enabled,
-          status: !prev[apiId].enabled ? "checking" : "disconnected"
+          status: !prev[apiId].enabled ? "checking" as ApiStatus : "disconnected" as ApiStatus
         }
       };
       

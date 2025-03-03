@@ -25,13 +25,16 @@ export const ApiList = ({ apiStatus, toggleApiEnabled }: ApiListProps) => {
               apiStatus={apiStatus} 
               toggleApiEnabled={toggleApiEnabled}
             />
-            <ApiStatusBadge apiId={api.id} apiStatus={{
-              ...apiStatus,
-              [api.id]: {
-                ...apiStatus[api.id],
-                description: api.description
-              }
-            }} />
+            <ApiStatusBadge 
+              apiId={api.id} 
+              apiStatus={{
+                ...apiStatus,
+                [api.id]: {
+                  ...apiStatus[api.id],
+                  description: api.description
+                }
+              }} 
+            />
           </div>
         </div>
       ))}

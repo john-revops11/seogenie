@@ -8,6 +8,7 @@ export interface ApiStatusItem {
   lastChecked: Date | null;
   errorMessage?: string;
   enabled: boolean;
+  description?: string;
 }
 
 export interface ApiStatusState {

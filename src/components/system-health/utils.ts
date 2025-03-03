@@ -1,5 +1,4 @@
-
-import { ApiStatusState } from "./types";
+import { ApiStatusState, API_DETAILS } from "./types";
 import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
 
 export const saveApiStates = (newStates: ApiStatusState): void => {
