@@ -78,9 +78,14 @@ export interface ApiHealth {
 
 export const AI_MODELS = [
   {
+    id: "gpt-4o",
+    name: "GPT-4o",
+    description: "Most powerful model, optimized for speed and quality"
+  },
+  {
     id: "gpt-4",
     name: "GPT-4",
-    description: "Most powerful model for complex tasks, but slower and more expensive"
+    description: "Powerful model for complex tasks, but slower and more expensive"
   },
   {
     id: "gpt-3.5-turbo",

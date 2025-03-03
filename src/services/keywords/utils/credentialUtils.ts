@@ -27,8 +27,8 @@ export function validateOpenAIKey(): boolean {
     return false;
   }
   
-  // Basic format validation for OpenAI API keys
-  const openAIKeyPattern = /^sk-[a-zA-Z0-9]{48,}$/;
+  // Basic format validation for OpenAI API keys - updated for both sk-proj and sk- prefixes
+  const openAIKeyPattern = /^(sk-proj-|sk-)[a-zA-Z0-9]{30,}$/;
   if (!openAIKeyPattern.test(OPENAI_API_KEY.trim())) {
     console.error("OPENAI_API_KEY format appears invalid");
     return false;

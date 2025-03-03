@@ -77,7 +77,7 @@ export const ApiTesting = ({
         </div>
       )}
       
-      {selectedApiForTest === "googleAds" && !apiStatus.googleAds?.enabled && (
+      {selectedApiForTest === "google-ads" && !apiStatus["google-ads"]?.enabled && (
         <div className="mb-2 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
           <p>Google Ads API is configured with:</p>
           <ul className="list-disc pl-4 mt-1">
