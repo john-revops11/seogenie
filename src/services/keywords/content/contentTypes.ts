@@ -21,6 +21,9 @@ export interface GeneratedContent {
   ragEnhanced?: boolean;
 }
 
+// Alias for backward compatibility
+export type GeneratedContentType = GeneratedContent;
+
 export interface RagResults {
   relevantKeywords: string[];
   relatedTopics: string[];

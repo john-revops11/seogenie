@@ -2,6 +2,7 @@
 import { Dispatch, SetStateAction } from "react";
 
 export type ApiStatus = "connected" | "disconnected" | "error" | "checking";
+export type ApiHealth = "healthy" | "degraded" | "unhealthy";
 
 export interface ApiStatusItem {
   status: ApiStatus;

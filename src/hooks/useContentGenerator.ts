@@ -1,19 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { generateContent } from "@/services/keywords/content/contentGenerator";
-import { GeneratedContentType } from "@/services/keywords/content/contentTypes";
+import { GeneratedContent } from "@/services/keywords/content/contentTypes";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { isPineconeConfigured } from "@/services/vector/connection";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 
-export interface GeneratedContentType {
-  title: string;
-  metaDescription: string;
-  outline: string[];
-  content: string;
-  ragEnhanced: boolean;
-}
+type GeneratedContentType = GeneratedContent;
 
 interface UseContentGeneratorProps {
   domain: string;
