@@ -101,8 +101,9 @@ const testGoogleKeyword = async (
         message: `Test successful: Google Keyword API returned ${keywords.length} keywords for example.com.` 
       });
     } else {
+      // Changed from "warning" to "error" to match TestResultStatus type
       setTestResult({
-        status: "warning",
+        status: "error",
         message: "Test completed but returned no keywords. API may be working but found no data for example.com."
       });
     }
