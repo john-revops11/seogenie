@@ -1,4 +1,7 @@
 
+/**
+ * Pinecone connection utilities
+ */
 import { getPineconeApiKey, getPineconeApiUrl, isPineconeConfigured, STORAGE_KEYS } from './config';
 
 /**
