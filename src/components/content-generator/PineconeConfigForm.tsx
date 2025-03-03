@@ -24,7 +24,11 @@ import {
   isPineconeConfigured 
 } from "@/services/vector/pineconeService";
 
-export const PineconeConfigForm = () => {
+interface PineconeConfigFormProps {
+  onConfigSuccess?: () => void;
+}
+
+export const PineconeConfigForm = ({ onConfigSuccess }: PineconeConfigFormProps) => {
   const [apiKey, setApiKey] = useState("");
   const [indexName, setIndexName] = useState("content-index");
   const [isConfigured, setIsConfigured] = useState(isPineconeConfigured());
@@ -42,6 +46,11 @@ export const PineconeConfigForm = () => {
       setConfigDetails(getPineconeConfig());
       toast.success("Pinecone configured successfully");
       setApiKey(""); // Clear for security
+      
+      // Call the success callback if provided
+      if (onConfigSuccess) {
+        onConfigSuccess();
+      }
     } catch (error) {
       toast.error(`Failed to configure Pinecone: ${(error as Error).message}`);
     }
