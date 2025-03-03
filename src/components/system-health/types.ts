@@ -25,11 +25,6 @@ export const API_DETAILS = [
     description: "Content generation and topic analysis"
   },
   {
-    id: "gemini",
-    name: "Google Gemini API",
-    description: "Alternative content generation model"
-  },
-  {
     id: "pinecone",
     name: "Pinecone Vector DB",
     description: "Vector database for RAG (Retrieval Augmented Generation)"
@@ -86,10 +81,5 @@ export const AI_MODELS = [
     id: "gpt-3.5-turbo",
     name: "GPT-3.5 Turbo",
     description: "Good balance of quality and speed for most tasks"
-  },
-  {
-    id: "gemini-pro",
-    name: "Gemini Pro",
-    description: "Google's alternative AI model with strong overall capabilities"
   }
 ];

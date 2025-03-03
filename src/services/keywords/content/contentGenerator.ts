@@ -2,7 +2,6 @@
 import { enhanceContentWithRAG } from '@/utils/rag/contentRag';
 import { createContentBrief, addContentPreferencesToBrief, addRagContextToBrief } from './contentBriefs';
 import { callOpenAiApi, createSystemPrompt, createUserPrompt } from './openaiClient';
-import { callGeminiApi, isGeminiConfigured } from './geminiClient';
 import { GeneratedContent, RagResults } from './contentTypes';
 import { GOOGLE_ADS_API_KEY } from '../apiConfig';
 import { isGoogleAdsConfigured } from '../googleAds/googleAdsClient';
@@ -17,12 +16,11 @@ export const generateContent = async (
   contentType: string,
   creativityLevel: number,
   contentPreferences: string[] = [],
-  ragEnabled: boolean = false,
-  modelProvider: 'openai' | 'gemini' = 'openai'
+  ragEnabled: boolean = false
 ): Promise<GeneratedContent> => {
   try {
     console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
-    console.log(`Using model provider: ${modelProvider}`);
+    console.log(`Using OpenAI for content generation`);
     
     // Only use RAG if it's enabled
     let ragResults: RagResults = {
@@ -82,15 +80,9 @@ export const generateContent = async (
       wasRagEnhanced
     );
     
-    // Call the appropriate AI API based on the selected model provider
-    let result;
-    if (modelProvider === 'gemini' && isGeminiConfigured()) {
-      console.log("Using Gemini API for content generation");
-      result = await callGeminiApi(systemPrompt, userPrompt, temperature);
-    } else {
-      console.log("Using OpenAI API for content generation");
-      result = await callOpenAiApi(systemPrompt, userPrompt, temperature);
-    }
+    // Call OpenAI API
+    console.log("Using OpenAI API for content generation");
+    const result = await callOpenAiApi(systemPrompt, userPrompt, temperature);
     
     return {
       title: result.title || title,
