@@ -4,7 +4,7 @@
  */
 
 import { toast } from "sonner";
-import { KeywordData, GoogleKeywordInsightResponse } from '../types';
+import { KeywordData } from '../types';
 import { 
   API_KEY, 
   GOOGLE_KEYWORD_API_HOST, 
@@ -23,14 +23,13 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       url = `https://${url}`;
     }
     
-    const queryParams = new URLSearchParams({
-      url: url,
-      lang: 'en'
-    });
-
-    console.log(`Fetching keywords from Google Keyword Insight API for domain: ${url}`);
+    // Create the full API URL with query parameters
+    const apiUrl = `${GOOGLE_KEYWORD_API_URL}?url=${encodeURIComponent(url)}&lang=en`;
     
-    const response = await fetch(`${GOOGLE_KEYWORD_API_URL}?${queryParams}`, {
+    console.log(`Fetching keywords from Google Keyword Insight API for domain: ${url}`);
+    console.log(`Full API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         "x-rapidapi-host": GOOGLE_KEYWORD_API_HOST,
@@ -40,14 +39,17 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       signal: AbortSignal.timeout(30000) // Increased timeout for potentially slow API
     });
 
-    // Check for API errors
+    // Check for API errors and log the status
+    console.log(`Google Keyword API response status: ${response.status}`);
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.warn(`Google Keyword API error ${response.status} for ${url}: ${errorText}`);
-      throw new Error(`API error ${response.status}`);
+      throw new Error(`API error ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
+    console.log(`Google Keyword API response data:`, data);
     
     if (!data || !Array.isArray(data) || data.length === 0) {
       console.warn(`Google Keyword API unsuccessful for ${url} - no keywords returned`);

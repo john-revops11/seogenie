@@ -1,3 +1,4 @@
+
 import { ApiStatusState, TestResultState, API_DETAILS } from "../types";
 import { isPineconeConfigured, testPineconeConnection, STORAGE_KEYS } from "@/services/vector/pineconeService";
 import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/providers/googleAdsApi";
@@ -32,7 +33,7 @@ export const testApi = async (
       await testGoogleKeyword(setTestResult);
     } else if (apiId === "pinecone") {
       await testPinecone(setTestResult);
-    } else if (apiId === "googleAds") {
+    } else if (apiId === "google-ads") {
       await testGoogleAds(setTestResult);
     }
     
@@ -86,12 +87,25 @@ const testGoogleKeyword = async (
   try {
     // Perform a real test request to the Google Keyword API
     const testDomain = "example.com";
-    await fetchGoogleKeywordInsights(testDomain);
+    console.log("Testing Google Keyword API with domain:", testDomain);
     
-    setTestResult({ 
-      status: "success", 
-      message: "Test successful: Google Keyword API is responding correctly." 
-    });
+    // Clear any previous errors
+    localStorage.removeItem('googleKeywordErrors');
+    
+    const keywords = await fetchGoogleKeywordInsights(testDomain);
+    console.log("Google Keyword API test result:", keywords);
+    
+    if (keywords && keywords.length > 0) {
+      setTestResult({ 
+        status: "success", 
+        message: `Test successful: Google Keyword API returned ${keywords.length} keywords for example.com.` 
+      });
+    } else {
+      setTestResult({
+        status: "warning",
+        message: "Test completed but returned no keywords. API may be working but found no data for example.com."
+      });
+    }
   } catch (error) {
     const errorMsg = (error as Error).message || "Unknown error";
     localStorage.setItem('googleKeywordErrors', errorMsg);

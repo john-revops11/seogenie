@@ -1,56 +1,34 @@
 
-import { OPENAI_API_KEY, GEMINI_API_KEY } from "@/services/keywords/apiConfig";
+import { OPENAI_API_KEY } from "@/services/keywords/apiConfig";
 
-/**
- * Check which AI models are available based on API key configuration
- */
-export const getAvailableAiModels = () => {
-  const models = {
-    openai: OPENAI_API_KEY && OPENAI_API_KEY.length > 0,
-    gemini: GEMINI_API_KEY && GEMINI_API_KEY.length > 0
-  };
+// Validate OpenAI key format (basic check)
+export const validateOpenAIKey = (key: string): boolean => {
+  if (!key) return false;
   
-  return models;
+  // Check for standard OpenAI key format (sk-...)
+  if (!key.startsWith('sk-')) return false;
+  
+  // Check for minimum length
+  return key.length >= 40;
 };
 
-/**
- * Get the default AI model based on available keys
- */
-export const getDefaultAiModel = (): 'openai' | 'gemini' => {
-  const models = getAvailableAiModels();
-  
-  // Check if there's a saved preference in localStorage
-  const savedPreference = localStorage.getItem('selectedAiProvider') as 'openai' | 'gemini' | null;
-  if (savedPreference && models[savedPreference]) {
-    return savedPreference;
-  }
-  
-  // If Gemini is available and OpenAI is not, use Gemini
-  if (models.gemini && !models.openai) {
-    return 'gemini';
-  }
-  
-  // Default to OpenAI
-  return 'openai';
+// Check if OpenAI is configured
+export const isOpenAIConfigured = (): boolean => {
+  return validateOpenAIKey(OPENAI_API_KEY);
 };
 
-/**
- * Update the system health status with AI model availability
- */
-export const updateAiModelStatus = () => {
-  const models = getAvailableAiModels();
-  
-  const apiEnabledStates = JSON.parse(localStorage.getItem('apiEnabledStates') || '{}');
-  
-  if (models.openai) {
-    apiEnabledStates.openai = true;
+// Get the appropriate AI model based on availability and user preference
+export const getAIModel = (userPreference: string = 'gpt-4') => {
+  // If OpenAI is configured, use requested model or default to GPT-4
+  if (isOpenAIConfigured()) {
+    return userPreference;
   }
   
-  if (models.gemini) {
-    apiEnabledStates.gemini = true;
-  }
-  
-  localStorage.setItem('apiEnabledStates', JSON.stringify(apiEnabledStates));
-  
-  return models;
+  // No AI service is properly configured
+  return null;
+};
+
+// Helper to determine if AI services are available
+export const isAIAvailable = (): boolean => {
+  return isOpenAIConfigured();
 };

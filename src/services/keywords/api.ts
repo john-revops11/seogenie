@@ -23,12 +23,18 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   localStorage.removeItem('googleKeywordErrors');
   localStorage.removeItem('googleAdsErrors');
   
+  // Log which URL we're processing
+  console.log(`Fetching keywords for domain: ${validUrl}`);
+  
   // Try the DataForSEO API first
   try {
+    toast.info(`Trying DataForSEO API for ${validUrl}...`, { id: "dataforseo-api" });
     const dataForSEOKeywords = await fetchDataForSEOKeywords(validUrl);
     if (dataForSEOKeywords.length > 0) {
       console.log(`Successfully fetched ${dataForSEOKeywords.length} keywords from DataForSEO API`);
       return dataForSEOKeywords;
+    } else {
+      console.log("DataForSEO API returned no keywords, falling back to alternatives");
     }
   } catch (error) {
     console.error("Error with DataForSEO API, falling back to alternatives:", error);
@@ -38,13 +44,18 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   // Try Google Keyword Insight API next - prioritizing this based on your curl command
   try {
     console.log(`Trying Google Keyword Insight API for domain: ${validUrl}`);
+    toast.info(`Trying Google Keyword Insight API for ${validUrl}...`, { id: "google-keyword-api" });
+    
     const googleKeywords = await fetchGoogleKeywordInsights(validUrl);
     if (googleKeywords.length > 0) {
       console.log(`Successfully fetched ${googleKeywords.length} keywords from Google Keyword Insight API`);
       return googleKeywords;
+    } else {
+      console.log("Google Keyword Insight API returned no keywords, falling back to other alternatives");
     }
   } catch (error) {
     console.error("Error with Google Keyword Insight API, falling back to other alternatives:", error);
+    localStorage.setItem('googleKeywordErrors', (error as Error).message);
   }
   
   // Try Google Ads API if configured
@@ -63,6 +74,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
         if (googleAdsKeywords.length > 0) {
           console.log(`Successfully fetched ${googleAdsKeywords.length} keywords from Google Ads API`);
           return googleAdsKeywords;
+        } else {
+          console.log("Google Ads API returned no keywords, falling back to alternatives");
         }
       }
     } catch (error) {
@@ -76,6 +89,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   // Fall back to the original API
   try {
     console.log(`Falling back to original API for domain: ${validUrl}`);
+    toast.info(`Trying fallback keyword API for ${validUrl}...`, { id: "fallback-api" });
+    
     const fallbackKeywords = await fetchFallbackKeywords(validUrl);
     if (fallbackKeywords.length > 0) {
       console.log(`Successfully fetched ${fallbackKeywords.length} keywords from fallback API`);
