@@ -4,6 +4,7 @@ import { createContentBrief, addContentPreferencesToBrief, addRagContextToBrief 
 import { callOpenAiApi, createSystemPrompt, createUserPrompt } from './openaiClient';
 import { GeneratedContent, RagResults } from './contentTypes';
 import { GOOGLE_ADS_API_KEY } from '../apiConfig';
+import { isGoogleAdsConfigured } from '../googleAds/googleAdsClient';
 
 /**
  * Generate content with the provided parameters and options
@@ -43,8 +44,13 @@ export const generateContent = async (
     const enhancedKeywords = ragResults.relevantKeywords;
     
     // Log that we're using Google Ads API for keyword data if applicable
-    if (GOOGLE_ADS_API_KEY) {
+    if (isGoogleAdsConfigured()) {
       console.log("Using Google Ads API for additional keyword insights");
+      
+      // In a real implementation, you would fetch additional data from Google Ads API here
+      // and enhance the keywords/content brief
+    } else if (GOOGLE_ADS_API_KEY) {
+      console.log("Google Ads API key present but not fully configured");
     }
     
     const creativity = creativityLevel / 100; // Convert to 0-1 scale

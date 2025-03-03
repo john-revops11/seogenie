@@ -1,4 +1,3 @@
-
 // Local storage keys for Pinecone configuration
 const STORAGE_KEYS = {
   API_KEY: 'PINECONE_API_KEY',
@@ -40,6 +39,9 @@ export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX
     localStorage.removeItem(STORAGE_KEYS.ERRORS);
     
     console.log("Pinecone configuration saved to localStorage");
+    
+    // Test the connection immediately after configuration
+    testPineconeConnection();
   } catch (error) {
     console.error("Error saving Pinecone config to localStorage:", error);
   }
@@ -48,7 +50,7 @@ export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX
 };
 
 /**
- * Retrieve the current Pinecone API configuration
+ * Retrieve the current Pinecone configuration
  */
 export const getPineconeConfig = () => {
   // If we haven't loaded from localStorage yet, do so now
@@ -127,17 +129,33 @@ export const isPineconeConfigured = () => {
  * Get the API URL for Pinecone operations
  */
 export const getPineconeApiUrl = (endpoint: string = '') => {
+  // If a custom host is provided, use it directly
   if (PINECONE_HOST) {
-    return `${PINECONE_HOST}${endpoint ? `/${endpoint}` : ''}`;
+    // Make sure the URL has the correct format
+    const baseUrl = PINECONE_HOST.endsWith('/') ? PINECONE_HOST.slice(0, -1) : PINECONE_HOST;
+    return `${baseUrl}${endpoint ? `/${endpoint}` : ''}`;
   }
   
-  return `https://${PINECONE_INDEX}-${PINECONE_REGION}.svc.${PINECONE_REGION}.pinecone.io${endpoint ? `/${endpoint}` : ''}`;
+  // Otherwise, construct the Pinecone URL from index and region
+  // Make sure we're using the latest Pinecone URL format
+  if (!PINECONE_INDEX || !PINECONE_REGION) {
+    console.warn("Missing Pinecone index or region, using defaults");
+  }
+  
+  const index = PINECONE_INDEX || 'content-index';
+  const region = PINECONE_REGION || 'us-east-1';
+  
+  // The newer Pinecone URL format
+  return `https://${index}-${region}.svc.${region}.pinecone.io${endpoint ? `/${endpoint}` : ''}`;
 };
 
 /**
  * Get the API key
  */
 export const getPineconeApiKey = () => PINECONE_API_KEY;
+
+// Export the test connection function
+export { testPineconeConnection } from './connection';
 
 // Export the storage keys for use in other modules
 export { STORAGE_KEYS };

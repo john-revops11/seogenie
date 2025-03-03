@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import { isGoogleAdsConfigured } from "@/services/keywords/googleAds/googleAdsClient";
 import { ApiStatusState, TestResultState, ApiStatus } from "./system-health/types";
 import { 
   checkApiHealth, 
@@ -22,6 +23,7 @@ const SystemHealthCard = () => {
     dataforseo: { status: "checking" as ApiStatus, lastChecked: null, enabled: true },
     openai: { status: "checking" as ApiStatus, lastChecked: null, enabled: true },
     googleKeyword: { status: "checking" as ApiStatus, lastChecked: null, enabled: true },
+    googleAds: { status: "checking" as ApiStatus, lastChecked: null, enabled: isGoogleAdsConfigured() },
     pinecone: { status: "checking" as ApiStatus, lastChecked: null, enabled: isPineconeConfigured() },
   });
   const [checking, setChecking] = useState(false);

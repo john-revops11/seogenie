@@ -1,5 +1,5 @@
 
-export { saveApiStates, loadApiStates, saveSelectedModel, loadSelectedModel } from './statePersistence';
-export { calculateOverallHealth, initializePineconeStatus } from './healthCalculation';
-export { checkApiHealth, initializeApiStatusCheck } from './apiHealthCheck';
+export { checkApiHealth, calculateOverallHealth } from './apiHealthCheck';
 export { testApi } from './apiTesting';
+export { loadApiStates, saveApiStates, loadSelectedModel, saveSelectedModel } from './statePersistence';
+export { initializePineconeStatus } from './healthCalculation';

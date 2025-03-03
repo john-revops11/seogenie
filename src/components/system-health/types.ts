@@ -77,6 +77,11 @@ export const API_DETAILS: ApiDetail[] = [
     description: "Alternative source for keyword data" 
   },
   {
+    id: "googleAds",
+    name: "Google Ads",
+    description: "Official Google Ads API for keyword metrics"
+  },
+  {
     id: "pinecone",
     name: "Pinecone",
     description: "Vector database for RAG (Retrieval-Augmented Generation)"

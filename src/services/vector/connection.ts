@@ -16,23 +16,41 @@ export const testPineconeConnection = async (): Promise<boolean> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Api-Key': getPineconeApiKey()
+        'Api-Key': getPineconeApiKey(),
+        // Add additional headers to help with CORS
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Api-Key'
       },
+      mode: 'cors', // Explicitly set CORS mode
       body: JSON.stringify({})
     });
     
     if (response.ok) {
+      const data = await response.json();
+      console.log("Pinecone connection successful:", data);
       localStorage.removeItem(STORAGE_KEYS.ERRORS);
       return true;
     } else {
       const errorText = await response.text();
       console.error(`Pinecone API error: ${response.status} - ${errorText}`);
-      localStorage.setItem(STORAGE_KEYS.ERRORS, errorText);
+      localStorage.setItem(STORAGE_KEYS.ERRORS, `Status ${response.status}: ${errorText}`);
       return false;
     }
   } catch (error) {
     console.error("Error testing Pinecone connection:", error);
-    localStorage.setItem(STORAGE_KEYS.ERRORS, (error as Error).message);
+    // Store more detailed error information
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    localStorage.setItem(STORAGE_KEYS.ERRORS, errorMessage);
+    
+    // If it's a CORS issue, provide more helpful information
+    if (errorMessage.includes('Failed to fetch')) {
+      localStorage.setItem(STORAGE_KEYS.ERRORS, 
+        "CORS error: The browser couldn't access the Pinecone API. This is likely due to " +
+        "cross-origin restrictions. Consider using a proxy server or adjusting Pinecone CORS settings."
+      );
+    }
+    
     return false;
   }
 };

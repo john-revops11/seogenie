@@ -1,6 +1,7 @@
 
 import { ApiStatusState, TestResultState, API_DETAILS } from "../types";
-import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
+import { isPineconeConfigured, testPineconeConnection, STORAGE_KEYS } from "@/services/vector/pineconeService";
+import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/googleAds/googleAdsClient";
 
 export const testApi = async (
   apiId: string,
@@ -12,7 +13,7 @@ export const testApi = async (
   setTestResult({ status: "loading" });
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     if (!apiStatus[apiId].enabled) {
       const apiName = API_DETAILS.find(api => api.id === apiId)?.name;
@@ -31,6 +32,8 @@ export const testApi = async (
       await testGoogleKeyword(setTestResult);
     } else if (apiId === "pinecone") {
       await testPinecone(setTestResult);
+    } else if (apiId === "googleAds") {
+      await testGoogleAds(setTestResult);
     }
     
     checkApiHealthFn();
@@ -49,7 +52,7 @@ const testDataForSeo = async (
   if (hasErrors) {
     setTestResult({ 
       status: "error", 
-      message: "Test failed: DataForSEO API returned an error. Check your API key and limits." 
+      message: `Test failed: DataForSEO API returned an error. ${hasErrors}` 
     });
   } else {
     setTestResult({ 
@@ -67,7 +70,7 @@ const testOpenAi = async (
   if (hasErrors) {
     setTestResult({ 
       status: "error", 
-      message: `Test failed: OpenAI API returned an error using model "${selectedModel}". Check your API key and limits.` 
+      message: `Test failed: OpenAI API returned an error using model "${selectedModel}". ${hasErrors}` 
     });
   } else {
     setTestResult({ 
@@ -84,12 +87,37 @@ const testGoogleKeyword = async (
   if (hasErrors) {
     setTestResult({ 
       status: "error", 
-      message: "Test failed: Google Keyword API returned an error. Check your API key and limits." 
+      message: `Test failed: Google Keyword API returned an error. ${hasErrors}` 
     });
   } else {
     setTestResult({ 
       status: "success", 
       message: "Test successful: Google Keyword API is responding correctly." 
+    });
+  }
+};
+
+const testGoogleAds = async (
+  setTestResult: React.Dispatch<React.SetStateAction<TestResultState>>
+): Promise<void> => {
+  if (isGoogleAdsConfigured()) {
+    const connectionSuccess = await testGoogleAdsConnection();
+    if (connectionSuccess) {
+      setTestResult({
+        status: "success",
+        message: "Test successful: Google Ads API is properly configured and ready to use."
+      });
+    } else {
+      const errorMessage = localStorage.getItem('googleAdsErrors') || "Unknown error";
+      setTestResult({
+        status: "error",
+        message: `Test failed: Google Ads API returned an error. ${errorMessage}`
+      });
+    }
+  } else {
+    setTestResult({
+      status: "error",
+      message: "Test failed: Google Ads API is not fully configured. Check your Client ID, Client Secret and API Key."
     });
   }
 };
@@ -105,7 +133,7 @@ const testPinecone = async (
         message: "Test successful: Pinecone API is responding correctly and connected to your index."
       });
     } else {
-      const errorMessage = localStorage.getItem('pineconeErrors') || "Unknown error";
+      const errorMessage = localStorage.getItem(STORAGE_KEYS.ERRORS) || "Unknown error";
       setTestResult({
         status: "error",
         message: `Test failed: Pinecone API returned an error. ${errorMessage}`

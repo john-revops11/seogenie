@@ -65,6 +65,29 @@ export const ApiTesting = ({
         </div>
       )}
       
+      {selectedApiForTest === "pinecone" && apiStatus.pinecone?.status === "error" && (
+        <div className="mb-2 text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+          <p className="font-semibold">Troubleshooting Pinecone</p>
+          <ul className="list-disc pl-4 mt-1 space-y-1">
+            <li>Verify your API key format</li>
+            <li>Check if your index name is correct</li>
+            <li>Your browser may have CORS restrictions</li>
+            <li>Make sure your Pinecone plan is active</li>
+          </ul>
+        </div>
+      )}
+      
+      {selectedApiForTest === "googleAds" && !apiStatus.googleAds?.enabled && (
+        <div className="mb-2 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+          <p>Google Ads API is configured with:</p>
+          <ul className="list-disc pl-4 mt-1">
+            <li>Client ID: ...8hs</li>
+            <li>API Key: ...Ey4</li>
+          </ul>
+          <p className="mt-1">To use it, enable the API using the toggle.</p>
+        </div>
+      )}
+      
       {testResult.status !== "idle" && (
         <div className={`text-xs p-2 rounded flex items-start gap-1.5 ${
           testResult.status === "success" ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300" : 

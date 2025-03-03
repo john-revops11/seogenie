@@ -1,79 +1,8 @@
 
-import { ApiHealth, ApiStatus, ApiStatusState } from '../types';
-import { testPineconeConnection } from '@/services/vector/connection';
+import { ApiStatusState, ApiStatus, ApiHealth } from "../types";
+import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
+import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/googleAds/googleAdsClient";
 
-export const getDefaultApiStatus = (): ApiStatusState => ({
-  mainApi: {
-    status: "checking" as ApiStatus,
-    lastChecked: null,
-    enabled: true
-  },
-  googleKeyword: {
-    status: "checking" as ApiStatus,
-    lastChecked: null,
-    enabled: true
-  },
-  dataforseo: {
-    status: "checking" as ApiStatus,
-    lastChecked: null,
-    enabled: true
-  },
-  pinecone: {
-    status: "checking" as ApiStatus,
-    lastChecked: null,
-    enabled: true
-  },
-});
-
-export const updateApiHealth = (status: ApiStatusState, setApiHealth: React.Dispatch<React.SetStateAction<ApiHealth>>): void => {
-  const operationalCount = Object.values(status).filter(api => api.status === 'connected' && api.enabled).length;
-  const totalEnabledApis = Object.values(status).filter(api => api.enabled).length;
-  
-  if (totalEnabledApis === 0) {
-    setApiHealth('unhealthy');
-    return;
-  }
-  
-  const healthPercentage = (operationalCount / totalEnabledApis) * 100;
-
-  let health: ApiHealth = 'unhealthy';
-  if (healthPercentage === 100) {
-    health = 'healthy';
-  } else if (healthPercentage >= 50) {
-    health = 'degraded';
-  }
-
-  setApiHealth(health);
-};
-
-/**
- * Check API statuses at app initialization
- */
-export const initializeApiStatusCheck = async (
-  setApiStatus: React.Dispatch<React.SetStateAction<ApiStatusState>>,
-  setApiHealth: React.Dispatch<React.SetStateAction<ApiHealth>>
-): Promise<void> => {
-  try {
-    const storedStatus = localStorage.getItem('apiStatus');
-    const status = storedStatus ? JSON.parse(storedStatus) : getDefaultApiStatus();
-    
-    // Ensure Pinecone status is checked on initialization
-    if (status.pinecone && status.pinecone.enabled) {
-      const isPineconeWorking = await testPineconeConnection();
-      status.pinecone.status = isPineconeWorking ? 'connected' as ApiStatus : 'error' as ApiStatus;
-      status.pinecone.lastChecked = new Date();
-    }
-    
-    setApiStatus(status);
-    updateApiHealth(status, setApiHealth);
-  } catch (error) {
-    console.error('Error initializing API status check:', error);
-  }
-};
-
-/**
- * Check all API health status
- */
 export const checkApiHealth = async (
   apiStatus: ApiStatusState,
   setApiStatus: React.Dispatch<React.SetStateAction<ApiStatusState>>,
@@ -81,32 +10,104 @@ export const checkApiHealth = async (
 ): Promise<void> => {
   setChecking(true);
   
+  // Copy the current API status to update
+  const updatedApiStatus = { ...apiStatus };
+  
+  // Start with setting all enabled APIs to checking
+  Object.keys(updatedApiStatus).forEach(key => {
+    if (updatedApiStatus[key].enabled) {
+      updatedApiStatus[key] = {
+        ...updatedApiStatus[key],
+        status: "checking" as ApiStatus
+      };
+    }
+  });
+  
+  // Apply initial update to show checking status
+  setApiStatus(updatedApiStatus);
+  
   try {
-    const updatedStatus = { ...apiStatus };
-    
-    // Check Pinecone API if enabled
-    if (updatedStatus.pinecone && updatedStatus.pinecone.enabled) {
-      updatedStatus.pinecone.status = "checking" as ApiStatus;
-      const isPineconeWorking = await testPineconeConnection();
-      updatedStatus.pinecone.status = isPineconeWorking ? "connected" as ApiStatus : "error" as ApiStatus;
-      updatedStatus.pinecone.lastChecked = new Date();
+    // Check Pinecone connection
+    if (updatedApiStatus.pinecone?.enabled && isPineconeConfigured()) {
+      const pineconeConnected = await testPineconeConnection();
+      updatedApiStatus.pinecone = {
+        ...updatedApiStatus.pinecone,
+        status: pineconeConnected ? "connected" : "error",
+        lastChecked: new Date(),
+        errorMessage: pineconeConnected ? undefined : localStorage.getItem('pineconeErrors') || undefined
+      };
+    } else if (updatedApiStatus.pinecone) {
+      updatedApiStatus.pinecone = {
+        ...updatedApiStatus.pinecone,
+        status: isPineconeConfigured() ? "disconnected" : "error",
+        lastChecked: new Date(),
+        errorMessage: isPineconeConfigured() ? undefined : "Pinecone is not configured"
+      };
+    }
+
+    // Check Google Ads API connection
+    if (updatedApiStatus.googleAds?.enabled && isGoogleAdsConfigured()) {
+      const googleAdsConnected = await testGoogleAdsConnection();
+      updatedApiStatus.googleAds = {
+        ...updatedApiStatus.googleAds,
+        status: googleAdsConnected ? "connected" : "error",
+        lastChecked: new Date(),
+        errorMessage: googleAdsConnected ? undefined : localStorage.getItem('googleAdsErrors') || undefined
+      };
+    } else if (updatedApiStatus.googleAds) {
+      updatedApiStatus.googleAds = {
+        ...updatedApiStatus.googleAds,
+        status: isGoogleAdsConfigured() ? "disconnected" : "error",
+        lastChecked: new Date(),
+        errorMessage: isGoogleAdsConfigured() ? undefined : "Google Ads API is not fully configured"
+      };
     }
     
-    // TODO: Implement other API health checks
-    // Simulate checking other APIs
-    Object.keys(updatedStatus).forEach(key => {
-      if (key !== 'pinecone' && updatedStatus[key].enabled) {
-        const hasError = localStorage.getItem(`${key}Errors`);
-        updatedStatus[key].status = hasError ? "error" as ApiStatus : "connected" as ApiStatus;
-        updatedStatus[key].lastChecked = new Date();
-      }
-    });
+    // Set mock statuses for other APIs for demo
+    // In a real app, you would check these APIs properly
     
-    setApiStatus(updatedStatus);
-    localStorage.setItem('apiStatus', JSON.stringify(updatedStatus));
+    // DataForSEO API
+    if (updatedApiStatus.dataforseo?.enabled) {
+      const hasErrors = localStorage.getItem('dataForSeoErrors');
+      updatedApiStatus.dataforseo = {
+        ...updatedApiStatus.dataforseo,
+        status: hasErrors ? "error" : "connected",
+        lastChecked: new Date(),
+        errorMessage: hasErrors || undefined
+      };
+    }
+    
+    // OpenAI API
+    if (updatedApiStatus.openai?.enabled) {
+      const hasErrors = localStorage.getItem('openAiErrors');
+      updatedApiStatus.openai = {
+        ...updatedApiStatus.openai,
+        status: hasErrors ? "error" : "connected",
+        lastChecked: new Date(),
+        errorMessage: hasErrors || undefined
+      };
+    }
+    
+    // Google Keyword API
+    if (updatedApiStatus.googleKeyword?.enabled) {
+      const hasErrors = localStorage.getItem('googleKeywordErrors');
+      updatedApiStatus.googleKeyword = {
+        ...updatedApiStatus.googleKeyword,
+        status: hasErrors ? "error" : "connected",
+        lastChecked: new Date(),
+        errorMessage: hasErrors || undefined
+      };
+    }
+    
+    // Store the updated API status in localStorage
+    localStorage.setItem('apiStatus', JSON.stringify(updatedApiStatus));
   } catch (error) {
-    console.error('Error checking API health:', error);
+    console.error("Error checking API health:", error);
   } finally {
+    setApiStatus(updatedApiStatus);
     setChecking(false);
   }
 };
+
+// Export functions for module
+export { calculateOverallHealth } from './healthCalculation';
