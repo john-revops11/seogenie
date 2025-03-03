@@ -1,6 +1,7 @@
 import { ApiStatusState, TestResultState, API_DETAILS } from "../types";
 import { isPineconeConfigured, testPineconeConnection, STORAGE_KEYS } from "@/services/vector/pineconeService";
 import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/providers/googleAdsApi";
+import { fetchGoogleKeywordInsights } from "@/services/keywords/providers/googleKeywordApi";
 
 export const testApi = async (
   apiId: string,
@@ -82,16 +83,22 @@ const testOpenAi = async (
 const testGoogleKeyword = async (
   setTestResult: React.Dispatch<React.SetStateAction<TestResultState>>
 ): Promise<void> => {
-  const hasErrors = localStorage.getItem('googleKeywordErrors');
-  if (hasErrors) {
-    setTestResult({ 
-      status: "error", 
-      message: `Test failed: Google Keyword API returned an error. ${hasErrors}` 
-    });
-  } else {
+  try {
+    // Perform a real test request to the Google Keyword API
+    const testDomain = "example.com";
+    await fetchGoogleKeywordInsights(testDomain);
+    
     setTestResult({ 
       status: "success", 
       message: "Test successful: Google Keyword API is responding correctly." 
+    });
+  } catch (error) {
+    const errorMsg = (error as Error).message || "Unknown error";
+    localStorage.setItem('googleKeywordErrors', errorMsg);
+    
+    setTestResult({ 
+      status: "error", 
+      message: `Test failed: Google Keyword API returned an error. ${errorMsg}` 
     });
   }
 };

@@ -18,10 +18,11 @@ export const GEMINI_API_KEY = "AIzaSyCJIDNvI7w8jpjyWLI9yaPp3PWAeD95AnA";
 
 // Keep old API configurations for backward compatibility and fallback
 export const API_HOST = "keyword-tool.p.rapidapi.com";
-export const API_KEY = "6549be50bbmsh1d48a68f7367e70p18d2c2jsnacb70e5f1571"; // Updated API key with the new one provided
+export const API_KEY = "6549be50bbmsh1d48a68f7367e70p18d2c2jsnacb70e5f1571"; 
 export const API_URL = "https://keyword-tool.p.rapidapi.com/urlextract/";
 export const OPENAI_API_KEY = "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";
 
 // Google Keyword Insight API configuration
 export const GOOGLE_KEYWORD_API_HOST = "google-keyword-insight1.p.rapidapi.com";
-export const GOOGLE_KEYWORD_API_URL = "https://google-keyword-insight1.p.rapidapi.com/globalurl/";
+export const GOOGLE_KEYWORD_API_URL = "https://google-keyword-insight1.p.rapidapi.com/globalurl";
+

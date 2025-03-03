@@ -16,12 +16,19 @@ import { getCompetitionLabel } from '../utils/credentialUtils';
 export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
     toast.info(`Trying Google Keyword API for ${domainUrl}...`, { id: "google-api" });
+    
+    // Make sure the URL parameter is properly formatted
+    let url = domainUrl;
+    if (!url.startsWith('http')) {
+      url = `https://${url}`;
+    }
+    
     const queryParams = new URLSearchParams({
-      url: domainUrl,
+      url: url,
       lang: 'en'
     });
 
-    console.log(`Fetching keywords from Google Keyword Insight API for domain: ${domainUrl}`);
+    console.log(`Fetching keywords from Google Keyword Insight API for domain: ${url}`);
     
     const response = await fetch(`${GOOGLE_KEYWORD_API_URL}?${queryParams}`, {
       method: "GET",
@@ -30,37 +37,40 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
         "x-rapidapi-key": API_KEY
       },
       // Add a timeout to prevent hanging requests
-      signal: AbortSignal.timeout(15000) // Increased timeout for potentially slow API
+      signal: AbortSignal.timeout(30000) // Increased timeout for potentially slow API
     });
 
     // Check for API errors
     if (!response.ok) {
-      console.warn(`Google Keyword API error ${response.status} for ${domainUrl}`);
+      const errorText = await response.text();
+      console.warn(`Google Keyword API error ${response.status} for ${url}: ${errorText}`);
       throw new Error(`API error ${response.status}`);
     }
 
-    const data: GoogleKeywordInsightResponse = await response.json();
+    const data = await response.json();
     
-    if (data.status !== "success" || !data.keywords || data.keywords.length === 0) {
-      console.warn(`Google Keyword API unsuccessful for ${domainUrl}`);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.warn(`Google Keyword API unsuccessful for ${url} - no keywords returned`);
       throw new Error("API returned no keywords");
     }
 
     // Transform the API response to our KeywordData format
-    const keywords = data.keywords.map(item => ({
-      keyword: item.keyword,
-      monthly_search: item.volume,
-      competition: getCompetitionLabel(item.difficulty),
-      competition_index: item.difficulty,
-      cpc: item.cpc,
-      position: item.current_rank,
+    const keywords = data.map(item => ({
+      keyword: item.text || item.keyword,
+      monthly_search: item.volume || 0,
+      competition: getCompetitionLabel(item.competition_index || 0),
+      competition_index: item.competition_index || 0,
+      cpc: item.high_bid || item.cpc || 0,
+      position: null,
       rankingUrl: null,
     }));
     
-    toast.success(`Google API: Found ${keywords.length} keywords for ${domainUrl}`, { id: "google-success" });
+    toast.success(`Google API: Found ${keywords.length} keywords for ${url}`, { id: "google-success" });
     return keywords;
   } catch (error) {
     console.error(`Error fetching Google keywords for ${domainUrl}:`, error);
+    // Store the error in localStorage for the system health card to display
+    localStorage.setItem('googleKeywordErrors', (error as Error).message);
     toast.warning(`Google Keyword API failed: ${(error as Error).message}`, { id: "google-error" });
     throw error;
   }
