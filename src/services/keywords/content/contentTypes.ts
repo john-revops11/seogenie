@@ -18,7 +18,7 @@ export interface GeneratedContent {
   metaDescription: string;
   outline: string[];
   content: string;
-  ragEnhanced?: boolean;
+  ragEnhanced: boolean; // Changed from optional to required
 }
 
 // Alias for backward compatibility

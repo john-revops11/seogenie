@@ -75,7 +75,7 @@ export const generateContent = async (
       metaDescription: result.metaDescription,
       outline: result.outline,
       content: result.content,
-      ragEnhanced: result.ragEnhanced || wasRagEnhanced
+      ragEnhanced: result.ragEnhanced || wasRagEnhanced // Ensure this is always set (not undefined)
     };
   } catch (error) {
     console.error("Error generating content:", error);
