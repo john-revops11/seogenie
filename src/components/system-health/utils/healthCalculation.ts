@@ -47,7 +47,7 @@ export const initializePineconeStatus = async (
 /**
  * Calculate the overall health based on API statuses
  */
-export const calculateOverallHealth = (apiStatus: ApiStatusState): string => {
+export const calculateOverallHealth = (apiStatus: ApiStatusState): "healthy" | "degraded" | "critical" | "unknown" => {
   const enabledApis = Object.values(apiStatus).filter(api => api.enabled);
   if (enabledApis.length === 0) return "unknown";
   

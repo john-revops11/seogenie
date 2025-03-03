@@ -2,7 +2,7 @@
 import { Check, X, Wifi, WifiOff, AlertTriangle, LoaderCircle, Database } from "lucide-react";
 import { ApiStatus } from "./types";
 
-export const renderHealthIcon = (healthStatus: "healthy" | "degraded" | "critical") => {
+export const renderHealthIcon = (healthStatus: "healthy" | "degraded" | "critical" | "unknown") => {
   switch(healthStatus) {
     case "healthy":
       return <Check className="h-4 w-4 text-green-500" />;
@@ -10,6 +10,7 @@ export const renderHealthIcon = (healthStatus: "healthy" | "degraded" | "critica
       return <AlertTriangle className="h-4 w-4 text-amber-500" />;
     case "critical":
       return <X className="h-4 w-4 text-red-500" />;
+    case "unknown":
     default:
       return <LoaderCircle className="h-4 w-4 animate-spin" />;
   }
