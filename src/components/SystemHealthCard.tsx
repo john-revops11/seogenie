@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
-import { isGoogleAdsConfigured } from "@/services/keywords/googleAds/googleAdsClient";
+import { isGoogleAdsConfigured } from "@/services/keywords/providers/googleAdsApi";
 import { ApiStatusState, TestResultState, ApiStatusType } from "./system-health/types";
 import { 
   checkApiHealth, 

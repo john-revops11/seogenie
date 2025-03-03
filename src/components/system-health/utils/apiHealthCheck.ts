@@ -34,7 +34,7 @@ export const checkApiHealth = async (
         ...updatedApiStatus.pinecone,
         status: pineconeConnected ? "connected" : "error",
         lastChecked: new Date(),
-        errorMessage: pineconeConnected ? undefined : localStorage.getItem('pineconeErrors') || undefined
+        errorMessage: pineconeConnected ? undefined : localStorage.getItem(STORAGE_KEYS.ERRORS) || undefined
       };
     } else if (updatedApiStatus.pinecone) {
       updatedApiStatus.pinecone = {
@@ -46,17 +46,17 @@ export const checkApiHealth = async (
     }
 
     // Check Google Ads API connection
-    if (updatedApiStatus.googleAds?.enabled && isGoogleAdsConfigured()) {
+    if (updatedApiStatus["google-ads"]?.enabled && isGoogleAdsConfigured()) {
       const googleAdsConnected = await testGoogleAdsConnection();
-      updatedApiStatus.googleAds = {
-        ...updatedApiStatus.googleAds,
+      updatedApiStatus["google-ads"] = {
+        ...updatedApiStatus["google-ads"],
         status: googleAdsConnected ? "connected" : "error",
         lastChecked: new Date(),
         errorMessage: googleAdsConnected ? undefined : localStorage.getItem('googleAdsErrors') || undefined
       };
-    } else if (updatedApiStatus.googleAds) {
-      updatedApiStatus.googleAds = {
-        ...updatedApiStatus.googleAds,
+    } else if (updatedApiStatus["google-ads"]) {
+      updatedApiStatus["google-ads"] = {
+        ...updatedApiStatus["google-ads"],
         status: isGoogleAdsConfigured() ? "disconnected" : "error",
         lastChecked: new Date(),
         errorMessage: isGoogleAdsConfigured() ? undefined : "Google Ads API is not fully configured"
