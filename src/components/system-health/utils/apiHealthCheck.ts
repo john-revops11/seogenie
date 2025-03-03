@@ -1,5 +1,5 @@
 
-import { ApiStatusState, ApiStatus, ApiHealth } from "../types";
+import { ApiStatusState, ApiStatusType } from "../types";
 import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
 import { isGoogleAdsConfigured, testGoogleAdsConnection } from "@/services/keywords/googleAds/googleAdsClient";
 
@@ -18,7 +18,7 @@ export const checkApiHealth = async (
     if (updatedApiStatus[key].enabled) {
       updatedApiStatus[key] = {
         ...updatedApiStatus[key],
-        status: "checking" as ApiStatus
+        status: "checking" as ApiStatusType
       };
     }
   });
