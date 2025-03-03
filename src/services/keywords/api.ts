@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { 
   KeywordData, 
@@ -24,30 +23,10 @@ function getCompetitionLabel(difficulty: number): string {
   return "high";
 }
 
-// Validate DataForSEO credentials to ensure they're properly formatted
-function validateDataForSEOCredentials(): boolean {
-  if (!DATAFORSEO_LOGIN || typeof DATAFORSEO_LOGIN !== 'string' || DATAFORSEO_LOGIN.trim() === '') {
-    console.error("DataForSEO login is missing or invalid");
-    return false;
-  }
-  
-  if (!DATAFORSEO_PASSWORD || typeof DATAFORSEO_PASSWORD !== 'string' || DATAFORSEO_PASSWORD.trim() === '') {
-    console.error("DataForSEO password is missing or invalid");
-    return false;
-  }
-  
-  return true;
-}
-
 // New function to fetch related keywords using DataForSEO API
 export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<KeywordData[]> => {
   try {
     console.log(`Fetching related keywords from DataForSEO API for keywords:`, seedKeywords);
-    
-    // Validate credentials first
-    if (!validateDataForSEOCredentials()) {
-      throw new Error("Invalid DataForSEO credentials");
-    }
     
     // Create authorization string with the correct password for keyword research
     const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
@@ -76,11 +55,10 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
       body: requestBody
     });
 
-    // Detailed error handling for API responses
+    // Check for API errors
     if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(`DataForSEO API error ${response.status} for keywords search:`, errorBody);
-      throw new Error(`API error ${response.status}: ${errorBody.substring(0, 100)}`);
+      console.warn(`DataForSEO API error ${response.status} for keywords search`);
+      throw new Error(`API error ${response.status}`);
     }
 
     const data = await response.json();
@@ -88,21 +66,16 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
     // Debug the actual response structure
     console.log("DataForSEO keywords_for_keywords response:", JSON.stringify(data).substring(0, 500) + "...");
     
-    // More detailed response validation
-    if (!data || !data.tasks) {
-      console.error(`DataForSEO API returned invalid response format:`, data);
-      throw new Error("API returned invalid response format");
-    }
-    
-    if (data.tasks.length === 0) {
-      console.error(`DataForSEO API returned no tasks for keywords search:`, data);
+    // Check if we have a valid response with tasks
+    if (!data.tasks || data.tasks.length === 0) {
+      console.warn(`DataForSEO API returned no tasks for keywords search`);
       throw new Error("API returned no tasks");
     }
     
     // For task_post endpoints, we need to check the task_id
     const task = data.tasks[0];
     if (!task.id) {
-      console.error(`DataForSEO API task has no ID:`, task);
+      console.warn(`DataForSEO API task has no ID`);
       throw new Error("API task has no ID");
     }
     
@@ -125,21 +98,14 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
     return keywords;
   } catch (error) {
     console.error(`Error fetching related keywords:`, error);
-    toast.error(`Error fetching related keywords: ${(error as Error).message}`);
     throw error;
   }
 };
 
-// Fetch keywords from DataForSEO API with improved error handling
+// New function to fetch DataForSEO API
 export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl}`);
-    toast.info(`Trying DataForSEO API for ${domainUrl}...`, { id: "dataforseo-api" });
-    
-    // Validate credentials first
-    if (!validateDataForSEOCredentials()) {
-      throw new Error("Invalid DataForSEO credentials");
-    }
     
     // Create authorization string with the right password for domain analysis
     const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
@@ -153,57 +119,37 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
       }
     ]);
     
-    console.log(`Making DataForSEO API request to ${DATAFORSEO_API_URL} with credentials ${DATAFORSEO_LOGIN}:***`);
-    
     const response = await fetch(DATAFORSEO_API_URL, {
       method: "POST",
       headers: {
         "Authorization": `Basic ${encodedCredentials}`,
         "Content-Type": "application/json"
       },
-      body: requestBody,
-      // Add a timeout to prevent hanging requests
-      signal: AbortSignal.timeout(15000) // Increased timeout
+      body: requestBody
     });
 
-    // Detailed error handling for API responses
+    // Check for API errors
     if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(`DataForSEO API error ${response.status} for ${domainUrl}:`, errorBody);
-      throw new Error(`API error ${response.status}: ${errorBody.substring(0, 100)}`);
+      console.warn(`DataForSEO API error ${response.status} for ${domainUrl}`);
+      throw new Error(`API error ${response.status}`);
     }
 
     const data = await response.json();
     
-    // Log the full response for debugging if it's small enough
-    if (JSON.stringify(data).length < 1000) {
-      console.log("DataForSEO full response:", data);
-    } else {
-      console.log("DataForSEO response excerpt:", JSON.stringify(data).substring(0, 500) + "...");
-    }
+    // Debug the actual response structure
+    console.log("DataForSEO response:", JSON.stringify(data).substring(0, 500) + "...");
     
-    // More detailed response validation
-    if (!data || !data.tasks) {
-      console.error(`DataForSEO API returned invalid response format:`, data);
-      throw new Error("API returned invalid response format");
-    }
-    
-    if (data.tasks.length === 0) {
-      console.error(`DataForSEO API returned no tasks for ${domainUrl}:`, data);
+    // Check if we have a valid response with tasks
+    if (!data.tasks || data.tasks.length === 0) {
+      console.warn(`DataForSEO API returned no tasks for ${domainUrl}`);
       throw new Error("API returned no tasks");
     }
     
     const task = data.tasks[0];
     
-    // Check for API-level errors
-    if (task.status_code !== 20000) {
-      console.error(`DataForSEO API task failed with status ${task.status_code} for ${domainUrl}:`, task);
-      throw new Error(`API task failed: ${task.status_message || 'Unknown error'}`);
-    }
-    
     // Check if the task has result data
     if (!task.result || task.result.length === 0) {
-      console.error(`DataForSEO API task has no results for ${domainUrl}:`, task);
+      console.warn(`DataForSEO API task has no results for ${domainUrl}`);
       throw new Error("API task has no results");
     }
     
@@ -226,24 +172,21 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
     }
     
     if (keywords.length === 0) {
-      console.error(`DataForSEO API returned no valid keywords for ${domainUrl}:`, task.result);
+      console.warn(`DataForSEO API returned no valid keywords for ${domainUrl}`);
       throw new Error("API returned no valid keywords");
     }
     
     console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
-    toast.success(`DataForSEO: Found ${keywords.length} keywords for ${domainUrl}`, { id: "dataforseo-success" });
     return keywords;
   } catch (error) {
     console.error(`Error fetching DataForSEO keywords for ${domainUrl}:`, error);
-    toast.warning(`DataForSEO API failed: ${(error as Error).message}`, { id: "dataforseo-error" });
     throw error;
   }
 };
 
-// Function to fetch keywords using Google Keyword Insight API with proper error handling
+// Function to fetch keywords using Google Keyword Insight API
 export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<KeywordData[]> => {
   try {
-    toast.info(`Trying Google Keyword API for ${domainUrl}...`, { id: "google-api" });
     const queryParams = new URLSearchParams({
       url: domainUrl,
       lang: 'en'
@@ -256,9 +199,7 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       headers: {
         "x-rapidapi-host": GOOGLE_KEYWORD_API_HOST,
         "x-rapidapi-key": API_KEY
-      },
-      // Add a timeout to prevent hanging requests
-      signal: AbortSignal.timeout(10000)
+      }
     });
 
     // Check for API errors
@@ -275,7 +216,7 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
     }
 
     // Transform the API response to our KeywordData format
-    const keywords = data.keywords.map(item => ({
+    return data.keywords.map(item => ({
       keyword: item.keyword,
       monthly_search: item.volume,
       competition: getCompetitionLabel(item.difficulty),
@@ -284,12 +225,8 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       position: item.current_rank,
       rankingUrl: null,
     }));
-    
-    toast.success(`Google API: Found ${keywords.length} keywords for ${domainUrl}`, { id: "google-success" });
-    return keywords;
   } catch (error) {
     console.error(`Error fetching Google keywords for ${domainUrl}:`, error);
-    toast.warning(`Google Keyword API failed: ${(error as Error).message}`, { id: "google-error" });
     throw error;
   }
 };
@@ -319,7 +256,6 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   
   // Fall back to the original API
   try {
-    toast.info(`Trying fallback API for ${domainUrl}...`, { id: "fallback-api" });
     const queryParams = new URLSearchParams({
       url: domainUrl,
       place_id: "2840", // Updated to use US location code
@@ -334,9 +270,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       headers: {
         "x-rapidapi-host": API_HOST,
         "x-rapidapi-key": API_KEY
-      },
-      // Add a timeout to prevent hanging requests
-      signal: AbortSignal.timeout(10000)
+      }
     });
 
     // Check for API errors
@@ -359,7 +293,7 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
     }
 
     // Transform the API response to our KeywordData format
-    const keywords = data.data.map(item => ({
+    return data.data.map(item => ({
       keyword: item.keyword,
       monthly_search: item.monthly_search,
       competition: item.competition,
@@ -368,12 +302,8 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
       position: null,
       rankingUrl: null,
     }));
-    
-    toast.success(`Fallback API: Found ${keywords.length} keywords for ${domainUrl}`, { id: "fallback-success" });
-    return keywords;
   } catch (error) {
     console.error(`Error fetching domain keywords for ${domainUrl}:`, error);
-    toast.error(`All keyword APIs failed for ${domainUrl}. Using mock data.`, { id: "all-apis-failed" });
     throw error;
   }
 };

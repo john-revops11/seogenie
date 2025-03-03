@@ -1,3 +1,4 @@
+
 import { OPENAI_API_KEY } from './apiConfig';
 import { enhanceContentWithRAG } from '@/utils/rag/contentRag';
 
@@ -7,40 +8,24 @@ export const generateContent = async (
   keywords: string[],
   contentType: string,
   creativityLevel: number,
-  contentPreferences: string[] = [],
-  ragEnabled: boolean = false
+  contentPreferences: string[] = []
 ): Promise<{
   title: string;
   metaDescription: string;
   outline: string[];
   content: string;
-  ragEnhanced?: boolean;
 }> => {
   try {
     console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
     
-    // Get selected model from localStorage or default to gpt-4o
-    const selectedModel = localStorage.getItem('selectedAiModel') || 'gpt-4o';
+    // Use RAG to enhance keywords and get contextual information
+    const ragResults = await enhanceContentWithRAG(title, keywords, contentType);
     
-    // Only use RAG if it's enabled
-    let ragResults = {
-      relevantKeywords: keywords,
-      relatedTopics: [],
-      contextualExamples: [],
-      structuralRecommendations: []
-    };
-    
-    // Only perform RAG enhancement if enabled
-    if (ragEnabled) {
-      ragResults = await enhanceContentWithRAG(title, keywords, contentType);
-      console.log("Enhanced with RAG:", {
-        keywordCount: ragResults.relevantKeywords.length,
-        topicCount: ragResults.relatedTopics.length,
-        exampleCount: ragResults.contextualExamples.length
-      });
-    } else {
-      console.log("RAG enhancement disabled, using base keywords only");
-    }
+    console.log("Enhanced with RAG:", {
+      keywordCount: ragResults.relevantKeywords.length,
+      topicCount: ragResults.relatedTopics.length,
+      exampleCount: ragResults.contextualExamples.length
+    });
     
     const enhancedKeywords = ragResults.relevantKeywords;
     
@@ -62,123 +47,16 @@ export const generateContent = async (
         - Conclusion summarizing key takeaways with a clear call to action`;
         break;
       case "case-study":
-        contentBrief = `Create a business case study about ${title} that follows this exact structure:
-
-        <h1>[Title] Case Study: [Solution] at [Company/Project]</h1>
-        
-        <h2>Industry: [Industry] | Area: [Specific Area or Focus]</h2>
-        
-        <p>In collaboration with [Partner], Revology's strategic partner for [value proposition].</p>
-        
-        <div class="case-study-section">
-          <div class="left-column">
-            <h3>Fragmented Client Background</h3>
-            <p>[Describe the client's structure and challenges in 3-4 sentences]</p>
-          </div>
-          
-          <div class="right-column">
-            <h3>Business Structure</h3>
-            <p>[Describe the business organization and growth in 3-4 sentences]</p>
-          </div>
-        </div>
-        
-        <h3>Crowded Market Challenges</h3>
-        <p>[Describe market competition, risks, and positioning in 3-4 sentences]</p>
-        
-        <h3>Legacy Platform Issues</h3>
-        <p>[Describe technical/platform challenges in 4-6 sentences]</p>
-        
-        <h2>Situation:</h2>
-        
-        <div class="case-study-grid">
-          <div class="grid-item">
-            <h3>[Challenge 1]</h3>
-            <p>[Details about challenge 1 in 3-4 sentences]</p>
-          </div>
-          
-          <div class="grid-item">
-            <h3>[Challenge 2]</h3>
-            <p>[Details about challenge 2 in 3-4 sentences]</p>
-          </div>
-          
-          <div class="grid-item">
-            <h3>[Challenge 3]</h3>
-            <p>[Details about challenge 3 in 3-4 sentences]</p>
-          </div>
-          
-          <div class="grid-item">
-            <h3>[Challenge 4]</h3>
-            <p>[Details about challenge 4 in 3-4 sentences]</p>
-          </div>
-        </div>
-        
-        <h2>Obstacles</h2>
-        <p>[Describe key obstacles in 3-5 sentences]</p>
-        
-        <h2>Action</h2>
-        <p>Revology Analytics was engaged by the client's C-suite to provide a comprehensive solution for [primary challenge] in preparation for [goal/milestone].</p>
-        
-        <p>The project involved several key steps:</p>
-        
-        <div class="numbered-section">
-          <h3>1. [Action Area 1]</h3>
-          <p>[Describe action area 1 in 4-6 sentences]</p>
-        </div>
-        
-        <div class="numbered-section">
-          <h3>2. [Action Area 2]</h3>
-          <p>[Describe action area 2 in 4-6 sentences]</p>
-        </div>
-        
-        <div class="numbered-section">
-          <h3>3. [Action Area 3]</h3>
-          <p>[Describe action area 3 in 4-6 sentences]</p>
-        </div>
-        
-        <div class="numbered-section">
-          <h3>4. [Action Area 4]</h3>
-          <p>[Describe action area 4 in 4-6 sentences]</p>
-        </div>
-        
-        <h2>Results</h2>
-        
-        <div class="results-section">
-          <h3>Revenue Growth and Margin Expansion</h3>
-          <p>[Describe revenue outcomes in 4-6 sentences with specific metrics]</p>
-        </div>
-        
-        <div class="results-section">
-          <h3>Strategic Market Penetration</h3>
-          <p>[Describe market penetration outcomes in 4-6 sentences with specific metrics]</p>
-        </div>
-        
-        <div class="results-section">
-          <h3>Enhanced [Area of Improvement]</h3>
-          <p>[Describe specific improvement outcomes in 4-6 sentences]</p>
-        </div>
-        
-        <div class="results-section">
-          <h3>Ongoing Partnership and [Focus Area]</h3>
-          <p>[Describe partnership outcomes and future focus in 4-6 sentences]</p>
-        </div>
-        
-        Please follow this example format for the Case Study:
-        
-        Case Study SaaS: Portfolio Pricing Optimization at New Platform Launch
-        Industry: SaaS | Area: Pricing and Revenue Growth Management
-        In collaboration with EBITDA Catalyst, Revology's strategic partner for driving value creation for mid-market Private Equity.
-        
-        Fragmented Client Background
-        The client, a mid-sized Private-Equity held SaaS solution provider, experienced rapid growth through organic expansion and a series of strategic add-on acquisitions. Each business unit developed its own pricing strategy, resulting in a lack of uniformity and inefficiencies across the organization. This fragmentation made it challenging to maintain consistent pricing practices and optimize revenue effectively.
-        
-        Business Structure
-        This expansion led to a complex business structure with multiple independently operated business units.
-        
-        Crowded Market Challenges
-        The client faced a crowded market where competitors aggressively vied for market share based on features and value. Despite benefiting from secular growth trends, the company faced significant risks of engaging in a "race to the bottom" in pricing, which would have eroded margins if not managed carefully.
-        
-        Legacy Platform Issues
-        The client was preparing to launch a new flagship platform to consolidate its legacy software solutions, which had become a costly drain on resources. The existing structure had inefficiencies, such as inconsistent customer transaction recording and an over-reliance on Excel for analytics, which limited the company's ability to monitor and optimize pricing effectively.`;
+        contentBrief = `Create a business case study about ${title} that demonstrates real-world impact. 
+        Use a professional tone targeting executives and decision-makers.
+        Structure:
+        - Banner title: Short but impactful title referencing the key theme or solution
+        - Short description: 1-2 lines summarizing the project or outcome
+        - Situation: Detailed background, challenges, and context
+        - Obstacles: The biggest hurdles and their impacts on the business
+        - Action: Detailed methodology and engagement process
+        - Results: Tangible outcomes with specific metrics, KPIs, and improvements
+        End with a clear sense of business value and next steps.`;
         break;
       case "white-paper":
         contentBrief = `Create an executive-level white paper about ${title} for business decision-makers.
@@ -230,39 +108,26 @@ export const generateContent = async (
       if (contentPreferences.includes('Add internal links')) {
         contentBrief += `\nSuggest potential internal linking opportunities within the content.`;
       }
-      // Add new preferences handling
-      if (contentPreferences.includes('Add tables for data')) {
-        contentBrief += `\nInclude HTML tables to present data in a structured format where appropriate.`;
-      }
-      if (contentPreferences.includes('Include statistics')) {
-        contentBrief += `\nIncorporate relevant industry statistics and data points to support key claims.`;
-      }
-      if (contentPreferences.includes('Add FAQ section')) {
-        contentBrief += `\nAdd a FAQ section at the end addressing common questions related to the topic.`;
-      }
     }
     
-    // Add RAG-enhanced context to the content brief only if RAG is enabled
-    if (ragEnabled && ragResults.relatedTopics.length > 0) {
+    // Add RAG-enhanced context to the content brief
+    if (ragResults.relatedTopics.length > 0) {
       contentBrief += `\n\nConsider including these related topics: ${ragResults.relatedTopics.join(', ')}.`;
     }
     
-    if (ragEnabled && ragResults.contextualExamples.length > 0) {
+    if (ragResults.contextualExamples.length > 0) {
       contentBrief += `\n\nReference these contextual examples where appropriate:`;
       ragResults.contextualExamples.forEach(example => {
         contentBrief += `\n- "${example}"`;
       });
     }
     
-    if (ragEnabled && ragResults.structuralRecommendations.length > 0) {
+    if (ragResults.structuralRecommendations.length > 0) {
       contentBrief += `\n\nFollow these structural recommendations:`;
       ragResults.structuralRecommendations.forEach(rec => {
         contentBrief += `\n- ${rec}`;
       });
     }
-    
-    // Add RAG indicator
-    const wasRagEnhanced = ragEnabled && ragResults.relevantKeywords.length > keywords.length;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -271,7 +136,7 @@ export const generateContent = async (
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: selectedModel,
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -289,7 +154,6 @@ export const generateContent = async (
             7. Ensure each heading has relevant content below it
             8. Do not use deprecated HTML tags
             9. Each block of content should be wrapped in appropriate HTML tags
-            10. For case studies, create a visually structured layout using appropriate HTML elements
             
             Ensure your tone and approach are appropriate for a business audience - professional, data-driven, and actionable.`
           },
@@ -322,8 +186,7 @@ export const generateContent = async (
               "title": "The title",
               "metaDescription": "The meta description",
               "outline": ["Section 1", "Section 2", ...],
-              "content": "The full content with HTML formatting including proper heading tags, paragraphs, lists, etc.",
-              "ragEnhanced": ${wasRagEnhanced}
+              "content": "The full content with HTML formatting including proper heading tags, paragraphs, lists, etc."
             }`
           }
         ],
@@ -345,8 +208,7 @@ export const generateContent = async (
       title: result.title || title,
       metaDescription: result.metaDescription,
       outline: result.outline,
-      content: result.content,
-      ragEnhanced: result.ragEnhanced || wasRagEnhanced
+      content: result.content
     };
   } catch (error) {
     console.error("Error generating content:", error);

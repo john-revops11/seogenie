@@ -1,3 +1,4 @@
+
 import { retrieveSimilarDocuments, isPineconeConfigured } from '@/services/vector/pineconeService';
 
 interface RagResult {
@@ -127,41 +128,16 @@ export const enhanceContentWithRAG = async (
     // Remove duplicates and ensure uniqueness
     const uniqueKeywords = Array.from(new Set(relevantKeywords));
     
-    // Add special structural recommendations for case studies
-    let structuralRecommendations = getStructuralRecommendations(contentType, similarDocuments);
-    
-    if (contentType === 'case-study') {
-      structuralRecommendations = [
-        ...structuralRecommendations,
-        'Use a clear two-column layout for the client background section',
-        'Structure the situation section in a grid layout with four key challenges',
-        'Number the action steps from 1 to 4 for clarity',
-        'Present results in distinct sections with clear headings for each outcome area'
-      ];
-    }
-    
     return {
       relevantKeywords: uniqueKeywords,
       relatedTopics: extractTopicsFromDocuments(similarDocuments),
       contextualExamples: extractExamplesFromDocuments(similarDocuments),
-      structuralRecommendations: structuralRecommendations
+      structuralRecommendations: getStructuralRecommendations(contentType, similarDocuments)
     };
   } catch (error) {
     console.error("Error enhancing content with RAG:", error);
     return defaultResult;
   }
-};
-
-/**
- * Detects if content was generated using RAG enhancement
- */
-export const isRagEnhancedContent = (content: string): boolean => {
-  // Check for specific structural patterns often found in RAG-enhanced content
-  const hasStructuredHeadings = (content.match(/<h[1-3]/g) || []).length > 3;
-  const hasCitations = content.includes("according to") || content.includes("research shows");
-  const hasDataPoints = content.includes("%") || content.match(/\d+(\.\d+)?%/) !== null;
-  
-  return hasStructuredHeadings && (hasCitations || hasDataPoints);
 };
 
 /**

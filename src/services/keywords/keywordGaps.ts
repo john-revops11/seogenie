@@ -3,23 +3,6 @@ import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
 import { OPENAI_API_KEY } from './apiConfig';
 
-// Validate OpenAI API key to ensure it's properly formatted
-function validateOpenAIKey(): boolean {
-  if (!OPENAI_API_KEY || typeof OPENAI_API_KEY !== 'string' || OPENAI_API_KEY.trim() === "") {
-    console.error("OPENAI_API_KEY is not set or invalid");
-    return false;
-  }
-  
-  // Basic format validation for OpenAI API keys
-  const openAIKeyPattern = /^sk-[a-zA-Z0-9]{48,}$/;
-  if (!openAIKeyPattern.test(OPENAI_API_KEY.trim())) {
-    console.error("OPENAI_API_KEY format appears invalid");
-    return false;
-  }
-  
-  return true;
-}
-
 export const findKeywordGaps = async (
   mainDomain: string,
   competitorDomains: string[],
@@ -29,7 +12,6 @@ export const findKeywordGaps = async (
   try {
     if (!keywords.length) {
       console.error("No keywords provided to findKeywordGaps");
-      toast.error("Cannot find keyword gaps: No keywords available from domain analysis");
       return [];
     }
     
@@ -64,12 +46,10 @@ export const findKeywordGaps = async (
     });
     
     console.log(`Found ${potentialGaps.length} potential keyword gaps before AI analysis`);
-    toast.info(`Identified ${potentialGaps.length} potential keyword gaps`);
     
     // If we have enough gaps from the data, use them directly without AI
     if (potentialGaps.length >= targetGapCount) {
       console.log("Using directly identified gaps without AI processing");
-      toast.info("Using direct keyword gap analysis (no AI processing needed)");
       
       // Convert to KeywordGap format
       const directGaps: KeywordGap[] = [];
@@ -144,37 +124,15 @@ export const findKeywordGaps = async (
       
       console.log("Returning directly identified gaps:", directGaps.length);
       console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
-      
-      toast.success(`Found ${directGaps.length} keyword gaps from your competitors`);
       return directGaps;
     }
     
     // Fall back to OpenAI for analysis if we don't have enough direct gaps
     console.log("Using OpenAI to analyze keyword gaps");
-    toast.info("Using AI to analyze and identify keyword gaps");
-    
-    // Validate OpenAI API key before making the API call
-    if (!validateOpenAIKey()) {
-      console.error("OPENAI_API_KEY validation failed");
-      toast.error("OpenAI API key is missing or invalid. Using basic gap analysis instead.");
-      
-      // Return basic gaps without AI analysis
-      return potentialGaps.map(kw => ({
-        keyword: kw.keyword,
-        volume: kw.monthly_search,
-        difficulty: kw.competition_index,
-        opportunity: 'medium',
-        competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
-        rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
-        isTopOpportunity: false
-      }));
-    }
     
     // Ensure we're requesting up to 50 gaps per competitor
     const minGapsPerCompetitor = 50;
     const adjustedGapCount = minGapsPerCompetitor * competitorDomains.length;
-    
-    console.log(`Making OpenAI API request with key: ${OPENAI_API_KEY.substring(0, 10)}...`);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -242,18 +200,7 @@ export const findKeywordGaps = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`OpenAI API error (${response.status}):`, errorText);
-      toast.error(`AI analysis failed: ${response.status} - ${errorText.substring(0, 100)}. Using basic gap analysis instead.`);
-      
-      // Return basic gaps without AI analysis if OpenAI fails
-      return potentialGaps.map(kw => ({
-        keyword: kw.keyword,
-        volume: kw.monthly_search,
-        difficulty: kw.competition_index,
-        opportunity: 'medium',
-        competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
-        rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
-        isTopOpportunity: false
-      }));
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
     
     const data = await response.json();
@@ -265,18 +212,7 @@ export const findKeywordGaps = async (
       
       if (!Array.isArray(gaps) || gaps.length === 0) {
         console.error("OpenAI returned invalid or empty gaps array:", data.choices[0].message.content);
-        toast.error("AI returned invalid data format. Using basic gap analysis instead.");
-        
-        // Return basic gaps without AI analysis if OpenAI returns invalid data
-        return potentialGaps.map(kw => ({
-          keyword: kw.keyword,
-          volume: kw.monthly_search,
-          difficulty: kw.competition_index,
-          opportunity: 'medium',
-          competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
-          rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
-          isTopOpportunity: false
-        }));
+        throw new Error("Invalid response format from OpenAI");
       }
       
       // Verify we have at least some gaps for each competitor
@@ -287,23 +223,11 @@ export const findKeywordGaps = async (
       });
       
       console.log("Gaps distribution by competitor:", Object.fromEntries(gapsByCompetitor));
-      toast.success(`AI analysis complete: Found ${gaps.length} keyword gaps`);
       
       return gaps;
     } catch (error) {
       console.error("Error parsing OpenAI response:", error, data.choices[0].message.content);
-      toast.error(`Failed to parse AI response: ${(error as Error).message}`);
-      
-      // Return basic gaps without AI analysis if parsing fails
-      return potentialGaps.map(kw => ({
-        keyword: kw.keyword,
-        volume: kw.monthly_search,
-        difficulty: kw.competition_index,
-        opportunity: 'medium',
-        competitor: Object.keys(kw.competitorRankings || {})[0] || competitorDomainNames[0],
-        rank: kw.competitorRankings ? kw.competitorRankings[Object.keys(kw.competitorRankings)[0]] || null : null,
-        isTopOpportunity: false
-      }));
+      throw new Error("Failed to parse OpenAI response");
     }
   } catch (error) {
     console.error("Error finding keyword gaps:", error);
