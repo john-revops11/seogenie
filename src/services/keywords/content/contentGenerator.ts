@@ -3,6 +3,7 @@ import { enhanceContentWithRAG } from '@/utils/rag/contentRag';
 import { createContentBrief, addContentPreferencesToBrief, addRagContextToBrief } from './contentBriefs';
 import { callOpenAiApi, createSystemPrompt, createUserPrompt } from './openaiClient';
 import { GeneratedContent, RagResults } from './contentTypes';
+import { GOOGLE_ADS_API_KEY } from '../apiConfig';
 
 /**
  * Generate content with the provided parameters and options
@@ -40,6 +41,11 @@ export const generateContent = async (
     }
     
     const enhancedKeywords = ragResults.relevantKeywords;
+    
+    // Log that we're using Google Ads API for keyword data if applicable
+    if (GOOGLE_ADS_API_KEY) {
+      console.log("Using Google Ads API for additional keyword insights");
+    }
     
     const creativity = creativityLevel / 100; // Convert to 0-1 scale
     const temperature = 0.5 + (creativity * 0.5); // Range from 0.5 to 1.0

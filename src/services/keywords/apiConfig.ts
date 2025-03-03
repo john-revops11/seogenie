@@ -7,6 +7,11 @@ export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/g
 export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/task_post";
 export const DATAFORSEO_KEYWORDS_PASSWORD = "c5a4c248785ced68"; // Now using the same password
 
+// Google Ads API configuration
+export const GOOGLE_ADS_CLIENT_ID = "623108624631-8t96pnn5uulehm4coubbpd9n5d9em8hs.apps.googleusercontent.com";
+export const GOOGLE_ADS_CLIENT_SECRET = "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";
+export const GOOGLE_ADS_API_KEY = "AIzaSyCfeLQZlY5lL95XuDkOCRfIQ_Tin7sSEy4";
+
 // Keep old API configurations for backward compatibility and fallback
 export const API_HOST = "keyword-tool.p.rapidapi.com";
 export const API_KEY = "795e7799e2116908b7e00f6992fb812d1da70905"; // Updated API key
