@@ -12,7 +12,7 @@ import { ensureValidUrl } from './utils/urlUtils';
 import { fetchDataForSEOKeywords, fetchRelatedKeywords } from './providers/dataForSeoApi';
 import { fetchGoogleKeywordInsights } from './providers/googleKeywordApi';
 import { fetchFallbackKeywords } from './providers/fallbackApi';
-import { fetchGoogleAdsKeywords, isGoogleAdsConfigured } from './providers/googleAdsApi';
+import { fetchGoogleAdsKeywords, isGoogleAdsConfigured, testGoogleAdsConnection } from './providers/googleAdsApi';
 
 // Main function to fetch domain keywords with fallback strategy
 export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
@@ -30,14 +30,26 @@ export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordDat
   // Try Google Ads API if configured
   if (isGoogleAdsConfigured()) {
     try {
-      const googleAdsKeywords = await fetchGoogleAdsKeywords(domainUrl);
-      if (googleAdsKeywords.length > 0) {
-        console.log(`Successfully fetched ${googleAdsKeywords.length} keywords from Google Ads API`);
-        return googleAdsKeywords;
+      toast.info("Attempting to fetch keywords from Google Ads API...");
+      console.log("Google Ads API is configured, attempting to fetch keywords...");
+      
+      // Check connection before attempting to fetch
+      const connectionSuccess = await testGoogleAdsConnection();
+      if (!connectionSuccess) {
+        console.warn("Google Ads API connection test failed, skipping");
+        toast.warning("Google Ads API connection test failed, trying alternative sources");
+      } else {
+        const googleAdsKeywords = await fetchGoogleAdsKeywords(domainUrl);
+        if (googleAdsKeywords.length > 0) {
+          console.log(`Successfully fetched ${googleAdsKeywords.length} keywords from Google Ads API`);
+          return googleAdsKeywords;
+        }
       }
     } catch (error) {
       console.error("Error with Google Ads API, falling back to alternatives:", error);
     }
+  } else {
+    console.log("Google Ads API is not configured, skipping");
   }
   
   // Try the Google Keyword Insight API next
@@ -74,5 +86,6 @@ export {
   fetchGoogleKeywordInsights,
   fetchGoogleAdsKeywords,
   isGoogleAdsConfigured,
+  testGoogleAdsConnection,
   ensureValidUrl
 };
