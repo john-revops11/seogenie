@@ -7,15 +7,20 @@ import { isPineconeConfigured, configurePinecone, getPineconeConfig } from "@/se
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface AdvancedSettingsSectionProps {
   ragEnabled: boolean;
   onRagToggle: (enabled: boolean) => void;
+  modelProvider?: 'openai' | 'gemini';
+  onModelProviderChange?: (provider: 'openai' | 'gemini') => void;
 }
 
 const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   ragEnabled,
-  onRagToggle
+  onRagToggle,
+  modelProvider = 'openai',
+  onModelProviderChange = () => {}
 }) => {
   const [isPineconeReady, setIsPineconeReady] = useState(isPineconeConfigured());
   const [showPineconeConfig, setShowPineconeConfig] = useState(false);
@@ -23,6 +28,7 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   const [pineconeIndex, setPineconeIndex] = useState(getPineconeConfig().index);
   const [pineconeHost, setPineconeHost] = useState(getPineconeConfig().host || "");
   const [pineconeRegion, setPineconeRegion] = useState(getPineconeConfig().region || "us-east-1");
+  const [selectedModelProvider, setSelectedModelProvider] = useState<'openai' | 'gemini'>(modelProvider);
   
   useEffect(() => {
     // Pre-populate with the provided values
@@ -33,6 +39,13 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
     
     // Re-check Pinecone configuration on component mount
     setIsPineconeReady(isPineconeConfigured());
+    
+    // Load the selected model provider from localStorage if available
+    const savedProvider = localStorage.getItem('selectedAiProvider') as 'openai' | 'gemini' | null;
+    if (savedProvider) {
+      setSelectedModelProvider(savedProvider);
+      onModelProviderChange(savedProvider);
+    }
   }, []);
   
   const handleConfigurePinecone = () => {
@@ -91,12 +104,43 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
       toast.error("Failed to configure Pinecone");
     }
   };
+  
+  const handleModelProviderChange = (value: 'openai' | 'gemini') => {
+    setSelectedModelProvider(value);
+    onModelProviderChange(value);
+    
+    // Save the selection to localStorage
+    localStorage.setItem('selectedAiProvider', value);
+    
+    toast.success(`Switched to ${value === 'openai' ? 'OpenAI' : 'Google Gemini'} for content generation`);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Label className="text-base">Advanced Settings</Label>
         <Settings className="w-4 h-4 text-muted-foreground" />
+      </div>
+      
+      <div className="space-y-3">
+        <Label className="text-sm">AI Model Provider</Label>
+        <RadioGroup 
+          value={selectedModelProvider} 
+          onValueChange={(value) => handleModelProviderChange(value as 'openai' | 'gemini')}
+          className="flex flex-col space-y-1"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="openai" id="openai" />
+            <Label htmlFor="openai" className="cursor-pointer">OpenAI (GPT-4o)</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="gemini" id="gemini" />
+            <Label htmlFor="gemini" className="cursor-pointer">Google Gemini 1.5 Pro</Label>
+          </div>
+        </RadioGroup>
+        <p className="text-xs text-muted-foreground mt-1">
+          Select which AI model to use for content generation
+        </p>
       </div>
       
       <RagSettings 

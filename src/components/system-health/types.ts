@@ -1,96 +1,41 @@
 
-import { Dispatch, SetStateAction } from "react";
+export type ApiStatusType = "success" | "warning" | "error" | "checking";
 
-export type ApiStatus = "connected" | "disconnected" | "error" | "checking";
-export type ApiHealth = "healthy" | "degraded" | "unhealthy";
-
-export interface ApiStatusItem {
-  status: ApiStatus;
-  lastChecked: Date | null;
-  errorMessage?: string;
+export interface ApiStatus {
+  status: ApiStatusType;
   enabled: boolean;
+  errorMessage?: string;
   description?: string;
 }
 
 export interface ApiStatusState {
-  [key: string]: ApiStatusItem;
+  [key: string]: ApiStatus;
 }
 
-export interface ApiDetail {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export interface AiModel {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export interface TestResultState {
-  status: "idle" | "success" | "error" | "loading";
-  message?: string;
-}
-
-export interface StatusCardProps {
-  expanded: boolean;
-  setExpanded: Dispatch<SetStateAction<boolean>>;
-}
-
-export interface ApiToggleProps {
-  apiId: string;
-  apiStatus: ApiStatusState;
-  toggleApiEnabled: (apiId: string) => void;
-}
-
-export interface ApiStatusBadgeProps {
-  apiId: string;
-  apiStatus: ApiStatusState;
-}
-
-export interface ApiTestingProps {
-  apiStatus: ApiStatusState;
-  selectedApiForTest: string;
-  setSelectedApiForTest: Dispatch<SetStateAction<string>>;
-  testResult: TestResultState;
-  testApi: (apiId: string) => Promise<void>;
-  selectedModel: string;
-  handleModelChange: (value: string) => void;
-}
-
-// Constants that can be shared across components
-export const API_DETAILS: ApiDetail[] = [
-  { 
-    id: "dataforseo", 
-    name: "DataForSEO", 
-    description: "Provides keyword research data" 
-  },
-  { 
-    id: "openai", 
-    name: "OpenAI", 
-    description: "Powers content generation and AI-based keyword analysis" 
-  },
-  { 
-    id: "googleKeyword", 
-    name: "Google Keyword", 
-    description: "Alternative source for keyword data" 
+export const API_DETAILS = [
+  {
+    id: "dataforseo",
+    name: "DataForSEO API",
+    description: "Keyword research and competitor analysis"
   },
   {
-    id: "googleAds",
-    name: "Google Ads",
-    description: "Official Google Ads API for keyword metrics"
+    id: "openai",
+    name: "OpenAI API",
+    description: "Content generation and topic analysis"
+  },
+  {
+    id: "gemini",
+    name: "Google Gemini API",
+    description: "Alternative content generation model"
   },
   {
     id: "pinecone",
-    name: "Pinecone",
-    description: "Vector database for RAG (Retrieval-Augmented Generation)"
+    name: "Pinecone Vector DB",
+    description: "Vector database for RAG (Retrieval Augmented Generation)"
+  },
+  {
+    id: "google-ads",
+    name: "Google Ads API",
+    description: "Keyword volume and CPC data"
   }
-];
-
-export const AI_MODELS: AiModel[] = [
-  { id: "gpt-4o", name: "GPT-4o", description: "Powerful model for content generation" },
-  { id: "gpt-4-turbo", name: "GPT-4 Turbo", description: "Fast and capable model for most tasks" }, 
-  { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Faster, more cost-effective version" },
-  { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", description: "Legacy model for basic tasks" }
 ];

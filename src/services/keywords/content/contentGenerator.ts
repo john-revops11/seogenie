@@ -2,6 +2,7 @@
 import { enhanceContentWithRAG } from '@/utils/rag/contentRag';
 import { createContentBrief, addContentPreferencesToBrief, addRagContextToBrief } from './contentBriefs';
 import { callOpenAiApi, createSystemPrompt, createUserPrompt } from './openaiClient';
+import { callGeminiApi, isGeminiConfigured } from './geminiClient';
 import { GeneratedContent, RagResults } from './contentTypes';
 import { GOOGLE_ADS_API_KEY } from '../apiConfig';
 import { isGoogleAdsConfigured } from '../googleAds/googleAdsClient';
@@ -16,10 +17,12 @@ export const generateContent = async (
   contentType: string,
   creativityLevel: number,
   contentPreferences: string[] = [],
-  ragEnabled: boolean = false
+  ragEnabled: boolean = false,
+  modelProvider: 'openai' | 'gemini' = 'openai'
 ): Promise<GeneratedContent> => {
   try {
     console.log(`Generating ${contentType} content for "${title}" with keywords: ${keywords.join(', ')}`);
+    console.log(`Using model provider: ${modelProvider}`);
     
     // Only use RAG if it's enabled
     let ragResults: RagResults = {
@@ -68,7 +71,7 @@ export const generateContent = async (
     // Add RAG indicator
     const wasRagEnhanced = ragEnabled && ragResults.relevantKeywords.length > keywords.length;
     
-    // Create prompts for OpenAI
+    // Create prompts for AI model
     const systemPrompt = createSystemPrompt(domain);
     const userPrompt = createUserPrompt(
       contentBrief, 
@@ -79,8 +82,15 @@ export const generateContent = async (
       wasRagEnhanced
     );
     
-    // Call OpenAI API
-    const result = await callOpenAiApi(systemPrompt, userPrompt, temperature);
+    // Call the appropriate AI API based on the selected model provider
+    let result;
+    if (modelProvider === 'gemini' && isGeminiConfigured()) {
+      console.log("Using Gemini API for content generation");
+      result = await callGeminiApi(systemPrompt, userPrompt, temperature);
+    } else {
+      console.log("Using OpenAI API for content generation");
+      result = await callOpenAiApi(systemPrompt, userPrompt, temperature);
+    }
     
     return {
       title: result.title || title,

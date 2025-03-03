@@ -32,6 +32,8 @@ interface GeneratorFormProps {
   onCustomTopicAdd: (topic: string) => void;
   ragEnabled?: boolean;
   onRagToggle?: (enabled: boolean) => void;
+  modelProvider?: 'openai' | 'gemini';
+  onModelProviderChange?: (provider: 'openai' | 'gemini') => void;
 }
 
 export const GeneratorForm: React.FC<GeneratorFormProps> = ({
@@ -56,7 +58,9 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   onGenerateContent,
   onCustomTopicAdd,
   ragEnabled = false,
-  onRagToggle = () => {}
+  onRagToggle = () => {},
+  modelProvider = 'openai',
+  onModelProviderChange = () => {}
 }) => {
   const [activeTab, setActiveTab] = useState("topics");
   const isPineconeReady = isPineconeConfigured();
@@ -122,6 +126,8 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
           <AdvancedSettingsSection
             ragEnabled={ragEnabled}
             onRagToggle={onRagToggle}
+            modelProvider={modelProvider}
+            onModelProviderChange={onModelProviderChange}
           />
         </TabsContent>
       </Tabs>
@@ -136,7 +142,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
         ) : (
           <>
             <FileText className="w-4 h-4 mr-2" />
-            Generate Content {ragEnabled && isPineconeReady ? '(RAG-Enhanced)' : ''}
+            Generate Content {modelProvider === 'gemini' ? '(Gemini)' : ''} {ragEnabled && isPineconeReady ? '(RAG-Enhanced)' : ''}
           </>
         )}
       </Button>
