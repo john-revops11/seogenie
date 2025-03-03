@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   INDEX: 'PINECONE_INDEX',
   HOST: 'PINECONE_HOST',
   REGION: 'PINECONE_REGION',
+  NAMESPACE: 'PINECONE_NAMESPACE',
   ENABLED_STATES: 'apiEnabledStates',
   ERRORS: 'pineconeErrors'
 };
@@ -14,15 +15,23 @@ let PINECONE_API_KEY = '';
 let PINECONE_INDEX = 'llama-text-embed-v2-index';
 let PINECONE_HOST = '';
 let PINECONE_REGION = 'us-east-1';
+let PINECONE_NAMESPACE = 'ns1';
 
 /**
  * Sets the Pinecone API configuration
  */
-export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX, host: string = '', region: string = 'us-east-1') => {
+export const configurePinecone = (
+  apiKey: string, 
+  index: string = PINECONE_INDEX, 
+  host: string = '', 
+  region: string = 'us-east-1',
+  namespace: string = 'ns1'
+) => {
   PINECONE_API_KEY = apiKey;
   PINECONE_INDEX = index;
   PINECONE_HOST = host;
   PINECONE_REGION = region;
+  PINECONE_NAMESPACE = namespace;
   
   // Persist configuration in localStorage
   try {
@@ -30,6 +39,7 @@ export const configurePinecone = (apiKey: string, index: string = PINECONE_INDEX
     localStorage.setItem(STORAGE_KEYS.INDEX, index);
     localStorage.setItem(STORAGE_KEYS.HOST, host);
     localStorage.setItem(STORAGE_KEYS.REGION, region);
+    localStorage.setItem(STORAGE_KEYS.NAMESPACE, namespace);
     
     // Mark Pinecone as configured in the system health
     const apiEnabledStates = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENABLED_STATES) || '{}');
@@ -58,6 +68,7 @@ export const getPineconeConfig = () => {
       const savedIndex = localStorage.getItem(STORAGE_KEYS.INDEX);
       const savedHost = localStorage.getItem(STORAGE_KEYS.HOST);
       const savedRegion = localStorage.getItem(STORAGE_KEYS.REGION);
+      const savedNamespace = localStorage.getItem(STORAGE_KEYS.NAMESPACE);
       
       if (savedApiKey) {
         PINECONE_API_KEY = savedApiKey;
@@ -74,6 +85,10 @@ export const getPineconeConfig = () => {
       if (savedRegion) {
         PINECONE_REGION = savedRegion;
       }
+      
+      if (savedNamespace) {
+        PINECONE_NAMESPACE = savedNamespace;
+      }
     } catch (error) {
       console.error("Error loading Pinecone config from localStorage:", error);
     }
@@ -83,7 +98,8 @@ export const getPineconeConfig = () => {
     apiKey: PINECONE_API_KEY ? PINECONE_API_KEY.substring(0, 5) + '...' : '',
     index: PINECONE_INDEX,
     host: PINECONE_HOST,
-    region: PINECONE_REGION
+    region: PINECONE_REGION,
+    namespace: PINECONE_NAMESPACE
   };
 };
 
@@ -98,6 +114,7 @@ export const isPineconeConfigured = () => {
       const savedIndex = localStorage.getItem(STORAGE_KEYS.INDEX);
       const savedHost = localStorage.getItem(STORAGE_KEYS.HOST);
       const savedRegion = localStorage.getItem(STORAGE_KEYS.REGION);
+      const savedNamespace = localStorage.getItem(STORAGE_KEYS.NAMESPACE);
       
       if (savedApiKey) {
         PINECONE_API_KEY = savedApiKey;
@@ -114,6 +131,10 @@ export const isPineconeConfigured = () => {
       
       if (savedRegion) {
         PINECONE_REGION = savedRegion;
+      }
+      
+      if (savedNamespace) {
+        PINECONE_NAMESPACE = savedNamespace;
       }
     } catch (error) {
       console.error("Error loading Pinecone config from localStorage:", error);
@@ -140,7 +161,7 @@ export const getPineconeApiUrl = (endpoint: string = '') => {
     console.warn("Missing Pinecone index or region, using defaults");
   }
   
-  const index = PINECONE_INDEX || 'content-index';
+  const index = PINECONE_INDEX || 'llama-text-embed-v2-index';
   const region = PINECONE_REGION || 'us-east-1';
   
   // The newer Pinecone URL format
@@ -152,8 +173,10 @@ export const getPineconeApiUrl = (endpoint: string = '') => {
  */
 export const getPineconeApiKey = () => PINECONE_API_KEY;
 
+/**
+ * Get the namespace
+ */
+export const getPineconeNamespace = () => PINECONE_NAMESPACE;
+
 // Export the storage keys for use in other modules
 export { STORAGE_KEYS };
-
-// Note: testPineconeConnection is now imported from the connection module
-// to avoid circular dependencies

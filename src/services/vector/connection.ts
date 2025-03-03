@@ -7,7 +7,7 @@ import { getPineconeApiKey, getPineconeApiUrl, isPineconeConfigured, STORAGE_KEY
 /**
  * Test the Pinecone configuration with a simple API call
  */
-export const testPineconeConnection = async (): Promise<boolean> => {
+export const testPineconeConnection = async (namespace: string = ''): Promise<boolean> => {
   if (!isPineconeConfigured()) {
     console.error("Cannot test Pinecone connection: Not configured");
     return false;
@@ -19,25 +19,45 @@ export const testPineconeConnection = async (): Promise<boolean> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Api-Key': getPineconeApiKey(),
-        // Add additional headers to help with CORS
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Api-Key'
+        'Api-Key': getPineconeApiKey()
       },
-      mode: 'cors', // Explicitly set CORS mode
-      body: JSON.stringify({})
+      body: JSON.stringify({
+        filter: {},
+        ...(namespace ? { namespace } : {})
+      })
     });
     
     if (response.ok) {
       const data = await response.json();
       console.log("Pinecone connection successful:", data);
       localStorage.removeItem(STORAGE_KEYS.ERRORS);
+      
+      // Check if index actually exists and has vectors
+      if (data.totalVectorCount === 0) {
+        console.warn("Pinecone index exists but is empty. No vectors have been uploaded yet.");
+      }
+      
+      if (namespace && data.namespaces && !data.namespaces[namespace]) {
+        console.warn(`Namespace '${namespace}' doesn't exist in the index yet.`);
+      }
+      
       return true;
     } else {
       const errorText = await response.text();
       console.error(`Pinecone API error: ${response.status} - ${errorText}`);
       localStorage.setItem(STORAGE_KEYS.ERRORS, `Status ${response.status}: ${errorText}`);
+      
+      // Provide more helpful error messages for common errors
+      if (response.status === 401 || response.status === 403) {
+        localStorage.setItem(STORAGE_KEYS.ERRORS, 
+          "Authentication error: Your Pinecone API key appears to be invalid or doesn't have permission to access this index."
+        );
+      } else if (response.status === 404) {
+        localStorage.setItem(STORAGE_KEYS.ERRORS, 
+          "Not found error: The specified Pinecone index doesn't exist or the endpoint URL is incorrect."
+        );
+      }
+      
       return false;
     }
   } catch (error) {
