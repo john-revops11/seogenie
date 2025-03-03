@@ -3,7 +3,15 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 import { ApiStatusState, TestResultState, ApiStatus } from "./system-health/types";
-import { checkApiHealth, loadApiStates, loadSelectedModel, saveApiStates, saveSelectedModel, testApi } from "./system-health/utils";
+import { 
+  checkApiHealth, 
+  loadApiStates, 
+  loadSelectedModel, 
+  saveApiStates, 
+  saveSelectedModel, 
+  testApi,
+  initializePineconeStatus
+} from "./system-health/utils";
 import { CollapsedCard } from "./system-health/CollapsedCard";
 import { ExpandedCard } from "./system-health/ExpandedCard";
 
@@ -59,6 +67,7 @@ const SystemHealthCard = () => {
 
   useEffect(() => {
     loadApiStates(setApiStatus);
+    initializePineconeStatus(setApiStatus);
     loadSelectedModel(setSelectedModel);
     handleCheckApiHealth();
     
