@@ -1,3 +1,4 @@
+
 // Local storage keys for Pinecone configuration
 const STORAGE_KEYS = {
   API_KEY: 'PINECONE_API_KEY',
@@ -10,7 +11,7 @@ const STORAGE_KEYS = {
 
 // Default config values
 let PINECONE_API_KEY = '';
-let PINECONE_INDEX = 'content-index';
+let PINECONE_INDEX = 'llama-text-embed-v2-index';
 let PINECONE_HOST = '';
 let PINECONE_REGION = 'us-east-1';
 

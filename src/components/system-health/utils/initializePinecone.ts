@@ -10,7 +10,7 @@ export const initializePinecone = async () => {
     // Configure Pinecone with the provided credentials
     configurePinecone(
       "pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797", 
-      "content-index", 
+      "llama-text-embed-v2-index", 
       "https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io", 
       "us-east-1"
     );
