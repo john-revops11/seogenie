@@ -12,12 +12,12 @@ import KeywordGapList from "./keyword-gaps/KeywordGapList";
 import KeywordGapPagination from "./keyword-gaps/KeywordGapPagination";
 import KeywordGapEmpty from "./keyword-gaps/KeywordGapEmpty";
 import KeywordGapLoader from "./keyword-gaps/KeywordGapLoader";
+import KeywordGapDataSourceSelector from "./keyword-gaps/KeywordGapDataSourceSelector";
 import { 
   keywordGapsCache, 
   getUniqueCompetitors, 
   normalizeDomainList 
 } from "./keyword-gaps/KeywordGapUtils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export { keywordGapsCache };
 
@@ -181,17 +181,6 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     }
   };
 
-  const addMoreKeywords = () => {
-    if (!keywordGaps) return;
-    
-    const newItemsPerPage = itemsPerPage + 15;
-    setItemsPerPage(newItemsPerPage);
-    
-    keywordGapsCache.itemsPerPage = newItemsPerPage;
-    
-    toast.success("Added more keywords to the list");
-  };
-
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
   };
@@ -253,7 +242,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     }
   };
 
-  // Calculate pagination values
+  // Calculate pagination values for display
   const filteredKeywords = keywordGaps ? (
     filterCompetitor === "all" 
       ? keywordGaps
@@ -284,17 +273,10 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
               </Badge>
             </div>
             
-            <Select value={apiSource} onValueChange={(v) => handleApiSourceChange(v as ApiSource)}>
-              <SelectTrigger className="w-full mt-1">
-                <SelectValue placeholder="Select data source" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                <SelectItem value="sample">Sample Data</SelectItem>
-                <SelectItem value="semrush">SEMrush</SelectItem>
-                <SelectItem value="dataforseo-live">DataForSEO (Live)</SelectItem>
-                <SelectItem value="dataforseo-task">DataForSEO (Tasks)</SelectItem>
-              </SelectContent>
-            </Select>
+            <KeywordGapDataSourceSelector 
+              apiSource={apiSource}
+              onApiSourceChange={handleApiSourceChange}
+            />
           </div>
         </CardDescription>
       </CardHeader>
@@ -336,7 +318,12 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
             itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}
             onItemsPerPageChange={setItemsPerPage}
-            onAddMoreKeywords={addMoreKeywords}
+            onAddMoreKeywords={() => {
+              const newItemsPerPage = itemsPerPage + 15;
+              setItemsPerPage(newItemsPerPage);
+              keywordGapsCache.itemsPerPage = newItemsPerPage;
+              toast.success("Added more keywords to the list");
+            }}
           />
         </CardFooter>
       )}
