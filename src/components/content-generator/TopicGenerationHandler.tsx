@@ -14,6 +14,7 @@ const TopicGenerationHandler: React.FC<TopicGenerationHandlerProps> = ({
       const { primaryKeyword, relatedKeywords } = event.detail;
       
       if (primaryKeyword) {
+        console.log("TopicGenerationHandler received event:", event.detail);
         onGenerateFromKeyword(primaryKeyword, relatedKeywords || []);
       }
     };

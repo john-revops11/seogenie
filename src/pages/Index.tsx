@@ -284,6 +284,7 @@ const Index = () => {
     window.dispatchEvent(event);
     
     toast.success(`Switched to content generator with "${keyword}"`);
+    console.log(`Generating content for "${keyword}" with related keywords:`, relatedKeywords);
   };
 
   const handleAddNewApi = () => {

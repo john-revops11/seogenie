@@ -85,6 +85,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     setTitle(titleSuggestions[0]);
     
     handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
+    
+    setActiveStep(1);
+    
+    console.log(`ContentGenerator: Received keyword "${primaryKeyword}" with related keywords:`, relatedKeywords);
   };
 
   const handleGenerateTopics = async () => {

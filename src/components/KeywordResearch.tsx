@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,7 +87,6 @@ const KeywordResearch = ({
     setApiError(null);
     
     try {
-      // Get DataForSEO credentials
       const credentials = getApiKey("dataforseo");
       console.log("DataForSEO API credentials retrieved:", credentials ? "Found credentials" : "No credentials found");
       
@@ -105,7 +103,6 @@ const KeywordResearch = ({
         return;
       }
 
-      // Use the improved API function
       toast.info(`Researching ${keywordList.length} keywords...`);
       
       try {
@@ -116,15 +113,12 @@ const KeywordResearch = ({
           throw new Error("No keywords returned from API");
         }
         
-        // Process the results
         const processedKeywords: ResearchKeyword[] = [];
         const groups: KeywordGroup[] = [];
 
-        // For each seed keyword
         keywordList.forEach(seedKeyword => {
           const relatedKeywords: ResearchKeyword[] = [];
           
-          // Find related keywords for this seed keyword
           keywordData.forEach(kw => {
             if (kw.keyword.toLowerCase().includes(seedKeyword.toLowerCase()) || 
                 seedKeyword.toLowerCase().includes(kw.keyword.toLowerCase())) {
@@ -144,7 +138,6 @@ const KeywordResearch = ({
             }
           });
           
-          // Add this group if it has any keywords
           if (relatedKeywords.length > 0) {
             groups.push({
               parentKeyword: seedKeyword,
@@ -172,7 +165,6 @@ const KeywordResearch = ({
       setApiError(errorMessage);
       toast.error(`Failed to fetch keywords: ${errorMessage}`);
       
-      // Check for specific errors and provide helpful messages
       if (errorMessage.includes("401") || errorMessage.includes("authentication")) {
         toast.info("Check your DataForSEO API credentials in Settings", {
           action: {
@@ -230,6 +222,8 @@ const KeywordResearch = ({
     onGenerateContent(keyword, relatedKeywords);
     
     toast.success(`Preparing to generate content for "${keyword}" - switched to Content tab`);
+    
+    console.log(`Generating content for keyword: ${keyword} with related keywords:`, relatedKeywords);
   };
 
   const handleRunRevologySeoStrategy = async () => {
