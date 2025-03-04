@@ -10,6 +10,7 @@ export const keywordGapsCache: {
   page: number;
   itemsPerPage: number;
   selectedKeywords: string[];
+  locationCode: number;
 } = {
   data: null,
   domain: "",
@@ -17,7 +18,8 @@ export const keywordGapsCache: {
   keywordsLength: 0,
   page: 1,
   itemsPerPage: 15,
-  selectedKeywords: []
+  selectedKeywords: [],
+  locationCode: 2840 // Default to US (2840)
 };
 
 /**
@@ -72,4 +74,30 @@ export function categorizeKeywordIntent(keyword: string, difficulty: number, vol
   }
   
   return difficulty < 40 ? 'informational' : 'commercial';
+}
+
+/**
+ * Common locations for DataForSEO
+ */
+export const commonLocations = [
+  { code: 2840, name: "United States" },
+  { code: 2826, name: "United Kingdom" },
+  { code: 2124, name: "Canada" },
+  { code: 2036, name: "Australia" },
+  { code: 2276, name: "Germany" },
+  { code: 2250, name: "France" },
+  { code: 2724, name: "Spain" },
+  { code: 2380, name: "Italy" },
+  { code: 2643, name: "India" },
+  { code: 2392, name: "Japan" },
+  { code: 2076, name: "Brazil" },
+  { code: 2158, name: "China" }
+];
+
+/**
+ * Get location name by code
+ */
+export function getLocationNameByCode(code: number): string {
+  const location = commonLocations.find(loc => loc.code === code);
+  return location ? location.name : "Unknown";
 }

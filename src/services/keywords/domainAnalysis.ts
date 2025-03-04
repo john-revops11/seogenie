@@ -8,7 +8,8 @@ import { mergeKeywordData } from './utils/keywordDataMerger';
 
 export const analyzeDomains = async (
   mainDomain: string, 
-  competitorDomains: string[]
+  competitorDomains: string[],
+  locationCode: number = 2840
 ): Promise<{
   keywords: KeywordData[],
   success: boolean
@@ -21,6 +22,7 @@ export const analyzeDomains = async (
       .map(domain => ensureValidUrl(domain));
     
     console.log("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
+    console.log("Using location code:", locationCode);
     
     // Try to fetch real data from API
     let mainKeywords: KeywordData[] = [];
@@ -48,7 +50,7 @@ export const analyzeDomains = async (
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
-      const result = await processCompetitorData(domain, useRealData);
+      const result = await processCompetitorData(domain, useRealData, locationCode);
       competitorResults.push(result);
     }
     

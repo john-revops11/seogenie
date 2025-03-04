@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 import { SeoRecommendation, KeywordGap } from "@/services/keywordService";
@@ -27,6 +26,7 @@ export const useKeywordGaps = () => {
     keywordGapsCache.competitorDomains = [];
     keywordGapsCache.keywordsLength = 0;
     keywordGapsCache.page = 1;
+    // Keep the locationCode and selectedKeywords
   };
   
   // This function checks if the competitors have changed

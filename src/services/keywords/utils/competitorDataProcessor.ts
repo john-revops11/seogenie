@@ -9,7 +9,8 @@ import { generateMockKeywords, generateSampleUrl } from './mockDataGenerator';
  */
 export const processCompetitorData = async (
   domain: string, 
-  useRealData: boolean
+  useRealData: boolean,
+  locationCode: number = 2840
 ): Promise<{ domain: string, keywords: KeywordData[] }> => {
   try {
     toast.info(`Analyzing competitor: ${domain}`);
@@ -17,7 +18,7 @@ export const processCompetitorData = async (
     
     if (useRealData) {
       try {
-        console.log(`Attempting to fetch keywords for competitor: ${domain}`);
+        console.log(`Attempting to fetch keywords for competitor: ${domain} with location code: ${locationCode}`);
         keywords = await fetchDomainKeywords(domain);
         console.log(`Successfully fetched ${keywords.length} keywords for competitor ${domain}`);
       } catch (error) {

@@ -16,7 +16,8 @@ import KeywordGapDataSourceSelector from "./keyword-gaps/KeywordGapDataSourceSel
 import { 
   keywordGapsCache, 
   getUniqueCompetitors, 
-  normalizeDomainList 
+  normalizeDomainList,
+  getLocationNameByCode 
 } from "./keyword-gaps/KeywordGapUtils";
 
 export { keywordGapsCache };
@@ -40,6 +41,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const { haveCompetitorsChanged: checkCompetitorsChanged } = useKeywordGaps();
   const [lastKeywordsLength, setLastKeywordsLength] = useState(0);
   const [apiSource, setApiSource] = useState<ApiSource>('sample');
+  const [locationCode, setLocationCode] = useState<number>(keywordGapsCache.locationCode || 2840);
 
   // Check if keywords array has changed (new analysis or competitor added)
   useEffect(() => {
@@ -80,7 +82,8 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
         !shouldRefreshAnalysis &&
         keywordGapsCache.data &&
         keywordGapsCache.domain === domain &&
-        keywordGapsCache.keywordsLength === keywords.length
+        keywordGapsCache.keywordsLength === keywords.length &&
+        keywordGapsCache.locationCode === locationCode
       ) {
         setKeywordGaps(keywordGapsCache.data);
         return;
@@ -91,8 +94,9 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       
       try {
         console.log(`Generating keyword gaps for ${domain} vs`, competitorDomains);
+        console.log(`Using API source: ${apiSource} and location: ${getLocationNameByCode(locationCode)}`);
         
-        const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource);
+        const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource, locationCode);
         
         if (gaps && gaps.length > 0) {
           console.log(`Found ${gaps.length} keyword gaps`);
@@ -109,6 +113,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           keywordGapsCache.domain = domain;
           keywordGapsCache.competitorDomains = [...competitorDomains];
           keywordGapsCache.keywordsLength = keywords.length;
+          keywordGapsCache.locationCode = locationCode;
           
           setKeywordGaps(gaps);
           setFilterCompetitor("all");
@@ -131,7 +136,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     };
     
     generateKeywordGaps();
-  }, [domain, competitorDomains, keywords, isLoading, checkCompetitorsChanged, apiSource]);
+  }, [domain, competitorDomains, keywords, isLoading, checkCompetitorsChanged, apiSource, locationCode]);
 
   useEffect(() => {
     if (!keywordGaps) return;
@@ -202,6 +207,19 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     }
   };
 
+  const handleLocationChange = (newLocationCode: number) => {
+    if (newLocationCode !== locationCode) {
+      setLocationCode(newLocationCode);
+      keywordGapsCache.locationCode = newLocationCode;
+      toast.info(`Switched location to ${getLocationNameByCode(newLocationCode)}`);
+      
+      // Refresh the analysis with the new location
+      if (keywords.length > 0) {
+        refreshAnalysis();
+      }
+    }
+  };
+
   const refreshAnalysis = async () => {
     keywordGapsCache.data = null;
     setKeywordGaps(null);
@@ -210,9 +228,9 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     setLoading(true);
     try {
       console.log(`Refreshing keyword gaps for ${domain} vs`, competitorDomains);
-      console.log(`Using API source: ${apiSource}`);
+      console.log(`Using API source: ${apiSource} and location: ${getLocationNameByCode(locationCode)}`);
       
-      const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource);
+      const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource, locationCode);
       
       if (gaps && gaps.length > 0) {
         console.log(`Found ${gaps.length} keyword gaps`);
@@ -221,6 +239,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
         keywordGapsCache.domain = domain;
         keywordGapsCache.competitorDomains = [...competitorDomains];
         keywordGapsCache.keywordsLength = keywords.length;
+        keywordGapsCache.locationCode = locationCode;
         
         setKeywordGaps(gaps);
         setFilterCompetitor("all");
@@ -276,6 +295,8 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
             <KeywordGapDataSourceSelector 
               apiSource={apiSource}
               onApiSourceChange={handleApiSourceChange}
+              locationCode={locationCode}
+              onLocationChange={handleLocationChange}
             />
           </div>
         </CardDescription>
