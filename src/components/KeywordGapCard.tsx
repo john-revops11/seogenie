@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +88,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           
           setKeywordGaps(gaps);
           setFilterCompetitor("all");
+          setCurrentPage(1); // Reset to first page when new data is loaded
           toast.success(`Found ${gaps.length} keyword gaps for analysis`);
         } else {
           console.warn("No keyword gaps found or service returned empty array");
@@ -112,16 +112,28 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   useEffect(() => {
     if (!keywordGaps) return;
     
-    let filteredKeywords = keywordGaps;
+    let filteredKeywords = [...keywordGaps]; // Create a copy to avoid mutations
+    
     if (filterCompetitor !== "all") {
       filteredKeywords = keywordGaps.filter(kw => kw.competitor === filterCompetitor);
     }
     
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    // Calculate pagination values
+    const totalFilteredKeywords = filteredKeywords.length;
+    const maxPage = Math.max(1, Math.ceil(totalFilteredKeywords / itemsPerPage));
+    
+    // Ensure current page is valid
+    const validCurrentPage = Math.min(maxPage, Math.max(1, currentPage));
+    if (validCurrentPage !== currentPage) {
+      setCurrentPage(validCurrentPage);
+    }
+    
+    const startIndex = (validCurrentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalFilteredKeywords);
+    
     setDisplayedKeywords(filteredKeywords.slice(startIndex, endIndex));
     
-    keywordGapsCache.page = currentPage;
+    keywordGapsCache.page = validCurrentPage;
     keywordGapsCache.itemsPerPage = itemsPerPage;
   }, [keywordGaps, currentPage, itemsPerPage, filterCompetitor]);
 
@@ -162,7 +174,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
 
   const handleCompetitorFilterChange = (value: string) => {
     setFilterCompetitor(value);
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to first page when filter changes
   };
 
   const refreshAnalysis = async () => {
@@ -202,13 +214,15 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     }
   };
 
-  const totalKeywords = keywordGaps ? (
+  // Calculate pagination values
+  const filteredKeywords = keywordGaps ? (
     filterCompetitor === "all" 
-      ? keywordGaps.length
-      : keywordGaps.filter(kw => kw.competitor === filterCompetitor).length
-  ) : 0;
+      ? keywordGaps
+      : keywordGaps.filter(kw => kw.competitor === filterCompetitor)
+  ) : [];
   
-  const totalPages = Math.ceil(totalKeywords / itemsPerPage);
+  const totalKeywords = filteredKeywords.length;
+  const totalPages = Math.max(1, Math.ceil(totalKeywords / itemsPerPage));
   const startItem = totalKeywords === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(startItem + itemsPerPage - 1, totalKeywords);
 

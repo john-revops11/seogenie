@@ -38,3 +38,11 @@ export {
   getPineconeConfig,
   getPineconeHostUrl
 } from './vector/pineconeService';
+
+// Add a new function to handle competitor removal
+export const removeCompetitorDomain = (
+  currentCompetitors: string[],
+  domainToRemove: string
+): string[] => {
+  return currentCompetitors.filter(domain => domain !== domainToRemove);
+};

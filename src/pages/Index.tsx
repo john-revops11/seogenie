@@ -95,6 +95,37 @@ const Index = () => {
     setCompetitorDomains(newDomains);
   };
 
+  const removeCompetitorFromAnalysis = (competitorToRemove: string) => {
+    if (isAnalyzing) {
+      toast.error("Cannot remove competitors during analysis");
+      return;
+    }
+
+    const updatedCompetitors = competitorDomains.filter(
+      domain => domain.toLowerCase() !== competitorToRemove.toLowerCase()
+    );
+    
+    if (updatedCompetitors.length === competitorDomains.length) {
+      toast.error(`Could not find competitor ${competitorToRemove} to remove`);
+      return;
+    }
+    
+    setCompetitorDomains(updatedCompetitors);
+    
+    try {
+      const savedData = localStorage.getItem('seoAnalysisData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        parsedData.competitorDomains = updatedCompetitors;
+        localStorage.setItem('seoAnalysisData', JSON.stringify(parsedData));
+      }
+    } catch (error) {
+      console.error("Error updating saved analysis:", error);
+    }
+    
+    toast.success(`Removed ${competitorToRemove} from competitors`);
+  };
+
   const updateCompetitorDomain = (index: number, value: string) => {
     if (isAnalyzing) return;
     const newDomains = [...competitorDomains];
@@ -273,6 +304,50 @@ const Index = () => {
     // Any additional logic for SEO strategy execution would go here
   };
 
+  const renderDashboardContent = () => {
+    return (
+      <div className="space-y-6 animate-slide-up">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+          <div className="md:col-span-2 lg:col-span-2">
+            <KeywordTable 
+              domain={mainDomain} 
+              competitorDomains={validCompetitorDomains} 
+              keywords={keywordData || []}
+              isLoading={isAnalyzing}
+              onAddCompetitor={handleAddCompetitorFromTable}
+              onRemoveCompetitor={removeCompetitorFromAnalysis}
+            />
+          </div>
+          
+          <div className="lg:col-span-1">
+            <KeywordGapCard 
+              domain={mainDomain} 
+              competitorDomains={validCompetitorDomains} 
+              keywords={keywordData || []}
+              isLoading={isAnalyzing}
+            />
+          </div>
+          
+          <div className="lg:col-span-1">
+            <SeoRecommendationsCard 
+              domain={mainDomain} 
+              keywords={keywordData || []}
+              isLoading={isAnalyzing}
+            />
+          </div>
+        </div>
+        
+        <KeywordResearch 
+          domain={mainDomain}
+          competitorDomains={validCompetitorDomains}
+          keywords={keywordData || []}
+          onGenerateContent={handleGenerateContentFromKeyword}
+          onRunSeoStrategy={handleRunSeoStrategy}
+        />
+      </div>
+    );
+  };
+
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
@@ -439,44 +514,7 @@ const Index = () => {
                 />
               </div>
             ) : (
-              <div className="space-y-6 animate-slide-up">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-                  <div className="md:col-span-2 lg:col-span-2">
-                    <KeywordTable 
-                      domain={mainDomain} 
-                      competitorDomains={validCompetitorDomains} 
-                      keywords={keywordData || []}
-                      isLoading={isAnalyzing}
-                      onAddCompetitor={handleAddCompetitorFromTable}
-                    />
-                  </div>
-                  
-                  <div className="lg:col-span-1">
-                    <KeywordGapCard 
-                      domain={mainDomain} 
-                      competitorDomains={validCompetitorDomains} 
-                      keywords={keywordData || []}
-                      isLoading={isAnalyzing}
-                    />
-                  </div>
-                  
-                  <div className="lg:col-span-1">
-                    <SeoRecommendationsCard 
-                      domain={mainDomain} 
-                      keywords={keywordData || []}
-                      isLoading={isAnalyzing}
-                    />
-                  </div>
-                </div>
-                
-                <KeywordResearch 
-                  domain={mainDomain}
-                  competitorDomains={validCompetitorDomains}
-                  keywords={keywordData || []}
-                  onGenerateContent={handleGenerateContentFromKeyword}
-                  onRunSeoStrategy={handleRunSeoStrategy}
-                />
-              </div>
+              renderDashboardContent()
             )}
           </TabsContent>
           
