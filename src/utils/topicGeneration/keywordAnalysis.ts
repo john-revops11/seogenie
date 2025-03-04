@@ -55,3 +55,36 @@ export const buildKeywordMetrics = (
     };
   });
 };
+
+/**
+ * Extract keywords with highest search volumes
+ */
+export const getHighVolumeKeywords = (keywordMetrics: Array<{
+  keyword: string;
+  volume: number;
+  opportunity: string;
+  difficulty: string;
+}>): string[] => {
+  return keywordMetrics
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, 20)
+    .map(k => k.keyword);
+};
+
+/**
+ * Identifies competitor-specific keywords
+ */
+export const getCompetitorKeywords = (
+  domainKeywords: {[domain: string]: string[]},
+  mainDomain: string
+): string[] => {
+  const allCompetitorKeywords = new Set<string>();
+  
+  Object.entries(domainKeywords).forEach(([domain, keywords]) => {
+    if (domain !== mainDomain) {
+      keywords.forEach(k => allCompetitorKeywords.add(k));
+    }
+  });
+  
+  return Array.from(allCompetitorKeywords);
+};

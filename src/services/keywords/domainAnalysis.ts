@@ -81,25 +81,21 @@ export const analyzeDomains = async (
     let useRealData = true;
     
     try {
+      console.log(`Attempting to fetch keywords for main domain: ${formattedMainDomain}`);
       mainKeywords = await fetchDomainKeywords(formattedMainDomain);
+      console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
+      
       if (!mainKeywords.length) {
         console.warn(`No real keywords found for ${formattedMainDomain}, using mock data`);
         useRealData = false;
+        mainKeywords = generateMockKeywords(formattedMainDomain, 30); // Generate more keywords
         toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`);
       }
     } catch (error) {
       console.warn(`Error fetching real keywords for ${formattedMainDomain}, using mock data:`, error);
       useRealData = false;
+      mainKeywords = generateMockKeywords(formattedMainDomain, 30); // Generate more keywords
       toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`);
-    }
-    
-    // If API failed, use mock data for demo purposes
-    if (!useRealData) {
-      toast.info("Using demo data for this session - all API services returned errors");
-      mainKeywords = generateMockKeywords(formattedMainDomain);
-      
-      // Log the mock data we're using
-      console.log(`Generated ${mainKeywords.length} mock keywords for ${formattedMainDomain}`);
     }
     
     // Process competitor domains - use mock data if real data isn't available
@@ -112,14 +108,16 @@ export const analyzeDomains = async (
         
         if (useRealData) {
           try {
+            console.log(`Attempting to fetch keywords for competitor: ${domain}`);
             keywords = await fetchDomainKeywords(domain);
+            console.log(`Successfully fetched ${keywords.length} keywords for competitor ${domain}`);
           } catch (error) {
             console.warn(`Error fetching real competitor keywords for ${domain}, using mock data:`, error);
-            keywords = generateMockKeywords(domain);
+            keywords = generateMockKeywords(domain, 25); // Generate more competitor keywords
             toast.warning(`API error when fetching keywords for competitor ${domain}, using sample data`);
           }
         } else {
-          keywords = generateMockKeywords(domain);
+          keywords = generateMockKeywords(domain, 25); // Generate more competitor keywords
         }
         
         if (keywords.length > 0) {
@@ -127,7 +125,7 @@ export const analyzeDomains = async (
           toast.success(`Found ${keywords.length} keywords for ${domain}`);
         } else {
           console.warn(`No keywords found for ${domain}, generating mock data`);
-          const mockKeywords = generateMockKeywords(domain);
+          const mockKeywords = generateMockKeywords(domain, 25);
           competitorResults.push({ domain, keywords: mockKeywords });
           toast.success(`Generated ${mockKeywords.length} sample keywords for ${domain}`);
         }
@@ -136,7 +134,7 @@ export const analyzeDomains = async (
         toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
         
         // Generate mock data even if analysis fails
-        const mockKeywords = generateMockKeywords(domain);
+        const mockKeywords = generateMockKeywords(domain, 25);
         competitorResults.push({ domain, keywords: mockKeywords });
         toast.success(`Generated ${mockKeywords.length} sample keywords for ${domain} (fallback)`);
       }

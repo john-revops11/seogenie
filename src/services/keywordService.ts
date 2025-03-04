@@ -7,6 +7,16 @@ export * from './keywords/contentGeneration';
 export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
 
+// Re-export updated keyword analysis
+export {
+  getHighValueKeywords,
+  getLongTailKeywords,
+  getQuestionKeywords,
+  buildKeywordMetrics,
+  getHighVolumeKeywords,
+  getCompetitorKeywords
+} from '../utils/topicGeneration/keywordAnalysis';
+
 // Re-export SemRush API functions with renamed export to avoid conflict
 export { 
   fetchDomainOverview,

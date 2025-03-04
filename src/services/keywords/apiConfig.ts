@@ -24,7 +24,10 @@ export const GOOGLE_KEYWORD_API_URL = "https://google-keyword-insight1.p.rapidap
 export const OPENAI_API_KEY = ""; // This will be populated dynamically via the ApiIntegrationManager
 
 // Dynamic API key accessor - allows getting API keys that are set at runtime
-let dynamicApiKeys: Record<string, string> = {};
+let dynamicApiKeys: Record<string, string> = {
+  // Initialize with default keys that can be overridden
+  dataforseo: `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`
+};
 
 export const setApiKey = (service: string, key: string) => {
   dynamicApiKeys[service.toLowerCase()] = key;

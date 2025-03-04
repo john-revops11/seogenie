@@ -23,6 +23,27 @@ function getCompetitionLabel(difficulty: number): string {
   return "high";
 }
 
+// Helper function to get API credentials from dynamic API keys
+function getApiKey(apiName: string): string | null {
+  // Check if we have the key in the dynamic storage
+  const dynamicKey = getApiKeyFromDynamic(apiName);
+  if (dynamicKey) return dynamicKey;
+  
+  // Fall back to the hardcoded credentials in apiConfig
+  if (apiName.toLowerCase() === 'dataforseo') {
+    return `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
+  }
+  
+  return null;
+}
+
+// Helper to retrieve from dynamic API keys (implemented elsewhere)
+function getApiKeyFromDynamic(apiName: string): string | null {
+  // This would typically integrate with apiConfig.getApiKey
+  // For now, let's just return null to use the fallback
+  return null;
+}
+
 // Function to fetch related keywords using DataForSEO API
 export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<KeywordData[]> => {
   try {
@@ -409,11 +430,4 @@ export function ensureValidUrl(urlString: string): string {
       throw new Error(`Invalid URL: ${urlString}`);
     }
   }
-}
-
-// Helper function to get API credentials from dynamic API keys
-function getApiKey(apiName: string): string | null {
-  // Implement logic to retrieve API credentials based on API name
-  // For example, you could use environment variables or a configuration file
-  return null;
 }
