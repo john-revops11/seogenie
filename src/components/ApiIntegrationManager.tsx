@@ -18,7 +18,8 @@ import {
   Edit,
   Trash,
   Eye,
-  EyeOff
+  EyeOff,
+  BarChart
 } from "lucide-react";
 import {
   Dialog,
@@ -31,6 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { configurePinecone, isPineconeConfigured } from "@/services/vector/pineconeService";
+import { setApiKey, getApiKey } from "@/services/keywords/apiConfig";
+import { testSemrushConnection } from "@/services/keywords/semrushApi";
 
 interface ApiDetails {
   id: string;
@@ -86,6 +89,14 @@ const ApiIntegrationManager = () => {
       apiKey: "6549be50bbmsh1d48a68f7367e70p18d2c2jsnacb70e5f1571",
       isConfigured: true,
       isActive: false
+    },
+    {
+      id: "semrush",
+      name: "SemRush",
+      description: "Competitor research and keyword analytics",
+      icon: <BarChart className="h-5 w-5 text-teal-600" />,
+      isConfigured: false,
+      isActive: false
     }
   ]);
   
@@ -124,12 +135,48 @@ const ApiIntegrationManager = () => {
     } catch (error) {
       console.error("Error loading saved API integrations:", error);
     }
+    
+    // Set API keys in the global config
+    apis.forEach(api => {
+      if (api.isConfigured && api.apiKey) {
+        setApiKey(api.id, api.apiKey);
+      }
+    });
   }, []);
   
   useEffect(() => {
     // Save APIs to localStorage when they change
     try {
-      localStorage.setItem('apiIntegrations', JSON.stringify(apis));
+      // Create a simplified copy without React elements to avoid circular references
+      const apisToSave = apis.map(api => ({
+        id: api.id,
+        name: api.name,
+        description: api.description,
+        apiKey: api.apiKey,
+        isConfigured: api.isConfigured,
+        isActive: api.isActive
+      }));
+      
+      localStorage.setItem('apiIntegrations', JSON.stringify(apisToSave));
+      
+      // Update the global API keys when APIs change
+      apis.forEach(api => {
+        if (api.isConfigured && api.apiKey) {
+          setApiKey(api.id, api.apiKey);
+        }
+      });
+      
+      // Test SemRush connection if configured
+      const semrushApi = apis.find(api => api.id === "semrush");
+      if (semrushApi?.isConfigured && semrushApi?.apiKey) {
+        testSemrushConnection().then(isConnected => {
+          if (isConnected) {
+            console.log("SemRush API connection successful");
+          } else {
+            console.warn("SemRush API connection failed");
+          }
+        });
+      }
     } catch (error) {
       console.error("Error saving API integrations:", error);
     }
@@ -161,6 +208,9 @@ const ApiIntegrationManager = () => {
     
     setApis([...apis, newApi]);
     
+    // Set the API key globally
+    setApiKey(newId, newApiKey);
+    
     setNewApiName("");
     setNewApiKey("");
     setNewApiDescription("");
@@ -171,7 +221,7 @@ const ApiIntegrationManager = () => {
   
   const handleRemoveApi = (apiId: string) => {
     // Don't allow removing built-in APIs
-    const isBuiltIn = ["pinecone", "openai", "dataforseo", "googleads", "rapidapi"].includes(apiId);
+    const isBuiltIn = ["pinecone", "openai", "dataforseo", "googleads", "rapidapi", "semrush"].includes(apiId);
     
     if (isBuiltIn) {
       setApis(prev => prev.map(api => 
@@ -193,6 +243,22 @@ const ApiIntegrationManager = () => {
     
     if (selectedApi.id === "pinecone" && selectedApi.apiKey) {
       configurePinecone(selectedApi.apiKey);
+    }
+    
+    // Set the API key globally
+    if (selectedApi.apiKey) {
+      setApiKey(selectedApi.id, selectedApi.apiKey);
+      
+      // Test SemRush connection if configured
+      if (selectedApi.id === "semrush") {
+        testSemrushConnection().then(isConnected => {
+          if (isConnected) {
+            toast.success("SemRush API connection successful");
+          } else {
+            toast.error("SemRush API connection failed. Please check your API key.");
+          }
+        });
+      }
     }
     
     setSelectedApi(null);
