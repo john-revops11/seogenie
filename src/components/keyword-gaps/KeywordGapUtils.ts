@@ -43,3 +43,33 @@ export function normalizeDomainList(domains: string[]): string[] {
     .filter(domain => domain && domain.trim() !== "")
     .map(domain => domain.trim().toLowerCase());
 }
+
+/**
+ * Categorize keyword intent based on keyword content, difficulty, and volume
+ */
+export function categorizeKeywordIntent(keyword: string, difficulty: number, volume: number): 'informational' | 'navigational' | 'commercial' | 'transactional' {
+  const informationalPatterns = ['how', 'what', 'why', 'when', 'where', 'guide', 'tutorial', 'tips', 'learn', 'example', 'definition'];
+  const navigationalPatterns = ['login', 'signin', 'account', 'download', 'contact', 'support', 'official'];
+  const commercialPatterns = ['best', 'top', 'review', 'compare', 'vs', 'versus', 'comparison', 'alternative'];
+  const transactionalPatterns = ['buy', 'price', 'cost', 'purchase', 'cheap', 'deal', 'discount', 'order', 'shop'];
+  
+  const keywordLower = keyword.toLowerCase();
+  
+  if (informationalPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'informational';
+  }
+  
+  if (navigationalPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'navigational';
+  }
+  
+  if (commercialPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'commercial';
+  }
+  
+  if (transactionalPatterns.some(pattern => keywordLower.includes(pattern))) {
+    return 'transactional';
+  }
+  
+  return difficulty < 40 ? 'informational' : 'commercial';
+}

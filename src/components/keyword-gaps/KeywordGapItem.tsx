@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Plus } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
+import { categorizeKeywordIntent } from "./KeywordGapUtils";
 
 interface KeywordGapItemProps {
   gap: KeywordGap;
@@ -55,33 +56,6 @@ export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordG
 }
 
 // Helper functions
-function categorizeKeywordIntent(keyword: string, difficulty: number, volume: number): 'informational' | 'navigational' | 'commercial' | 'transactional' {
-  const informationalPatterns = ['how', 'what', 'why', 'when', 'where', 'guide', 'tutorial', 'tips', 'learn', 'example', 'definition'];
-  const navigationalPatterns = ['login', 'signin', 'account', 'download', 'contact', 'support', 'official'];
-  const commercialPatterns = ['best', 'top', 'review', 'compare', 'vs', 'versus', 'comparison', 'alternative'];
-  const transactionalPatterns = ['buy', 'price', 'cost', 'purchase', 'cheap', 'deal', 'discount', 'order', 'shop'];
-  
-  const keywordLower = keyword.toLowerCase();
-  
-  if (informationalPatterns.some(pattern => keywordLower.includes(pattern))) {
-    return 'informational';
-  }
-  
-  if (navigationalPatterns.some(pattern => keywordLower.includes(pattern))) {
-    return 'navigational';
-  }
-  
-  if (commercialPatterns.some(pattern => keywordLower.includes(pattern))) {
-    return 'commercial';
-  }
-  
-  if (transactionalPatterns.some(pattern => keywordLower.includes(pattern))) {
-    return 'transactional';
-  }
-  
-  return difficulty < 40 ? 'informational' : 'commercial';
-}
-
 function getIntentBadgeColor(keyword: string, difficulty: number, volume: number) {
   const intent = categorizeKeywordIntent(keyword, difficulty, volume);
   switch (intent) {
