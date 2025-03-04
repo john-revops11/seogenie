@@ -1,4 +1,3 @@
-
 import { ApiStates } from "@/types/systemHealth";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
@@ -344,11 +343,9 @@ export const testAiModel = async (
         setTestResponse(responseText);
         setTestModelStatus("success");
       } catch (error) {
-        console.warn(`Error with model ${modelId}, trying fallback model:`, error);
+        console.warn(`Error with model ${modelId}, trying GPT-4 fallback:`, error);
         
-        // Try fallback model if the first one fails
-        const fallbackModel = "gpt-3.5-turbo";
-        
+        // Try GPT-4 fallback if the first one fails
         try {
           const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -357,7 +354,7 @@ export const testAiModel = async (
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              model: fallbackModel,
+              model: 'gpt-4',
               messages: [
                 {
                   role: "system",
@@ -374,16 +371,54 @@ export const testAiModel = async (
           });
   
           if (!fallbackResponse.ok) {
-            throw new Error(`Error with fallback model: ${fallbackResponse.status} ${fallbackResponse.statusText}`);
+            throw new Error(`Error with GPT-4 fallback: ${fallbackResponse.status} ${fallbackResponse.statusText}`);
           }
   
           const fallbackData = await fallbackResponse.json();
           const fallbackResponseText = fallbackData.choices[0].message.content;
           
-          setTestResponse(`ℹ️ Used fallback model (${fallbackModel}):\n${fallbackResponseText}`);
+          setTestResponse(`ℹ️ Used fallback model (gpt-4):\n${fallbackResponseText}`);
           setTestModelStatus("success");
-        } catch (fallbackError) {
-          throw new Error(`Original error: ${error.message}, Fallback error: ${fallbackError.message}`);
+        } catch (gpt4Error) {
+          console.warn(`Error with GPT-4 fallback, trying GPT-3.5-turbo as final fallback:`, gpt4Error);
+          
+          // Try GPT-3.5-turbo as final fallback if GPT-4 also fails
+          try {
+            const finalFallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer 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`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                  {
+                    role: "system",
+                    content: "You are a helpful assistant that provides brief, accurate responses."
+                  },
+                  {
+                    role: "user",
+                    content: prompt
+                  }
+                ],
+                temperature: 0.7,
+                max_tokens: 150
+              })
+            });
+    
+            if (!finalFallbackResponse.ok) {
+              throw new Error(`All models failed. Final error: ${finalFallbackResponse.status} ${finalFallbackResponse.statusText}`);
+            }
+    
+            const finalFallbackData = await finalFallbackResponse.json();
+            const finalFallbackResponseText = finalFallbackData.choices[0].message.content;
+            
+            setTestResponse(`ℹ️ Used second fallback model (gpt-3.5-turbo):\n${finalFallbackResponseText}`);
+            setTestModelStatus("success");
+          } catch (finalError) {
+            throw new Error(`Original error: ${error.message}, GPT-4 error: ${gpt4Error.message}, Final error: ${finalError.message}`);
+          }
         }
       }
     }

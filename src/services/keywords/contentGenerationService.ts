@@ -212,41 +212,16 @@ const fillContentBlocks = async (
           prompt += `\nGenerate a detailed paragraph for the section "${contextHeading}".\n`;
         }
         
-        // Generate the content with OpenAI
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini', // Using a more reliable model instead of GPT-4o
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            temperature: creativity / 100, // Convert creativity percentage to temperature
-            max_tokens: 500
-          })
-        });
-        
-        if (!response.ok) {
-          // If gpt-4o-mini fails, try gpt-3.5-turbo as a fallback
-          console.warn("Primary model failed, trying fallback model...");
-          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Try primary model (GPT-4o-mini) first
+        try {
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${OPENAI_API_KEY}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              model: 'gpt-3.5-turbo', // Fallback model
+              model: 'gpt-4o-mini',
               messages: [
                 {
                   role: 'system',
@@ -262,23 +237,97 @@ const fillContentBlocks = async (
             })
           });
           
-          if (!fallbackResponse.ok) {
-            throw new Error(`OpenAI API error: ${fallbackResponse.status}`);
+          if (!response.ok) {
+            throw new Error(`OpenAI API error with gpt-4o-mini: ${response.status}`);
           }
           
-          const fallbackData = await fallbackResponse.json();
-          const generatedContent = fallbackData.choices[0].message.content.trim();
-          updatedBlocks[i] = {
-            ...block,
-            content: `<p>${generatedContent}</p>`
-          };
-        } else {
           const data = await response.json();
           const generatedContent = data.choices[0].message.content.trim();
           updatedBlocks[i] = {
             ...block,
             content: `<p>${generatedContent}</p>`
           };
+        } catch (primaryModelError) {
+          console.warn("Primary model (gpt-4o-mini) failed, trying GPT-4:", primaryModelError);
+          
+          // Try GPT-4 as first fallback
+          try {
+            const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'gpt-4',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+                  },
+                  {
+                    role: 'user',
+                    content: prompt
+                  }
+                ],
+                temperature: creativity / 100,
+                max_tokens: 500
+              })
+            });
+            
+            if (!fallbackResponse.ok) {
+              throw new Error(`OpenAI API error with gpt-4: ${fallbackResponse.status}`);
+            }
+            
+            const fallbackData = await fallbackResponse.json();
+            const generatedContent = fallbackData.choices[0].message.content.trim();
+            updatedBlocks[i] = {
+              ...block,
+              content: `<p>${generatedContent}</p>`
+            };
+          } catch (gpt4Error) {
+            console.warn("GPT-4 fallback failed, trying GPT-3.5-turbo as final fallback:", gpt4Error);
+            
+            // Try GPT-3.5-turbo as final fallback
+            try {
+              const finalFallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  model: 'gpt-3.5-turbo',
+                  messages: [
+                    {
+                      role: 'system',
+                      content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+                    },
+                    {
+                      role: 'user',
+                      content: prompt
+                    }
+                  ],
+                  temperature: creativity / 100,
+                  max_tokens: 500
+                })
+              });
+              
+              if (!finalFallbackResponse.ok) {
+                throw new Error(`All models failed. Final error: ${finalFallbackResponse.status}`);
+              }
+              
+              const finalFallbackData = await finalFallbackResponse.json();
+              const generatedContent = finalFallbackData.choices[0].message.content.trim();
+              updatedBlocks[i] = {
+                ...block,
+                content: `<p>${generatedContent}</p>`
+              };
+            } catch (finalError) {
+              console.error("All OpenAI models failed:", finalError);
+              throw new Error("All available AI models failed to generate content");
+            }
+          }
         }
       }
     }
