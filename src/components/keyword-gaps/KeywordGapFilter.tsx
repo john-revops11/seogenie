@@ -37,7 +37,7 @@ export function KeywordGapFilter({
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Filter by competitor" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-background z-50">
             <SelectItem value="all">All Competitors</SelectItem>
             {uniqueCompetitors.map(comp => (
               <SelectItem key={comp} value={comp}>{comp}</SelectItem>

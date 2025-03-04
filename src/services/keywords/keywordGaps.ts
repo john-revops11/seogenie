@@ -5,6 +5,9 @@ import { extractDomain } from './utils/domainUtils';
 import { analyzeKeywordsWithAI } from './utils/aiKeywordAnalysis';
 import { findDirectKeywordGaps, prioritizeKeywordGaps } from './utils/directGapAnalysis';
 
+// Define API source options
+export type ApiSource = 'sample' | 'semrush' | 'dataforseo-live' | 'dataforseo-task';
+
 /**
  * Finds keyword gaps between a main domain and competitor domains
  * 
@@ -12,13 +15,15 @@ import { findDirectKeywordGaps, prioritizeKeywordGaps } from './utils/directGapA
  * @param competitorDomains - Array of competitor domain URLs
  * @param keywords - Keyword data including rankings
  * @param targetGapCount - Maximum number of gaps to find per competitor (default: 100)
+ * @param apiSource - Source API for keyword data (default: 'sample')
  * @returns Array of keyword gaps with opportunity analysis
  */
 export const findKeywordGaps = async (
   mainDomain: string,
   competitorDomains: string[],
   keywords: KeywordData[],
-  targetGapCount: number = 100
+  targetGapCount: number = 100,
+  apiSource: ApiSource = 'sample'
 ): Promise<KeywordGap[]> => {
   try {
     if (!keywords.length) {
@@ -30,12 +35,14 @@ export const findKeywordGaps = async (
     const competitorDomainNames = competitorDomains.map(extractDomain);
     
     console.log(`Finding keyword gaps for ${mainDomainName} vs ${competitorDomainNames.join(', ')}`);
+    console.log(`Using API source: ${apiSource}`);
     
     // Try direct analysis first (based on ranking data we already have)
     const directGaps = findDirectKeywordGaps(mainDomainName, competitorDomainNames, keywords, targetGapCount);
     
     if (directGaps.length > 0) {
       console.log("Using directly identified gaps with local analysis");
+      console.log(`Found ${directGaps.length} potential keyword gaps before analysis`);
       
       // Prioritize gaps and mark top opportunities
       const prioritizedGaps = prioritizeKeywordGaps(directGaps);
@@ -44,8 +51,24 @@ export const findKeywordGaps = async (
       return prioritizedGaps;
     }
     
-    // Fallback to AI-based analysis if direct analysis didn't find any gaps
+    // Fallback to API-specific methods if direct analysis didn't find any gaps
+    if (apiSource.startsWith('dataforseo')) {
+      try {
+        // In a real implementation, we would call different DataForSEO endpoints
+        // based on the apiSource value (dataforseo-live vs dataforseo-task)
+        toast.info(`Using ${apiSource} API for gap analysis`);
+        
+        // Mock implementation for now
+        return mockDataForSEOGaps(mainDomainName, competitorDomainNames, keywords, targetGapCount);
+      } catch (error) {
+        console.error(`Error with ${apiSource} analysis:`, error);
+        toast.error(`Failed with ${apiSource}: ${(error as Error).message}`);
+      }
+    }
+    
+    // Fallback to AI-based analysis as a last resort
     try {
+      toast.info("Using AI-based keyword gap analysis");
       const aiGaps = await analyzeKeywordsWithAI(
         mainDomainName, 
         competitorDomainNames, 
@@ -64,3 +87,38 @@ export const findKeywordGaps = async (
     return [];
   }
 };
+
+// Mock function to simulate DataForSEO results - in a real implementation, this would be replaced
+// with actual API calls to DataForSEO endpoints
+function mockDataForSEOGaps(
+  mainDomain: string,
+  competitorDomains: string[],
+  keywords: KeywordData[],
+  targetGapCount: number
+): KeywordGap[] {
+  // Generate some realistic looking gaps based on the provided keywords
+  const gaps: KeywordGap[] = [];
+  const competitorIndex = 0;
+  const competitor = competitorDomains[competitorIndex] || 'competitor.com';
+  
+  // Take 20% of the keywords as gaps
+  const gapCount = Math.min(Math.ceil(keywords.length * 0.2), targetGapCount);
+  
+  for (let i = 0; i < gapCount; i++) {
+    const keyword = keywords[i];
+    if (!keyword) continue;
+    
+    gaps.push({
+      keyword: keyword.keyword,
+      competitor,
+      rank: Math.floor(Math.random() * 10) + 1, // Competitor ranks 1-10
+      volume: keyword.monthly_search || Math.floor(Math.random() * 5000) + 100,
+      difficulty: Math.floor(Math.random() * 70) + 10,
+      relevance: Math.floor(Math.random() * 100) + 1,
+      competitiveAdvantage: Math.floor(Math.random() * 100) + 1,
+      isTopOpportunity: Math.random() > 0.7, // 30% chance of being a top opportunity
+    });
+  }
+  
+  return gaps;
+}

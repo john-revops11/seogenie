@@ -1,17 +1,23 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { toast } from "sonner";
-import { findKeywordGaps } from "@/services/keywordService";
+import { findKeywordGaps, ApiSource } from "@/services/keywords/keywordGaps";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 import KeywordGapFilter from "./keyword-gaps/KeywordGapFilter";
 import KeywordGapList from "./keyword-gaps/KeywordGapList";
 import KeywordGapPagination from "./keyword-gaps/KeywordGapPagination";
 import KeywordGapEmpty from "./keyword-gaps/KeywordGapEmpty";
 import KeywordGapLoader from "./keyword-gaps/KeywordGapLoader";
-import { keywordGapsCache, getUniqueCompetitors } from "./keyword-gaps/KeywordGapUtils";
+import { 
+  keywordGapsCache, 
+  getUniqueCompetitors, 
+  normalizeDomainList 
+} from "./keyword-gaps/KeywordGapUtils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export { keywordGapsCache };
 
@@ -33,6 +39,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
   const { haveCompetitorsChanged: checkCompetitorsChanged } = useKeywordGaps();
   const [lastKeywordsLength, setLastKeywordsLength] = useState(0);
+  const [apiSource, setApiSource] = useState<ApiSource>('sample');
 
   // Check if keywords array has changed (new analysis or competitor added)
   useEffect(() => {
@@ -45,6 +52,23 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       }
     }
   }, [keywords.length, lastKeywordsLength]);
+
+  // Detect competitor changes
+  useEffect(() => {
+    const normalizedCachedCompetitors = normalizeDomainList(keywordGapsCache.competitorDomains || []);
+    const normalizedCurrentCompetitors = normalizeDomainList(competitorDomains);
+    
+    // Check if the competitor list is different
+    const hasChanged = normalizedCachedCompetitors.length !== normalizedCurrentCompetitors.length ||
+                      !normalizedCachedCompetitors.every(comp => normalizedCurrentCompetitors.includes(comp));
+    
+    if (hasChanged && keywords.length > 0 && keywordGapsCache.data?.length > 0) {
+      console.log("Competitor domains have changed, refreshing analysis");
+      console.log("Cached:", normalizedCachedCompetitors);
+      console.log("Current:", normalizedCurrentCompetitors);
+      refreshAnalysis();
+    }
+  }, [competitorDomains, domain, keywords]);
 
   useEffect(() => {
     const generateKeywordGaps = async () => {
@@ -68,7 +92,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       try {
         console.log(`Generating keyword gaps for ${domain} vs`, competitorDomains);
         
-        const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
+        const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource);
         
         if (gaps && gaps.length > 0) {
           console.log(`Found ${gaps.length} keyword gaps`);
@@ -107,7 +131,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     };
     
     generateKeywordGaps();
-  }, [domain, competitorDomains, keywords, isLoading, checkCompetitorsChanged]);
+  }, [domain, competitorDomains, keywords, isLoading, checkCompetitorsChanged, apiSource]);
 
   useEffect(() => {
     if (!keywordGaps) return;
@@ -177,6 +201,18 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     setCurrentPage(1); // Reset to first page when filter changes
   };
 
+  const handleApiSourceChange = (value: ApiSource) => {
+    if (value !== apiSource) {
+      setApiSource(value);
+      toast.info(`Switched to ${value} data source`);
+      
+      // Refresh the analysis with the new API source
+      if (keywords.length > 0) {
+        refreshAnalysis();
+      }
+    }
+  };
+
   const refreshAnalysis = async () => {
     keywordGapsCache.data = null;
     setKeywordGaps(null);
@@ -185,8 +221,9 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     setLoading(true);
     try {
       console.log(`Refreshing keyword gaps for ${domain} vs`, competitorDomains);
+      console.log(`Using API source: ${apiSource}`);
       
-      const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
+      const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource);
       
       if (gaps && gaps.length > 0) {
         console.log(`Found ${gaps.length} keyword gaps`);
@@ -197,6 +234,8 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
         keywordGapsCache.keywordsLength = keywords.length;
         
         setKeywordGaps(gaps);
+        setFilterCompetitor("all");
+        setCurrentPage(1); // Reset to first page when new data is loaded
         toast.success(`Found ${gaps.length} keyword gaps for analysis`);
       } else {
         console.warn("No keyword gaps found or service returned empty array");
@@ -234,14 +273,28 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </CardTitle>
         <CardDescription>
-          <span>Keywords competitors rank for that you don't</span>
-          <div className="mt-1 flex justify-between items-center">
-            <Badge variant="outline" className="text-xs">
-              {competitorDomains.length} competitors analyzed
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {selectedKeywords.length}/10 selected
-            </Badge>
+          <div className="flex flex-col gap-2">
+            <span>Keywords competitors rank for that you don't</span>
+            <div className="flex justify-between items-center">
+              <Badge variant="outline" className="text-xs">
+                {competitorDomains.length} competitors analyzed
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {selectedKeywords.length}/10 selected
+              </Badge>
+            </div>
+            
+            <Select value={apiSource} onValueChange={(v) => handleApiSourceChange(v as ApiSource)}>
+              <SelectTrigger className="w-full mt-1">
+                <SelectValue placeholder="Select data source" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="sample">Sample Data</SelectItem>
+                <SelectItem value="semrush">SEMrush</SelectItem>
+                <SelectItem value="dataforseo-live">DataForSEO (Live)</SelectItem>
+                <SelectItem value="dataforseo-task">DataForSEO (Tasks)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardDescription>
       </CardHeader>

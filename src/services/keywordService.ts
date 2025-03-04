@@ -44,5 +44,15 @@ export const removeCompetitorDomain = (
   currentCompetitors: string[],
   domainToRemove: string
 ): string[] => {
-  return currentCompetitors.filter(domain => domain !== domainToRemove);
+  // Normalize the domain to remove for case-insensitive comparison
+  const normalizedDomainToRemove = domainToRemove.trim().toLowerCase();
+  
+  // Filter out the domain to remove (case-insensitive)
+  return currentCompetitors.filter(domain => {
+    const normalizedDomain = domain.trim().toLowerCase();
+    return normalizedDomain !== normalizedDomainToRemove;
+  });
 };
+
+// Re-export API source type from keywordGaps
+export type { ApiSource } from './keywords/keywordGaps';

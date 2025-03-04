@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { KeywordData } from './types';
 import { fetchDomainKeywords, ensureValidUrl } from './api';
@@ -164,7 +163,8 @@ export const analyzeDomains = async (
     
     // Add competitor keywords and rankings
     competitorResults.forEach(({ domain, keywords }) => {
-      const domainName = new URL(domain).hostname.replace(/^www\./, '');
+      // Extract just the domain name without protocol and www prefix for cleaner display
+      const domainName = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
       
       keywords.forEach(kw => {
         if (keywordMap.has(kw.keyword)) {

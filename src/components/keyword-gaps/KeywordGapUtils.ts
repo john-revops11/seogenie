@@ -82,3 +82,15 @@ export const haveCompetitorsChanged = (
   // Check if all competitors are the same
   return !newCompetitors.every(comp => cachedCompetitors.includes(comp));
 };
+
+// Ensure we're extracting domain names correctly for comparison
+export const normalizeDomainList = (domains: string[]): string[] => {
+  return domains.map(domain => {
+    try {
+      return extractDomain(domain);
+    } catch (e) {
+      // If extraction fails, return as is
+      return domain.trim().toLowerCase();
+    }
+  });
+};
