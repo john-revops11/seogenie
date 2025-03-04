@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { OPENAI_API_KEY } from "@/services/keywords/apiConfig";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
+import { fetchRelatedKeywords } from "@/services/keywords/api";
 
 interface KeywordResearchProps {
   domain: string;
@@ -103,6 +104,33 @@ const KeywordResearch = ({
     setIsSearching(true);
     try {
       try {
+        toast.info("Fetching keyword data from DataForSEO API...");
+        const dataForSeoResults = await fetchRelatedKeywords([searchTerm]);
+        
+        if (dataForSeoResults && dataForSeoResults.length > 0) {
+          const formattedKeywords: ResearchKeyword[] = dataForSeoResults.map(kw => ({
+            keyword: kw.keyword,
+            volume: kw.monthly_search || 0,
+            difficulty: kw.competition_index || 50,
+            cpc: kw.cpc || 0,
+            recommendation: getRecommendationForKeyword(kw.keyword),
+            relatedKeywords: getRelatedKeywordsFor(kw.keyword)
+          }));
+          
+          setKeywords(formattedKeywords);
+          toast.success(`Found ${formattedKeywords.length} keywords from DataForSEO API`);
+          setIsSearching(false);
+          return;
+        } else {
+          console.log("DataForSEO API returned empty results, falling back to AI");
+          toast.warning("DataForSEO API returned no results, trying alternative methods...");
+        }
+      } catch (dataForSeoError) {
+        console.error("Error with DataForSEO API:", dataForSeoError);
+        toast.warning("Could not retrieve data from DataForSEO API, trying alternative methods...");
+      }
+      
+      try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -169,7 +197,7 @@ const KeywordResearch = ({
         }
 
         setKeywords(parsedData.keywords);
-        toast.success(`Found ${parsedData.keywords.length} keyword opportunities`);
+        toast.success(`Found ${parsedData.keywords.length} keyword opportunities using AI`);
       } catch (apiError) {
         console.error("Error with OpenAI API, using sample data:", apiError);
         const sampleKeywords = getSampleKeywords(searchTerm);
@@ -187,6 +215,40 @@ const KeywordResearch = ({
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const getRecommendationForKeyword = (keyword: string): string => {
+    const recommendations = [
+      `Create a dedicated landing page focusing on ${keyword}`,
+      `Develop a comprehensive guide about ${keyword}`,
+      `Write a detailed blog post targeting ${keyword}`,
+      `Add ${keyword} to your product descriptions and metadata`,
+      `Create a FAQ section addressing common questions about ${keyword}`,
+      `Develop comparison content featuring ${keyword}`,
+      `Add testimonials mentioning ${keyword}`
+    ];
+    
+    return recommendations[Math.floor(Math.random() * recommendations.length)];
+  };
+  
+  const getRelatedKeywordsFor = (keyword: string): string[] => {
+    const words = keyword.split(' ');
+    const related = [
+      `best ${keyword}`,
+      `${keyword} guide`,
+      `${keyword} tips`,
+      `${keyword} strategies`,
+      `${keyword} examples`,
+      `${keyword} tools`,
+      `how to ${keyword}`,
+      `${keyword} for business`,
+      `${keyword} benefits`,
+      `${keyword} vs ${words[0]} alternatives`
+    ];
+    
+    const count = Math.floor(Math.random() * 3) + 3;
+    const shuffled = related.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
   };
 
   const handleGenerateContent = (keyword: string, relatedKeywords: string[]) => {
