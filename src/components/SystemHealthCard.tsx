@@ -23,6 +23,7 @@ import {
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { API_CHANGE_EVENT } from "@/components/ApiIntegrationManager";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { getApiKey } from "@/services/keywords/apiConfig";
 
 type ApiStatus = "idle" | "loading" | "success" | "error";
 
@@ -95,6 +97,18 @@ const SystemHealthCard = () => {
   
   useEffect(() => {
     checkApiStatuses();
+    
+    const handleApiChange = (event: CustomEvent) => {
+      const { apiId, action } = event.detail;
+      console.log(`API ${action} detected for ${apiId}, refreshing system health...`);
+      checkApiStatuses();
+    };
+    
+    window.addEventListener(API_CHANGE_EVENT, handleApiChange as EventListener);
+    
+    return () => {
+      window.removeEventListener(API_CHANGE_EVENT, handleApiChange as EventListener);
+    };
   }, []);
   
   const checkApiStatuses = async () => {
@@ -206,6 +220,18 @@ const SystemHealthCard = () => {
         googleAds: { status: "loading" }
       }));
       
+      const googleAdsApiKey = getApiKey("googleads");
+      if (!googleAdsApiKey) {
+        setApiStates(prev => ({
+          ...prev,
+          googleAds: { 
+            status: "error", 
+            message: "Google Ads API not configured" 
+          }
+        }));
+        return;
+      }
+      
       setTimeout(() => {
         console.error("Error testing Google Ads API connection:", "Failed to fetch");
         setApiStates(prev => ({
@@ -232,6 +258,18 @@ const SystemHealthCard = () => {
         ...prev,
         dataForSeo: { status: "loading" }
       }));
+      
+      const dataForSeoApiKey = getApiKey("dataforseo");
+      if (!dataForSeoApiKey) {
+        setApiStates(prev => ({
+          ...prev,
+          dataForSeo: { 
+            status: "error", 
+            message: "DataForSEO API not configured" 
+          }
+        }));
+        return;
+      }
       
       const credentials = `armin@revologyanalytics.com:ab4016dc9302b8cf`;
       const encodedCredentials = btoa(credentials);
@@ -273,6 +311,18 @@ const SystemHealthCard = () => {
         ...prev,
         rapidApi: { status: "loading" }
       }));
+      
+      const rapidApiKey = getApiKey("rapidapi");
+      if (!rapidApiKey) {
+        setApiStates(prev => ({
+          ...prev,
+          rapidApi: { 
+            status: "error", 
+            message: "RapidAPI key not configured" 
+          }
+        }));
+        return;
+      }
       
       setTimeout(() => {
         setApiStates(prev => ({

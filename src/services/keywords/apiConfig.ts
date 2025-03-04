@@ -33,3 +33,11 @@ export const getApiKey = (service: string): string => {
   const key = service.toLowerCase();
   return dynamicApiKeys[key] || "";
 };
+
+export const removeApiKey = (service: string): void => {
+  const key = service.toLowerCase();
+  if (dynamicApiKeys[key]) {
+    delete dynamicApiKeys[key];
+    console.log(`Removed API key for ${service}`);
+  }
+};

@@ -31,8 +31,17 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { configurePinecone, isPineconeConfigured } from "@/services/vector/pineconeService";
-import { setApiKey, getApiKey } from "@/services/keywords/apiConfig";
+import { setApiKey, getApiKey, removeApiKey } from "@/services/keywords/apiConfig";
 import { testSemrushConnection } from "@/services/keywords/semrushApi";
+
+export const API_CHANGE_EVENT = "api-integration-change";
+
+export const broadcastApiChange = (apiId: string, action: 'add' | 'update' | 'remove') => {
+  const event = new CustomEvent(API_CHANGE_EVENT, { 
+    detail: { apiId, action } 
+  });
+  window.dispatchEvent(event);
+};
 
 interface ApiDetails {
   id: string;
@@ -200,6 +209,7 @@ const ApiIntegrationManager = () => {
     setApis([...apis, newApi]);
     
     setApiKey(newId, newApiKey);
+    broadcastApiChange(newId, 'add');
     
     setNewApiName("");
     setNewApiKey("");
@@ -216,15 +226,23 @@ const ApiIntegrationManager = () => {
       setApis(prev => prev.map(api => 
         api.id === apiId ? { ...api, isConfigured: false, apiKey: undefined, isActive: false } : api
       ));
+      removeApiKey(apiId);
+      broadcastApiChange(apiId, 'remove');
       toast.success(`Removed API key for ${apis.find(api => api.id === apiId)?.name}`);
     } else {
       setApis(prev => prev.filter(api => api.id !== apiId));
+      removeApiKey(apiId);
+      broadcastApiChange(apiId, 'remove');
       toast.success(`Removed custom API integration`);
     }
   };
   
   const handleUpdateApi = () => {
     if (!selectedApi) return;
+    
+    const previousConfig = apis.find(api => api.id === selectedApi.id);
+    const configChanged = previousConfig?.apiKey !== selectedApi.apiKey || 
+                         previousConfig?.isActive !== selectedApi.isActive;
     
     setApis(prev => prev.map(api => 
       api.id === selectedApi.id ? { ...api, ...selectedApi } : api
@@ -237,6 +255,10 @@ const ApiIntegrationManager = () => {
     if (selectedApi.apiKey) {
       setApiKey(selectedApi.id, selectedApi.apiKey);
       
+      if (configChanged) {
+        broadcastApiChange(selectedApi.id, 'update');
+      }
+      
       if (selectedApi.id === "semrush") {
         testSemrushConnection().then(isConnected => {
           if (isConnected) {
@@ -246,6 +268,9 @@ const ApiIntegrationManager = () => {
           }
         });
       }
+    } else if (previousConfig?.apiKey) {
+      removeApiKey(selectedApi.id);
+      broadcastApiChange(selectedApi.id, 'remove');
     }
     
     setSelectedApi(null);
