@@ -1,12 +1,12 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Eye, EyeOff, Edit, Trash } from "lucide-react";
+import { Eye, EyeOff, Edit, Trash, Activity } from "lucide-react";
 import { ApiDetails } from "@/types/apiIntegration";
 import { ApiDialog } from "./ApiDialog";
+import { icons } from "lucide-react";
 
 interface ApiCardProps {
   api: ApiDetails;
@@ -26,13 +26,30 @@ export const ApiCard = ({
     setShowApiKey(prev => !prev);
   };
 
+  const renderIcon = () => {
+    if (api.icon) {
+      return api.icon;
+    }
+
+    if (api.iconName) {
+      const iconName = api.iconName
+        .replace(/(?:^|-)([a-z])/g, (_, letter) => letter.toUpperCase())
+        .replace(/-/g, '');
+
+      const IconComponent = icons[iconName] || Activity;
+      return <IconComponent className="h-5 w-5 text-gray-600" />;
+    }
+
+    return <Activity className="h-5 w-5 text-gray-600" />;
+  };
+
   return (
     <Card key={api.id} className="overflow-hidden">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-              {api.icon}
+              {renderIcon()}
             </div>
             <div>
               <div className="flex items-center gap-2">

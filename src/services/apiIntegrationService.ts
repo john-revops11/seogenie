@@ -7,7 +7,6 @@ import {
 } from "@/services/keywords/apiConfig";
 import { configurePinecone } from "@/services/vector/pineconeService";
 import { testSemrushConnection } from "@/services/keywords/semrushApi";
-import { Activity } from "lucide-react";
 import { toast } from "sonner";
 import { broadcastApiChange } from "@/utils/apiIntegrationEvents";
 
@@ -31,6 +30,7 @@ export const saveApisToStorage = (apis: ApiDetails[]) => {
       id: api.id,
       name: api.name,
       description: api.description,
+      iconName: api.iconName,
       apiKey: api.apiKey,
       isConfigured: api.isConfigured,
       isActive: api.isActive
@@ -50,7 +50,7 @@ export const addApi = (name: string, apiKey: string, description: string): ApiDe
     id: newId,
     name,
     description: description || "Custom API integration",
-    icon: <Activity className="h-5 w-5 text-gray-600" />,
+    iconName: "activity",
     apiKey,
     isConfigured: true,
     isActive: true
