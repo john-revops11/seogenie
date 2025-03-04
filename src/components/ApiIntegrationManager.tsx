@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -69,9 +68,9 @@ const ApiIntegrationManager = () => {
       name: "DataForSEO",
       description: "Keyword research API",
       icon: <Search className="h-5 w-5 text-amber-600" />,
-      apiKey: "john@revologyanalytics.com:c5a4c248785ced68",
+      apiKey: "armin@revologyanalytics.com:ab4016dc9302b8cf",
       isConfigured: true,
-      isActive: false
+      isActive: true
     },
     {
       id: "googleads",
@@ -108,7 +107,6 @@ const ApiIntegrationManager = () => {
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
-    // Check if Pinecone is configured
     const pineconeConfigured = isPineconeConfigured();
     
     setApis(prev => prev.map(api => 
@@ -122,7 +120,6 @@ const ApiIntegrationManager = () => {
         : api
     ));
     
-    // Load APIs from localStorage if available
     try {
       const savedApis = localStorage.getItem('apiIntegrations');
       if (savedApis) {
@@ -136,7 +133,6 @@ const ApiIntegrationManager = () => {
       console.error("Error loading saved API integrations:", error);
     }
     
-    // Set API keys in the global config
     apis.forEach(api => {
       if (api.isConfigured && api.apiKey) {
         setApiKey(api.id, api.apiKey);
@@ -145,9 +141,7 @@ const ApiIntegrationManager = () => {
   }, []);
   
   useEffect(() => {
-    // Save APIs to localStorage when they change
     try {
-      // Create a simplified copy without React elements to avoid circular references
       const apisToSave = apis.map(api => ({
         id: api.id,
         name: api.name,
@@ -159,14 +153,12 @@ const ApiIntegrationManager = () => {
       
       localStorage.setItem('apiIntegrations', JSON.stringify(apisToSave));
       
-      // Update the global API keys when APIs change
       apis.forEach(api => {
         if (api.isConfigured && api.apiKey) {
           setApiKey(api.id, api.apiKey);
         }
       });
       
-      // Test SemRush connection if configured
       const semrushApi = apis.find(api => api.id === "semrush");
       if (semrushApi?.isConfigured && semrushApi?.apiKey) {
         testSemrushConnection().then(isConnected => {
@@ -190,7 +182,6 @@ const ApiIntegrationManager = () => {
     
     const newId = newApiName.toLowerCase().replace(/\s+/g, '');
     
-    // Check if API with this ID already exists
     if (apis.some(api => api.id === newId)) {
       toast.error("An API with this name already exists");
       return;
@@ -208,7 +199,6 @@ const ApiIntegrationManager = () => {
     
     setApis([...apis, newApi]);
     
-    // Set the API key globally
     setApiKey(newId, newApiKey);
     
     setNewApiName("");
@@ -220,7 +210,6 @@ const ApiIntegrationManager = () => {
   };
   
   const handleRemoveApi = (apiId: string) => {
-    // Don't allow removing built-in APIs
     const isBuiltIn = ["pinecone", "openai", "dataforseo", "googleads", "rapidapi", "semrush"].includes(apiId);
     
     if (isBuiltIn) {
@@ -245,11 +234,9 @@ const ApiIntegrationManager = () => {
       configurePinecone(selectedApi.apiKey);
     }
     
-    // Set the API key globally
     if (selectedApi.apiKey) {
       setApiKey(selectedApi.id, selectedApi.apiKey);
       
-      // Test SemRush connection if configured
       if (selectedApi.id === "semrush") {
         testSemrushConnection().then(isConnected => {
           if (isConnected) {

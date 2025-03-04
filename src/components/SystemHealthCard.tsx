@@ -233,15 +233,30 @@ const SystemHealthCard = () => {
         dataForSeo: { status: "loading" }
       }));
       
-      setTimeout(() => {
+      const credentials = `armin@revologyanalytics.com:ab4016dc9302b8cf`;
+      const encodedCredentials = btoa(credentials);
+      
+      const response = await fetch("https://api.dataforseo.com/v3/merchant/google/locations", {
+        method: "GET",
+        headers: {
+          "Authorization": `Basic ${encodedCredentials}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (response.ok) {
+        console.info("DataForSEO connection successful");
         setApiStates(prev => ({
           ...prev,
           dataForSeo: { 
-            status: "error", 
-            message: "Payment Required (402)" 
+            status: "success", 
+            message: "API connection verified" 
           }
         }));
-      }, 800);
+      } else {
+        const errorData = await response.json();
+        throw new Error(`DataForSEO API returned ${response.status}: ${errorData?.message || "Unknown error"}`);
+      }
     } catch (error) {
       console.error("Error testing DataForSEO connection:", error);
       setApiStates(prev => ({
