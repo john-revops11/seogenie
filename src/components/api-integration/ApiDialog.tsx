@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, EyeOff, Trash } from "lucide-react";
+import { Eye, EyeOff, Trash, AlertCircle } from "lucide-react";
 import { ApiDetails } from "@/types/apiIntegration";
 
 interface ApiDialogProps {
@@ -43,6 +43,9 @@ export const ApiDialog = ({
     onClose();
   };
 
+  // Determine if this API needs special instructions
+  const isDataForSEO = api.id === "dataforseo";
+
   return (
     <DialogContent>
       <DialogHeader>
@@ -53,12 +56,25 @@ export const ApiDialog = ({
       </DialogHeader>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <Label htmlFor="edit-api-key">API Key</Label>
+          <Label htmlFor="edit-api-key">
+            {isDataForSEO ? "API Credentials" : "API Key"}
+          </Label>
+          
+          {isDataForSEO && (
+            <div className="flex items-start gap-2 mb-2 p-2 rounded bg-amber-50 text-amber-700 text-xs">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div>
+                For DataForSEO, enter your credentials in the format: <strong>username:password</strong><br />
+                Example: youremail@example.com:your_password
+              </div>
+            </div>
+          )}
+          
           <div className="flex items-center gap-2">
             <Input 
               id="edit-api-key"
               type={showApiKey ? "text" : "password"}
-              placeholder="Enter your API key" 
+              placeholder={isDataForSEO ? "username:password" : "Enter your API key"} 
               value={editedApi.apiKey || ""}
               onChange={(e) => setEditedApi({
                 ...editedApi,

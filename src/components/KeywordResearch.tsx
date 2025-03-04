@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Zap, Target } from "lucide-react";
+import { Loader2, Search, Zap, Target, Settings } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
 import { fetchRelatedKeywords } from "@/services/keywords/api";
+import { useNavigate } from "react-router-dom";
 
 interface KeywordResearchProps {
   domain: string;
@@ -39,6 +40,7 @@ const KeywordResearch = ({
   const [isSearching, setIsSearching] = useState(false);
   const [keywords, setKeywords] = useState<ResearchKeyword[]>([]);
   const [isRunningSeoStrategy, setIsRunningSeoStrategy] = useState(false);
+  const navigate = useNavigate();
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -74,17 +76,35 @@ const KeywordResearch = ({
       const errorMessage = (error as Error).message || "Unknown error";
       
       if (errorMessage.includes("401") || errorMessage.includes("authentication") || errorMessage.includes("Authorization")) {
-        toast.error("DataForSEO API authentication failed. Please check your API credentials in the API Integrations tab.");
+        toast.error("DataForSEO API authentication failed. Please check your API credentials.");
+        toast.info("Go to API Integrations tab to configure your DataForSEO credentials in format: username:password", {
+          action: {
+            label: "Go to API Settings",
+            onClick: () => navigate("/settings")
+          }
+        });
       } else if (errorMessage.includes("429") || errorMessage.includes("rate limit")) {
         toast.error("DataForSEO API rate limit exceeded. Please wait a moment and try again.");
       } else if (errorMessage.includes("No valid keywords")) {
         toast.error("No valid keywords found. Please try a different search term.");
+      } else if (errorMessage.includes("not configured")) {
+        toast.error("DataForSEO API is not configured correctly.");
+        toast.info("Go to API Integrations tab to set up your DataForSEO credentials", {
+          action: {
+            label: "Configure API",
+            onClick: () => navigate("/settings")
+          }
+        });
       } else {
         toast.error(`DataForSEO API error: ${errorMessage}. Please check your API configuration.`);
       }
       
       // Show recovery steps
-      toast.info("To fix this issue: 1) Check your DataForSEO API credentials in API Integrations, 2) Verify your account has sufficient credits, 3) Try a different keyword");
+      toast.info(
+        "To fix this issue: 1) Check your DataForSEO API credentials in API Integrations, " +
+        "2) Make sure to use the format username:password, " +
+        "3) Verify your account has sufficient credits"
+      );
     } finally {
       setIsSearching(false);
     }
@@ -166,27 +186,38 @@ const KeywordResearch = ({
             <CardTitle>Keyword Research</CardTitle>
             <CardDescription>Discover relevant keywords and content opportunities</CardDescription>
           </div>
-          {domain && competitorDomains.length > 0 && existingKeywords.length > 0 && (
-            <Button 
-              variant="danger" 
+          <div className="flex gap-2">
+            {domain && competitorDomains.length > 0 && existingKeywords.length > 0 && (
+              <Button 
+                variant="danger" 
+                size="sm"
+                onClick={handleRunRevologySeoStrategy}
+                disabled={isRunningSeoStrategy}
+                className="whitespace-nowrap"
+              >
+                {isRunningSeoStrategy ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    Running Strategy...
+                  </>
+                ) : (
+                  <>
+                    <Target className="w-4 h-4 mr-1" /> 
+                    Run SEO Strategy for Revology
+                  </>
+                )}
+              </Button>
+            )}
+            <Button
+              variant="outline"
               size="sm"
-              onClick={handleRunRevologySeoStrategy}
-              disabled={isRunningSeoStrategy}
+              onClick={() => navigate("/settings")}
               className="whitespace-nowrap"
             >
-              {isRunningSeoStrategy ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Running Strategy...
-                </>
-              ) : (
-                <>
-                  <Target className="w-4 h-4 mr-1" /> 
-                  Run SEO Strategy for Revology
-                </>
-              )}
+              <Settings className="w-4 h-4 mr-1" />
+              Configure API
             </Button>
-          )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

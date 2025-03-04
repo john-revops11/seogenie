@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { 
   KeywordData, 
@@ -29,8 +28,26 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
   try {
     console.log(`Fetching related keywords from DataForSEO API for keywords:`, seedKeywords);
     
+    // Get API credentials from dynamic API keys
+    const dataForSeoCredentials = getApiKey("dataforseo");
+    
+    if (!dataForSeoCredentials) {
+      throw new Error("DataForSEO API credentials not configured");
+    }
+    
+    let login, password;
+    
+    // Check if credentials are in username:password format
+    if (dataForSeoCredentials.includes(':')) {
+      [login, password] = dataForSeoCredentials.split(':');
+    } else {
+      // Fall back to default credentials if format is incorrect
+      login = DATAFORSEO_LOGIN;
+      password = DATAFORSEO_PASSWORD;
+    }
+    
     // Create authorization string
-    const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
+    const credentials = `${login}:${password}`;
     const encodedCredentials = btoa(credentials);
     
     // Prepare the request body - remove any empty keywords
@@ -152,8 +169,26 @@ export const fetchDataForSEOKeywords = async (domainUrl: string): Promise<Keywor
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl}`);
     
+    // Get API credentials from dynamic API keys
+    const dataForSeoCredentials = getApiKey("dataforseo");
+    
+    if (!dataForSeoCredentials) {
+      throw new Error("DataForSEO API credentials not configured");
+    }
+    
+    let login, password;
+    
+    // Check if credentials are in username:password format
+    if (dataForSeoCredentials.includes(':')) {
+      [login, password] = dataForSeoCredentials.split(':');
+    } else {
+      // Fall back to default credentials if format is incorrect
+      login = DATAFORSEO_LOGIN;
+      password = DATAFORSEO_PASSWORD;
+    }
+    
     // Create authorization string
-    const credentials = `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
+    const credentials = `${login}:${password}`;
     const encodedCredentials = btoa(credentials);
     
     // Prepare the request body
@@ -374,4 +409,11 @@ export function ensureValidUrl(urlString: string): string {
       throw new Error(`Invalid URL: ${urlString}`);
     }
   }
+}
+
+// Helper function to get API credentials from dynamic API keys
+function getApiKey(apiName: string): string | null {
+  // Implement logic to retrieve API credentials based on API name
+  // For example, you could use environment variables or a configuration file
+  return null;
 }

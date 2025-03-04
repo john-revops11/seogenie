@@ -128,8 +128,35 @@ export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiS
       return;
     }
     
-    const credentials = `armin@revologyanalytics.com:ab4016dc9302b8cf`;
-    const encodedCredentials = btoa(credentials);
+    // Parse credentials
+    let login, password;
+    
+    // Check if credentials are in username:password format
+    if (dataForSeoApiKey.includes(':')) {
+      [login, password] = dataForSeoApiKey.split(':');
+      
+      if (!login || !password) {
+        setApiStates(prev => ({
+          ...prev,
+          dataForSeo: { 
+            status: "error", 
+            message: "Invalid format. Use: username:password" 
+          }
+        }));
+        return;
+      }
+    } else {
+      setApiStates(prev => ({
+        ...prev,
+        dataForSeo: { 
+          status: "error", 
+          message: "Invalid format. Use: username:password" 
+        }
+      }));
+      return;
+    }
+    
+    const encodedCredentials = btoa(`${login}:${password}`);
     
     const response = await fetch("https://api.dataforseo.com/v3/merchant/google/locations", {
       method: "GET",
