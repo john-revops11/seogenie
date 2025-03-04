@@ -1,14 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { generateContent } from "@/services/keywords/contentGeneration";
+import { generateContent, getAvailableContentTemplates, getSuggestedTitles } from "@/services/keywords/contentGeneration";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { GeneratorForm } from "./content-generator/GeneratorForm";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
+import ContentEditor from "./content-generator/ContentEditor";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import ContentTypeSelector from "./content-generator/ContentTypeSelector";
+import TemplateSelector from "./content-generator/TemplateSelector";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -32,18 +36,18 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [ragEnabled, setRagEnabled] = useState(false);
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [generatedContentData, setGeneratedContentData] = useState<GeneratedContentType | null>(null);
   const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
 
-  // Check Pinecone configuration on mount
   useEffect(() => {
     if (isPineconeConfigured()) {
       toast.success("Pinecone RAG is available for enhanced content generation");
     }
   }, []);
 
-  // Listen for content preference events from settings
   useEffect(() => {
-    // Try to load saved preferences
     try {
       const savedPreferences = localStorage.getItem('contentPreferences');
       if (savedPreferences) {
@@ -54,7 +58,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     }
   }, []);
 
-  // Save preferences when changed
   useEffect(() => {
     if (contentPreferences.length > 0) {
       localStorage.setItem('contentPreferences', JSON.stringify(contentPreferences));
@@ -62,12 +65,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   }, [contentPreferences]);
 
   const handleGenerateFromKeyword = (primaryKeyword: string, relatedKeywords: string[]) => {
-    // Generate an SEO-optimized topic based on the keyword
     const topicSuggestion = `${primaryKeyword} Guide: Best Practices and Strategies`;
     setTopics(prev => [...prev, topicSuggestion]);
     setSelectedTopic(topicSuggestion);
     
-    // Generate title suggestions
     const titleSuggestions = [
       `Ultimate Guide to ${primaryKeyword}: Everything You Need to Know`,
       `${primaryKeyword} in ${new Date().getFullYear()}: Trends and Insights`,
@@ -81,10 +82,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       [topicSuggestion]: titleSuggestions 
     }));
     
-    // Set the selected title
     setTitle(titleSuggestions[0]);
     
-    // Set selected keywords (combine primary with related)
     handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
   };
 
@@ -94,7 +93,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
       setTopics(newTopics);
       
-      // Generate title suggestions for each topic
       const newTitleSuggestions: {[topic: string]: string[]} = {};
       newTopics.forEach(topic => {
         newTitleSuggestions[topic] = [
@@ -122,7 +120,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
       setTopics(newTopics);
       
-      // Generate title suggestions for each topic
       const newTitleSuggestions: {[topic: string]: string[]} = {};
       newTopics.forEach(topic => {
         newTitleSuggestions[topic] = [
@@ -166,6 +163,23 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
 
   const handleContentTypeChange = (value: string) => {
     setContentType(value);
+    setSelectedTemplateId("");
+    
+    if (selectedTopic) {
+      const newTitleSuggestions = getSuggestedTitles(
+        selectedTopic,
+        selectedKeywords.slice(1),
+        value
+      );
+      setTitleSuggestions(prev => ({
+        ...prev,
+        [selectedTopic]: newTitleSuggestions
+      }));
+      
+      if (newTitleSuggestions.length > 0) {
+        setTitle(newTitleSuggestions[0]);
+      }
+    }
   };
 
   const handleCreativityChange = (value: number) => {
@@ -197,7 +211,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     
     setIsGenerating(true);
     try {
-      // Display a message about RAG if it's enabled
       if (ragEnabled && isPineconeConfigured()) {
         toast.info("Using RAG to enhance content with related keywords and context", {
           duration: 3000
@@ -210,10 +223,42 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
         selectedKeywords, 
         contentType, 
         creativity,
-        contentPreferences
+        contentPreferences,
+        ragEnabled && isPineconeConfigured()
       );
+      
       setGeneratedContent(result);
+      
+      const blocks = result.content.split('\n').map((html, index) => {
+        let type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' = 'paragraph';
+        
+        if (html.startsWith('<h1')) type = 'heading1';
+        else if (html.startsWith('<h2')) type = 'heading2';
+        else if (html.startsWith('<h3')) type = 'heading3';
+        
+        return {
+          id: `block-${index}-${Date.now()}`,
+          type,
+          content: html
+        };
+      });
+      
+      setGeneratedContentData({
+        title: result.title,
+        metaDescription: result.metaDescription,
+        outline: result.outline,
+        blocks,
+        keywords: selectedKeywords,
+        contentType,
+        generationMethod: ragEnabled && isPineconeConfigured() ? 'rag' : 'standard',
+        ragInfo: ragEnabled && isPineconeConfigured() ? {
+          chunksRetrieved: 5,
+          relevanceScore: 0.85
+        } : undefined
+      });
+      
       toast.success("Content generated successfully!");
+      setActiveStep(4);
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error(`Failed to generate content: ${(error as Error).message}`);
@@ -237,6 +282,156 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     toast.success(`Added custom topic "${topic}"`);
   };
 
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">Step 1: Select Content Type</h3>
+            <ContentTypeSelector 
+              value={contentType}
+              onChange={handleContentTypeChange}
+            />
+            
+            <div className="space-y-2 pt-4">
+              <GeneratorForm
+                topics={topics}
+                titleSuggestions={titleSuggestions}
+                selectedTopic={selectedTopic}
+                selectedKeywords={selectedKeywords}
+                title={title}
+                contentType={contentType}
+                creativity={creativity}
+                contentPreferences={contentPreferences}
+                isLoadingTopics={isLoadingTopics}
+                isGenerating={isGenerating}
+                onTopicSelect={handleSelectTopic}
+                onTitleSelect={handleSelectTitle}
+                onTopicDelete={handleDeleteTopic}
+                onContentTypeChange={handleContentTypeChange}
+                onCreativityChange={handleCreativityChange}
+                onContentPreferenceToggle={handleContentPreferenceToggle}
+                onGenerateTopics={handleGenerateTopics}
+                onRegenerateTopics={handleRegenerateTopics}
+                onGenerateContent={() => setActiveStep(2)}
+                onCustomTopicAdd={handleAddCustomTopic}
+                ragEnabled={ragEnabled}
+                onRagToggle={handleRagToggle}
+              />
+            </div>
+          </div>
+        );
+        
+      case 2:
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">Step 2: Choose a Template</h3>
+            <TemplateSelector 
+              contentType={contentType}
+              selectedTemplateId={selectedTemplateId}
+              onSelectTemplate={setSelectedTemplateId}
+            />
+            
+            <div className="flex justify-between">
+              <button
+                onClick={() => setActiveStep(1)}
+                className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => setActiveStep(3)}
+                className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        );
+        
+      case 3:
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">Step 3: Generate Content</h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/30 rounded-md">
+                <h4 className="font-medium">Content Configuration</h4>
+                <div className="mt-2 text-sm">
+                  <div><span className="font-medium">Content Type:</span> {contentType}</div>
+                  <div><span className="font-medium">Template:</span> {selectedTemplateId || "Standard"}</div>
+                  <div><span className="font-medium">Title:</span> {title}</div>
+                  <div><span className="font-medium">Keywords:</span> {selectedKeywords.join(", ")}</div>
+                  <div><span className="font-medium">Creativity:</span> {creativity}%</div>
+                  <div><span className="font-medium">Generation Method:</span> {ragEnabled ? "RAG-Enhanced" : "Standard"}</div>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleGenerateContent}
+                disabled={isGenerating}
+                className="w-full px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isGenerating ? "Generating Content..." : "Generate Content"}
+              </button>
+            </div>
+            
+            <div className="flex justify-between">
+              <button
+                onClick={() => setActiveStep(2)}
+                className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        );
+        
+      case 4:
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">Step 4: Edit Content</h3>
+            
+            <Tabs defaultValue="editor">
+              <TabsList className="mb-4">
+                <TabsTrigger value="editor">Block Editor</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="editor">
+                {generatedContentData && (
+                  <ContentEditor 
+                    generatedContent={generatedContentData}
+                    onContentUpdate={setGeneratedContentData}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="preview">
+                {generatedContent && (
+                  <GeneratedContent 
+                    generatedContent={generatedContent} 
+                    contentType={contentType} 
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+            
+            <div className="flex justify-between">
+              <button
+                onClick={() => setActiveStep(3)}
+                className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <TopicGenerationHandler onGenerateFromKeyword={handleGenerateFromKeyword} />
@@ -247,35 +442,12 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             <CardTitle>AI Content Generator</CardTitle>
           </CardHeader>
           <CardContent>
-            <GeneratorForm
-              topics={topics}
-              titleSuggestions={titleSuggestions}
-              selectedTopic={selectedTopic}
-              selectedKeywords={selectedKeywords}
-              title={title}
-              contentType={contentType}
-              creativity={creativity}
-              contentPreferences={contentPreferences}
-              isLoadingTopics={isLoadingTopics}
-              isGenerating={isGenerating}
-              onTopicSelect={handleSelectTopic}
-              onTitleSelect={handleSelectTitle}
-              onTopicDelete={handleDeleteTopic}
-              onContentTypeChange={handleContentTypeChange}
-              onCreativityChange={handleCreativityChange}
-              onContentPreferenceToggle={handleContentPreferenceToggle}
-              onGenerateTopics={handleGenerateTopics}
-              onRegenerateTopics={handleRegenerateTopics}
-              onGenerateContent={handleGenerateContent}
-              onCustomTopicAdd={handleAddCustomTopic}
-              ragEnabled={ragEnabled}
-              onRagToggle={handleRagToggle}
-            />
+            {renderStepContent()}
           </CardContent>
         </Card>
       </div>
       
-      {generatedContent && (
+      {generatedContent && activeStep !== 4 && (
         <div className="space-y-4">
           <GeneratedContent 
             generatedContent={generatedContent} 

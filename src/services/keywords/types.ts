@@ -1,4 +1,3 @@
-
 export interface KeywordData {
   keyword: string;
   monthly_search: number;
@@ -18,8 +17,8 @@ export interface KeywordGap {
   opportunity: 'high' | 'medium' | 'low';
   competitor: string;
   rank: number;
-  relevance?: number;  // Added as optional to maintain backward compatibility
-  competitiveAdvantage?: number;  // Added as optional to maintain backward compatibility
+  relevance?: number;
+  competitiveAdvantage?: number;
   isTopOpportunity?: boolean;
 }
 
@@ -28,16 +27,14 @@ export interface KeywordResearchPrompt {
   relatedKeywords: string[];
 }
 
-// Updated SeoRecommendation interface to include both old and new properties
 export interface SeoRecommendation {
   title: string;
   description: string;
   impact: 'high' | 'medium' | 'low';
   difficulty: 'easy' | 'medium' | 'hard';
-  priority: 'high' | 'medium' | 'low';  // Changed from number to string enum
+  priority: 'high' | 'medium' | 'low';
   implementation: string;
   category: 'onPage' | 'technical' | 'content' | 'offPage' | 'summary';
-  // Additional properties used in existing code
   type?: string;
   recommendation?: string;
   details?: string;
@@ -50,29 +47,49 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-// Define the missing types needed for api.ts
 export interface DomainKeywordResponse {
   success: boolean;
+  data?: any[];
   reason?: string;
-  data: {
-    keyword: string;
-    monthly_search: number;
-    competition: string;
-    competition_index: number;
-    low_bid: number;
-    high_bid: number;
-  }[];
 }
 
 export interface GoogleKeywordInsightResponse {
   status: string;
   keyword?: string;
-  keywords: {
-    keyword: string;
-    volume: number;
-    difficulty: number;
-    cpc: number;
-    current_rank?: number;
-  }[];
-  insights?: any;
+  keywords?: any[];
+}
+
+export interface ContentTemplate {
+  id: string;
+  name: string;
+  contentType: string;
+  structure: string[];
+  description: string;
+}
+
+export interface ContentBlock {
+  id: string;
+  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'faq';
+  content: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ContentOutline {
+  title: string;
+  headings: string[];
+  faqs: Array<{question: string, answer: string}>;
+}
+
+export interface GeneratedContent {
+  title: string;
+  metaDescription: string;
+  outline: string[];
+  blocks: ContentBlock[];
+  keywords: string[];
+  contentType: string;
+  generationMethod: 'standard' | 'rag';
+  ragInfo?: {
+    chunksRetrieved: number;
+    relevanceScore: number;
+  };
 }
