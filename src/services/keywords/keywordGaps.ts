@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
 import { OPENAI_API_KEY } from './apiConfig';
@@ -138,26 +137,66 @@ export const findKeywordGaps = async (
       // Return the potential gaps we've already found instead of nothing
       if (potentialGaps.length > 0) {
         console.log("Falling back to direct analysis without AI due to missing API key");
-        return potentialGaps.slice(0, Math.min(potentialGaps.length, targetGapCount)).map(kw => {
-          // Convert to KeywordGap format
-          const opportunity: 'high' | 'medium' | 'low' = 
-            kw.monthly_search > 500 && kw.competition_index < 30 ? 'high' :
-            kw.monthly_search < 100 && kw.competition_index > 60 ? 'low' : 'medium';
-          
-          // Find first competitor that ranks for this keyword
-          const competitorEntry = Object.entries(kw.competitorRankings || {})
-            .find(([comp, pos]) => competitorDomainNames.includes(comp) && pos !== null && pos <= 30);
-          
-          return {
-            keyword: kw.keyword,
-            volume: kw.monthly_search,
-            difficulty: kw.competition_index,
-            opportunity: opportunity,
-            competitor: competitorEntry?.[0] || competitorDomainNames[0],
-            rank: competitorEntry?.[1] || 30,
-            isTopOpportunity: false
-          };
+        const directGaps: KeywordGap[] = [];
+        
+        // Create a map to track gaps by competitor
+        const gapsByCompetitor = new Map<string, KeywordGap[]>();
+        competitorDomainNames.forEach(comp => gapsByCompetitor.set(comp, []));
+        
+        // Process each potential gap
+        for (const kw of potentialGaps) {
+          if (kw.competitorRankings) {
+            for (const [competitor, position] of Object.entries(kw.competitorRankings)) {
+              // Only process relevant competitors
+              if (position !== null && position <= 30 && competitorDomainNames.includes(competitor)) {
+                const opportunity: 'high' | 'medium' | 'low' = 
+                  kw.monthly_search > 500 && kw.competition_index < 30 ? 'high' :
+                  kw.monthly_search < 100 && kw.competition_index > 60 ? 'low' : 'medium';
+                
+                const gap: KeywordGap = {
+                  keyword: kw.keyword,
+                  volume: kw.monthly_search,
+                  difficulty: kw.competition_index,
+                  opportunity: opportunity,
+                  competitor: competitor,
+                  rank: position,
+                  isTopOpportunity: false
+                };
+                
+                // Add to the competitor's gaps array
+                const competitorGaps = gapsByCompetitor.get(competitor) || [];
+                if (competitorGaps.length < 50) { // Limit to 50 per competitor
+                  competitorGaps.push(gap);
+                  gapsByCompetitor.set(competitor, competitorGaps);
+                }
+              }
+            }
+          }
+        }
+        
+        // Combine all gaps from all competitors
+        for (const competitorGaps of gapsByCompetitor.values()) {
+          directGaps.push(...competitorGaps);
+        }
+        
+        // Mark top 5 opportunities
+        const sortedGaps = [...directGaps].sort((a, b) => {
+          if (a.opportunity !== b.opportunity) {
+            return a.opportunity === 'high' ? -1 : a.opportunity === 'medium' ? 0 : 1;
+          }
+          return b.volume - a.volume;
         });
+        
+        sortedGaps.slice(0, 5).forEach(gap => {
+          const originalGap = directGaps.find(g => g.keyword === gap.keyword && g.competitor === gap.competitor);
+          if (originalGap) {
+            originalGap.isTopOpportunity = true;
+          }
+        });
+        
+        console.log("Returning fallback gaps:", directGaps.length);
+        console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
+        return directGaps;
       }
       
       return [];

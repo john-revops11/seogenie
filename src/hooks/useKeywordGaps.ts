@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { keywordGapsCache } from "@/components/KeywordGapCard";
 import { SeoRecommendation, KeywordGap } from "@/services/keywordService";
 
@@ -29,6 +29,21 @@ export const useKeywordGaps = () => {
     keywordGapsCache.page = 1;
   };
   
+  // This function checks if the competitors have changed
+  const haveCompetitorsChanged = (newDomain: string, newCompetitors: string[]) => {
+    if (keywordGapsCache.domain !== newDomain) return true;
+    
+    if (!keywordGapsCache.competitorDomains || 
+        newCompetitors.length !== keywordGapsCache.competitorDomains.length) {
+      return true;
+    }
+    
+    // Check if all competitors are the same
+    return !newCompetitors.every(comp => 
+      keywordGapsCache.competitorDomains.includes(comp)
+    );
+  };
+  
   const getSelectedKeywordsData = (): KeywordGap[] => {
     if (!keywordGapsCache.data) return [];
     
@@ -54,6 +69,7 @@ export const useKeywordGaps = () => {
     error,
     setError,
     clearKeywordGapsCache,
-    getSelectedKeywordsData
+    getSelectedKeywordsData,
+    haveCompetitorsChanged
   };
 };

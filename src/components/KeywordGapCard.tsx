@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { findKeywordGaps } from "@/services/keywordService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 
 export const keywordGapsCache = {
   data: null as KeywordGap[] | null,
@@ -82,15 +83,18 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 15);
   const [displayedKeywords, setDisplayedKeywords] = useState<KeywordGap[]>([]);
   const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
+  const { haveCompetitorsChanged } = useKeywordGaps();
 
   useEffect(() => {
     const generateKeywordGaps = async () => {
       if (isLoading || !keywords || keywords.length === 0) return;
       
+      const shouldRefreshAnalysis = haveCompetitorsChanged(domain, competitorDomains);
+      
       if (
+        !shouldRefreshAnalysis &&
         keywordGapsCache.data &&
         keywordGapsCache.domain === domain &&
-        JSON.stringify(keywordGapsCache.competitorDomains) === JSON.stringify(competitorDomains) &&
         keywordGapsCache.keywordsLength === keywords.length
       ) {
         setKeywordGaps(keywordGapsCache.data);
@@ -122,6 +126,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           keywordGapsCache.keywordsLength = keywords.length;
           
           setKeywordGaps(gaps);
+          setFilterCompetitor("all");
           toast.success(`Found ${gaps.length} keyword gaps for analysis`);
         } else {
           console.warn("No keyword gaps found or service returned empty array");
@@ -140,7 +145,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     };
     
     generateKeywordGaps();
-  }, [domain, competitorDomains, keywords, isLoading]);
+  }, [domain, competitorDomains, keywords, isLoading, haveCompetitorsChanged]);
 
   useEffect(() => {
     if (!keywordGaps) return;
