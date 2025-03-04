@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { ContentBlock, ContentOutline, GeneratedContent } from './types';
+import { ContentBlock, ContentOutline, ContentTemplate, GeneratedContent } from './types';
 import { generateContentWithRAG } from '../vector/ragService';
 import { isPineconeConfigured } from '../vector/pineconeService';
 import { OPENAI_API_KEY } from './apiConfig';
@@ -297,7 +297,7 @@ export const getContentTemplates = (contentType: string): ContentTemplate[] => {
         name: 'Listicle',
         contentType: 'blog',
         structure: ['Introduction', 'Numbered List Items', 'Conclusion'],
-        description: 'A list-based article format that's easy to scan and read.'
+        description: 'A list-based article format that is easy to scan and read.'
       }
     ],
     'how-to': [
@@ -329,7 +329,7 @@ export const getContentTemplates = (contentType: string): ContentTemplate[] => {
         name: 'Narrative Case Study',
         contentType: 'case-study',
         structure: ['Background', 'Story Beginning', 'Conflict/Challenge', 'Resolution', 'Outcome', 'Lessons Learned'],
-        description: 'Tells the story of the client's journey in a narrative format.'
+        description: 'Tells the story of the client journey in a narrative format.'
       }
     ],
     'white-paper': [
