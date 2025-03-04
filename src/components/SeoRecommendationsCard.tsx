@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SeoRecommendation, generateSeoRecommendations } from "@/services/keywordService";
+import { SeoRecommendation } from "@/services/keywords/types";
+import { generateSeoRecommendations } from "@/services/keywordService";
 
 // Create a cache to store SEO recommendations
 export const recommendationsCache = {
@@ -133,8 +134,13 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
     return (
       <div className="space-y-4">
         {recs.map((rec, index) => {
-          const recId = `${rec.type}-${index}`;
+          // Use category or type, whichever is available
+          const recType = rec.category || rec.type || "";
+          const recId = `${recType}-${index}`;
           const isExpanded = expandedRecs[recId] || false;
+          
+          // Use either recommendation or title based on what's available
+          const title = rec.recommendation || rec.title || "";
           
           return (
             <div key={recId} className="space-y-2 transition-all">
@@ -143,16 +149,16 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
                 onClick={() => toggleExpand(recId)}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{getTypeIcon(rec.type)}</span>
-                  <h3 className="font-semibold">{rec.recommendation}</h3>
+                  <span className="text-xl">{getTypeIcon(recType)}</span>
+                  <h3 className="font-semibold">{title}</h3>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Badge className={`${getPriorityColor(rec.priority)}`}>
                     {rec.priority}
                   </Badge>
-                  {rec.implementationDifficulty && (
-                    <Badge className={`${getDifficultyColor(rec.implementationDifficulty)}`}>
-                      {rec.implementationDifficulty}
+                  {(rec.difficulty || rec.implementationDifficulty) && (
+                    <Badge className={`${getDifficultyColor(rec.difficulty || rec.implementationDifficulty)}`}>
+                      {rec.difficulty || rec.implementationDifficulty}
                     </Badge>
                   )}
                   {isExpanded ? 
@@ -162,9 +168,9 @@ export function SeoRecommendationsCard({ domain, keywords, isLoading }: SeoRecom
                 </div>
               </div>
               
-              {isExpanded && rec.details && (
+              {isExpanded && (rec.details || rec.description) && (
                 <div className="ml-7 text-sm text-muted-foreground bg-muted/10 p-2 rounded-md border-l-2 border-revology/30 animate-fade-in">
-                  {rec.details}
+                  {rec.details || rec.description}
                 </div>
               )}
               

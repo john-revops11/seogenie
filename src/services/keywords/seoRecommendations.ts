@@ -1,4 +1,3 @@
-
 import { SeoRecommendation } from './types';
 import { OPENAI_API_KEY } from './apiConfig';
 
@@ -212,7 +211,13 @@ function getCustomizedTechnicalRecommendations(isBusinessSite: boolean): SeoReco
       recommendation: "Implement XML sitemap and submit to Google Search Console",
       priority: "high",
       details: "Create and maintain an up-to-date sitemap.xml file to help search engines crawl and index your content efficiently. Submit to GSC monthly.",
-      implementationDifficulty: "easy"
+      implementationDifficulty: "easy",
+      title: "Implement XML sitemap", 
+      description: "Create and maintain an up-to-date sitemap.xml file",
+      impact: "high",
+      difficulty: "easy",
+      implementation: "Create sitemap.xml and submit to GSC",
+      category: "technical"
     },
     {
       type: "technical",
@@ -516,7 +521,7 @@ function getCustomizedContentRecommendations(topKeywords: string[], isBusinessSi
       },
       {
         type: "content",
-        recommendation: "Develop 10x content on core topics",
+        recommendation: "Create 10x content on core topics",
         priority: "high",
         details: "Create content significantly better than top-ranking competitors by including more depth, better examples, original research, expert quotes, and comprehensive solutions.",
         implementationDifficulty: "hard"
@@ -797,4 +802,3 @@ function getGenericSummaryRecommendations(): SeoRecommendation[] {
     }
   ];
 }
-

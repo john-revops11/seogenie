@@ -1,4 +1,3 @@
-
 import { SeoRecommendation } from "@/services/keywordService";
 
 /**
@@ -111,7 +110,7 @@ export const generateTitleSuggestions = (
   contentRecs.forEach(rec => {
     if (rec.priority === 'high') {
       // Extract useful phrases from recommendation
-      let titlePhrase = rec.recommendation.split(':').pop()?.trim() || '';
+      let titlePhrase = rec.title.split(':').pop()?.trim() || '';
       titlePhrase = titlePhrase.replace(/^["']|["']$/g, ''); // Remove quotes if present
       
       if (titlePhrase.length > 10) {
