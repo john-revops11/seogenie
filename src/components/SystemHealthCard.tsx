@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +74,10 @@ const SystemHealthCard = () => {
     openai: { status: "idle", models: [
       { id: "gpt-4o", name: "GPT-4o", provider: "openai", capabilities: ["text", "vision", "function calling"] },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", capabilities: ["text", "vision", "function calling"] },
+      { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai", capabilities: ["text", "function calling"] },
+      { id: "gpt-4o-2024-05-13", name: "GPT-4o (May 13)", provider: "openai", capabilities: ["text", "vision", "function calling"] },
+      { id: "gpt-4-vision", name: "GPT-4 Vision", provider: "openai", capabilities: ["text", "vision"] },
+      { id: "gpt-4o-1106", name: "GPT-4 O1", provider: "openai", capabilities: ["text", "vision", "function calling", "advanced reasoning"] },
       { id: "text-embedding-3-small", name: "Text Embedding v3 Small", provider: "openai", capabilities: ["embeddings"] },
       { id: "text-embedding-3-large", name: "Text Embedding v3 Large", provider: "openai", capabilities: ["embeddings"] },
     ] },
@@ -95,7 +98,6 @@ const SystemHealthCard = () => {
   }, []);
   
   const checkApiStatuses = async () => {
-    // Check Pinecone
     try {
       setApiStates(prev => ({
         ...prev,
@@ -103,7 +105,6 @@ const SystemHealthCard = () => {
       }));
       
       if (isPineconeConfigured()) {
-        // Test Pinecone connection
         const response = await fetch(`https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io/describe_index_stats`, {
           method: 'POST',
           headers: {
@@ -149,7 +150,6 @@ const SystemHealthCard = () => {
       }));
     }
     
-    // Check OpenAI
     try {
       setApiStates(prev => ({
         ...prev,
@@ -159,7 +159,6 @@ const SystemHealthCard = () => {
         }
       }));
       
-      // Use a simple request to test the OpenAI API
       const response = await fetch('https://api.openai.com/v1/models', {
         method: 'GET',
         headers: {
@@ -201,14 +200,12 @@ const SystemHealthCard = () => {
       }));
     }
     
-    // Check Google Ads
     try {
       setApiStates(prev => ({
         ...prev,
         googleAds: { status: "loading" }
       }));
       
-      // Test Google Ads API connection
       setTimeout(() => {
         console.error("Error testing Google Ads API connection:", "Failed to fetch");
         setApiStates(prev => ({
@@ -230,14 +227,12 @@ const SystemHealthCard = () => {
       }));
     }
     
-    // Check DataForSEO
     try {
       setApiStates(prev => ({
         ...prev,
         dataForSeo: { status: "loading" }
       }));
       
-      // Set a timeout to simulate the payment required response
       setTimeout(() => {
         setApiStates(prev => ({
           ...prev,
@@ -258,7 +253,6 @@ const SystemHealthCard = () => {
       }));
     }
     
-    // Check RapidAPI
     try {
       setApiStates(prev => ({
         ...prev,
@@ -297,7 +291,6 @@ const SystemHealthCard = () => {
       }
     }));
     
-    // Simulate retry with a timeout
     setTimeout(() => {
       checkApiStatuses();
     }, 1000);
@@ -313,11 +306,9 @@ const SystemHealthCard = () => {
     setTestResponse("");
 
     try {
-      // Only handling OpenAI models for now
       const isEmbeddingModel = selectedModelToTest.includes("embedding");
       
       if (isEmbeddingModel) {
-        // Test embedding model
         const response = await fetch('https://api.openai.com/v1/embeddings', {
           method: 'POST',
           headers: {
@@ -341,7 +332,6 @@ const SystemHealthCard = () => {
         setTestResponse(`✅ Success! Generated ${dimensions}-dimensional embedding vector.`);
         setTestModelStatus("success");
       } else {
-        // Test chat completion model
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -382,7 +372,6 @@ const SystemHealthCard = () => {
     }
   };
   
-  // Calculate overall system health
   const allApiStatuses = Object.values(apiStates).map(api => api.status);
   const healthyApiCount = allApiStatuses.filter(status => status === "success").length;
   const totalApiCount = allApiStatuses.length;
@@ -397,7 +386,6 @@ const SystemHealthCard = () => {
     systemHealth = "critical";
   }
   
-  // Get system health color
   const healthColor = {
     good: "text-green-500",
     warning: "text-amber-500",
@@ -516,7 +504,6 @@ const SystemHealthCard = () => {
                       </TooltipProvider>
                     )}
                     
-                    {/* Add test models button for AI services */}
                     {api === "openai" && apiState.status === "success" && apiState.models && apiState.models.length > 0 && (
                       <TooltipProvider>
                         <Tooltip>
@@ -598,7 +585,6 @@ const SystemHealthCard = () => {
           })}
         </div>
 
-        {/* AI Model Testing Dialog */}
         <Dialog open={showModelDialog} onOpenChange={setShowModelDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
