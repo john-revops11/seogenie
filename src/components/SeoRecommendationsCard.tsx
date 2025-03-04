@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SeoRecommendation } from "@/services/keywords/types";
-import { generateSeoRecommendations } from "@/services/keywordService";
+import { generateSeoRecommendations } from "@/services/keywords/seoRecommendations";
 
 // Create a cache to store SEO recommendations
 export const recommendationsCache = {
