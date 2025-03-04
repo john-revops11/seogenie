@@ -295,7 +295,7 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
 
     const data: GoogleKeywordInsightResponse = await response.json();
     
-    if (data.status !== "success" || !data.keywords || data.keywords.length === 0) {
+    if (!data.status || data.status !== "success" || !data.keywords || data.keywords.length === 0) {
       console.warn(`Google Keyword API unsuccessful for ${domainUrl}`);
       throw new Error("API returned no keywords");
     }
@@ -307,7 +307,7 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
       competition: getCompetitionLabel(item.difficulty),
       competition_index: item.difficulty,
       cpc: item.cpc,
-      position: item.current_rank,
+      position: item.current_rank || null,
       rankingUrl: null,
     }));
   } catch (error) {

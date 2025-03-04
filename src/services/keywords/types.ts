@@ -28,6 +28,7 @@ export interface KeywordResearchPrompt {
   relatedKeywords: string[];
 }
 
+// Updated SeoRecommendation interface to include both old and new properties
 export interface SeoRecommendation {
   title: string;
   description: string;
@@ -36,10 +37,11 @@ export interface SeoRecommendation {
   priority: 'high' | 'medium' | 'low';  // Changed from number to string enum
   implementation: string;
   category: 'onPage' | 'technical' | 'content' | 'offPage' | 'summary';
-  type?: string;  // Added to match usage in SeoRecommendationsCard
-  recommendation?: string;  // Added to match usage in SeoRecommendationsCard
-  details?: string;  // Added to match usage in SeoRecommendationsCard
-  implementationDifficulty?: string;  // Added to match usage in SeoRecommendationsCard
+  // Additional properties used in existing code
+  type?: string;
+  recommendation?: string;
+  details?: string;
+  implementationDifficulty?: string;
 }
 
 export interface ApiResponse<T> {
@@ -48,15 +50,29 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-// Add the missing types that are causing errors in api.ts
+// Define the missing types needed for api.ts
 export interface DomainKeywordResponse {
-  // Add the necessary properties based on the actual implementation
-  domain: string;
-  keywords: KeywordData[];
+  success: boolean;
+  reason?: string;
+  data: {
+    keyword: string;
+    monthly_search: number;
+    competition: string;
+    competition_index: number;
+    low_bid: number;
+    high_bid: number;
+  }[];
 }
 
 export interface GoogleKeywordInsightResponse {
-  // Add the necessary properties based on the actual implementation
-  keyword: string;
-  insights: any; // Replace with specific type if available
+  status: string;
+  keyword?: string;
+  keywords: {
+    keyword: string;
+    volume: number;
+    difficulty: number;
+    cpc: number;
+    current_rank?: number;
+  }[];
+  insights?: any;
 }
