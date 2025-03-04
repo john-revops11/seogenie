@@ -3,7 +3,7 @@
 
 // DataForSEO API configuration
 export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";
-export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf"; // Updated password for all DataForSEO APIs
+export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf"; // Updated password
 export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_site/live";
 export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live";
 
@@ -31,11 +31,14 @@ let dynamicApiKeys: Record<string, string> = {
 
 export const setApiKey = (service: string, key: string) => {
   dynamicApiKeys[service.toLowerCase()] = key;
+  console.log(`Set API key for ${service}`);
 };
 
 export const getApiKey = (service: string): string => {
   const key = service.toLowerCase();
-  return dynamicApiKeys[key] || "";
+  const apiKey = dynamicApiKeys[key] || "";
+  console.log(`Getting API key for ${service}: ${apiKey ? "Key found" : "No key found"}`);
+  return apiKey;
 };
 
 export const removeApiKey = (service: string): void => {

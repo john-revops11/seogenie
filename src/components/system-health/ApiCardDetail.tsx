@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { Activity, BrainCircuit, BookOpen } from "lucide-react";
+import { Activity, BrainCircuit, BookOpen, Globe } from "lucide-react";
 import { ApiCardDetailProps } from "@/types/systemHealth";
 import { getApiIcon, getApiName, getFixSuggestion } from "./ApiIcon";
 import { getStatusBadge } from "./ApiStatusIndicator";
@@ -156,6 +156,21 @@ export const ApiCardDetail = ({
             <div className="flex items-center gap-2">
               <span className="font-medium">Format:</span>
               <span>username:password</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">APIs:</span>
+              <span>Keywords for Site, Keywords for Keywords</span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 px-2 py-0 text-[9px]"
+                onClick={onOpenDocs}
+              >
+                <Globe className="h-2 w-2 mr-1" />
+                API Docs
+              </Button>
             </div>
           </div>
         </div>

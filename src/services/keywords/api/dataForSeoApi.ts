@@ -450,7 +450,7 @@ export const getDataForSEOTaskResults = async (taskId: string): Promise<KeywordD
 };
 
 /**
- * New function to fetch keywords for multiple seed keywords
+ * New function to fetch keywords for multiple seed keywords with improved error handling
  */
 export const fetchKeywordsForMultipleKeywords = async (
   seedKeywords: string[],
@@ -463,6 +463,7 @@ export const fetchKeywordsForMultipleKeywords = async (
     const dataForSeoCredentials = getApiKey("dataforseo");
     
     if (!dataForSeoCredentials) {
+      console.error("DataForSEO API credentials not found");
       throw new Error("DataForSEO API credentials not configured");
     }
     
@@ -471,10 +472,12 @@ export const fetchKeywordsForMultipleKeywords = async (
     // Check if credentials are in username:password format
     if (dataForSeoCredentials.includes(':')) {
       [login, password] = dataForSeoCredentials.split(':');
+      console.log(`Using provided DataForSEO credentials for user: ${login}`);
     } else {
       // Fall back to default credentials if format is incorrect
       login = DATAFORSEO_LOGIN;
       password = DATAFORSEO_PASSWORD;
+      console.log(`Using default DataForSEO credentials for user: ${login}`);
     }
     
     // Create authorization string
@@ -488,16 +491,19 @@ export const fetchKeywordsForMultipleKeywords = async (
       throw new Error("No valid keywords provided");
     }
     
-    // Prepare the request body
+    // Prepare the request body with explicit sort_by parameter
     const requestBody = JSON.stringify([
       {
         location_code: locationCode,
         language_code: "en",
-        keywords: filteredKeywords
+        keywords: filteredKeywords,
+        sort_by: "relevance"  // Adding the sort_by parameter as specified in the example
       }
     ]);
     
+    console.log("DataForSEO keywords API URL:", DATAFORSEO_KEYWORDS_API_URL);
     console.log("DataForSEO keywords request body:", requestBody);
+    console.log("DataForSEO credentials (encoded):", encodedCredentials.substring(0, 10) + "...");
     
     const response = await fetch(DATAFORSEO_KEYWORDS_API_URL, {
       method: "POST",
@@ -508,27 +514,32 @@ export const fetchKeywordsForMultipleKeywords = async (
       body: requestBody
     });
 
+    console.log("DataForSEO API response status:", response.status);
+    
     // Check for API errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`DataForSEO API error ${response.status}: ${errorText}`);
+      console.error(`DataForSEO API error ${response.status}: ${errorText}`);
       throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
     const data = await response.json();
     
     // Debug the actual response structure
-    console.log("DataForSEO keywords response:", JSON.stringify(data).substring(0, 500) + "...");
+    console.log("DataForSEO keywords response status_code:", data.status_code);
+    console.log("DataForSEO keywords response status_message:", data.status_message);
+    console.log("DataForSEO keywords response structure:", JSON.stringify(data).substring(0, 500) + "...");
     
     // Check for DataForSEO API-specific error status
     if (data.status_code !== 20000) {
       const errorMsg = data.status_message || "Unknown DataForSEO API error";
+      console.error(`DataForSEO API returned error status: ${data.status_code}, message: ${errorMsg}`);
       throw new Error(`DataForSEO API error: ${errorMsg}`);
     }
     
     // Parse the response
     if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result) {
-      console.warn(`DataForSEO API returned no results for keywords`);
+      console.error(`DataForSEO API returned no results for keywords`);
       throw new Error("API returned no results");
     }
     
@@ -550,11 +561,22 @@ export const fetchKeywordsForMultipleKeywords = async (
             rankingUrl: null,
           });
         }
+      } else if (item.keyword) {
+        // Fallback for different response structure
+        keywords.push({
+          keyword: item.keyword,
+          monthly_search: item.search_volume || 0,
+          competition: getCompetitionLabel(item.competition_index || 50),
+          competition_index: item.competition_index || 50,
+          cpc: item.cpc || 0,
+          position: null,
+          rankingUrl: null,
+        });
       }
     }
     
     if (keywords.length === 0) {
-      console.warn(`DataForSEO API returned no valid keywords`);
+      console.error(`DataForSEO API returned no valid keywords`);
       throw new Error("API returned no valid keywords");
     }
     

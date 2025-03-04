@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Zap, Target, Settings, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import { Loader2, Search, Zap, Target, Settings, ChevronDown, ChevronRight, Plus, X, AlertCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -12,8 +12,9 @@ import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
 import { getApiKey } from "@/services/keywords/api";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { commonLocations, getLocationNameByCode } from "./keyword-gaps/KeywordGapUtils";
+import { fetchKeywordsForMultipleKeywords } from "@/services/keywords/api/dataForSeoApi";
 
 interface KeywordResearchProps {
   domain: string;
@@ -53,6 +54,7 @@ const KeywordResearch = ({
   const [keywords, setKeywords] = useState<ResearchKeyword[]>([]);
   const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([]);
   const [isRunningSeoStrategy, setIsRunningSeoStrategy] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const addKeyword = () => {
@@ -83,12 +85,15 @@ const KeywordResearch = ({
     }
 
     setIsSearching(true);
+    setApiError(null);
+    
     try {
       // Get DataForSEO credentials
       const credentials = getApiKey("dataforseo");
       console.log("DataForSEO API credentials retrieved:", credentials ? "Found credentials" : "No credentials found");
       
       if (!credentials) {
+        setApiError("DataForSEO API credentials not configured");
         toast.error("DataForSEO API credentials not configured");
         toast.info("Go to API Integrations tab to configure your DataForSEO credentials", {
           action: {
@@ -100,104 +105,71 @@ const KeywordResearch = ({
         return;
       }
 
-      // Format credentials for API call
-      const encodedCredentials = btoa(credentials);
-      
-      // Prepare the request
-      const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live";
-      
+      // Use the improved API function
       toast.info(`Researching ${keywordList.length} keywords...`);
       
-      const requestBody = JSON.stringify([{
-        location_code: locationCode,
-        language_code: "en",
-        keywords: keywordList
-      }]);
-      
-      console.log(`Making DataForSEO API request to ${DATAFORSEO_KEYWORDS_API_URL}`);
-      console.log(`Request body: ${requestBody}`);
-      
-      const response = await fetch(DATAFORSEO_KEYWORDS_API_URL, {
-        method: "POST",
-        headers: {
-          "Authorization": `Basic ${encodedCredentials}`,
-          "Content-Type": "application/json"
-        },
-        body: requestBody
-      });
-
-      console.log(`DataForSEO API response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`DataForSEO API error response: ${errorText}`);
-        throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
-      }
-
-      const data = await response.json();
-      console.log("DataForSEO API response data:", data);
-      
-      if (data.status_code !== 20000) {
-        console.error("DataForSEO API returned non-success status code:", data.status_code, data.status_message);
-        throw new Error(`DataForSEO API error: ${data.status_message || "Unknown error"}`);
-      }
-      
-      if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result) {
-        console.error("No results returned from DataForSEO API");
-        throw new Error("No results returned from DataForSEO API");
-      }
-
-      // Process the results
-      const processedKeywords: ResearchKeyword[] = [];
-      const groups: KeywordGroup[] = [];
-
-      // For each seed keyword
-      keywordList.forEach(seedKeyword => {
-        const relatedKeywords: ResearchKeyword[] = [];
+      try {
+        const keywordData = await fetchKeywordsForMultipleKeywords(keywordList, locationCode);
+        console.log("Fetched keyword data:", keywordData);
         
-        // Find the related keywords for this seed keyword in the response
-        data.tasks[0].result.forEach((result: any) => {
-          if (result.keyword_data && result.keyword_data.keywords) {
-            result.keyword_data.keywords.forEach((keywordData: any) => {
-              // Check if this keyword is related to the seed keyword
-              if (keywordData.keyword.toLowerCase().includes(seedKeyword.toLowerCase()) || 
-                  seedKeyword.toLowerCase().includes(keywordData.keyword.toLowerCase())) {
-                const processedKeyword: ResearchKeyword = {
-                  keyword: keywordData.keyword,
-                  volume: keywordData.search_volume || 0,
-                  difficulty: keywordData.competition_index || 50,
-                  cpc: keywordData.cpc || 0,
-                  recommendation: getRecommendationForKeyword(keywordData.keyword),
-                  relatedKeywords: getRelatedKeywordsFor(keywordData.keyword),
-                  isExpanded: false
-                };
-                relatedKeywords.push(processedKeyword);
-                processedKeywords.push(processedKeyword);
-              }
+        if (keywordData.length === 0) {
+          throw new Error("No keywords returned from API");
+        }
+        
+        // Process the results
+        const processedKeywords: ResearchKeyword[] = [];
+        const groups: KeywordGroup[] = [];
+
+        // For each seed keyword
+        keywordList.forEach(seedKeyword => {
+          const relatedKeywords: ResearchKeyword[] = [];
+          
+          // Find related keywords for this seed keyword
+          keywordData.forEach(kw => {
+            if (kw.keyword.toLowerCase().includes(seedKeyword.toLowerCase()) || 
+                seedKeyword.toLowerCase().includes(kw.keyword.toLowerCase())) {
+              
+              const processedKeyword: ResearchKeyword = {
+                keyword: kw.keyword,
+                volume: kw.monthly_search || 0,
+                difficulty: kw.competition_index || 50,
+                cpc: kw.cpc || 0,
+                recommendation: getRecommendationForKeyword(kw.keyword),
+                relatedKeywords: getRelatedKeywordsFor(kw.keyword),
+                isExpanded: false
+              };
+              
+              relatedKeywords.push(processedKeyword);
+              processedKeywords.push(processedKeyword);
+            }
+          });
+          
+          // Add this group if it has any keywords
+          if (relatedKeywords.length > 0) {
+            groups.push({
+              parentKeyword: seedKeyword,
+              keywords: relatedKeywords,
+              isExpanded: false
             });
           }
         });
-        
-        // Add this group
-        if (relatedKeywords.length > 0) {
-          groups.push({
-            parentKeyword: seedKeyword,
-            keywords: relatedKeywords,
-            isExpanded: false
-          });
-        }
-      });
 
-      console.log(`Found ${processedKeywords.length} related keywords across ${groups.length} groups`);
+        console.log(`Found ${processedKeywords.length} related keywords across ${groups.length} groups`);
+        
+        setKeywords(processedKeywords);
+        setKeywordGroups(groups);
+        
+        toast.success(`Found ${processedKeywords.length} keywords related to your search`);
+      } catch (error) {
+        console.error("Error in fetchKeywordsForMultipleKeywords:", error);
+        throw error;
+      }
       
-      setKeywords(processedKeywords);
-      setKeywordGroups(groups);
-      
-      toast.success(`Found ${processedKeywords.length} keywords related to your search`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("Error fetching keywords:", error);
       
+      setApiError(errorMessage);
       toast.error(`Failed to fetch keywords: ${errorMessage}`);
       
       // Check for specific errors and provide helpful messages
@@ -339,6 +311,25 @@ const KeywordResearch = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {apiError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>API Error</AlertTitle>
+            <AlertDescription>
+              {apiError}
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate("/settings")}
+                >
+                  Check API Settings
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+      
         <div className="space-y-4">
           <div className="flex items-start gap-2">
             <div className="flex-1">
