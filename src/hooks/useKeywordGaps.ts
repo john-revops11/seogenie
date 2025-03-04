@@ -54,7 +54,17 @@ export const useKeywordGaps = () => {
         if (a.isTopOpportunity !== b.isTopOpportunity) {
           return a.isTopOpportunity ? -1 : 1;
         }
-        // Then by volume (higher comes first)
+        // Then by competitive advantage (higher comes first)
+        if (a.competitiveAdvantage !== b.competitiveAdvantage && 
+            a.competitiveAdvantage !== undefined && b.competitiveAdvantage !== undefined) {
+          return b.competitiveAdvantage - a.competitiveAdvantage;
+        }
+        // Then by relevance (higher comes first)
+        if (a.relevance !== b.relevance && 
+            a.relevance !== undefined && b.relevance !== undefined) {
+          return b.relevance - a.relevance;
+        }
+        // Finally by volume (higher comes first)
         return b.volume - a.volume;
       });
   };
