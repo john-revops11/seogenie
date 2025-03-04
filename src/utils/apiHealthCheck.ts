@@ -118,7 +118,10 @@ export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiS
     }));
     
     const dataForSeoApiKey = getApiKey("dataforseo");
+    console.log("Checking DataForSEO API health with key:", dataForSeoApiKey ? "Found key" : "No key found");
+    
     if (!dataForSeoApiKey) {
+      console.log("DataForSEO API not configured");
       setApiStates(prev => ({
         ...prev,
         dataForSeo: { 
@@ -137,6 +140,7 @@ export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiS
       [login, password] = dataForSeoApiKey.split(':');
       
       if (!login || !password) {
+        console.log("Invalid DataForSEO credentials format");
         setApiStates(prev => ({
           ...prev,
           dataForSeo: { 
@@ -147,6 +151,7 @@ export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiS
         return;
       }
     } else {
+      console.log("DataForSEO credentials not in username:password format");
       setApiStates(prev => ({
         ...prev,
         dataForSeo: { 
@@ -158,6 +163,7 @@ export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiS
     }
     
     const encodedCredentials = btoa(`${login}:${password}`);
+    console.log("Making request to DataForSEO API: locations endpoint");
     
     const response = await fetch("https://api.dataforseo.com/v3/merchant/google/locations", {
       method: "GET",
@@ -167,17 +173,26 @@ export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiS
       }
     });
     
+    console.log(`DataForSEO API response status: ${response.status}`);
+    
     if (response.ok) {
-      console.info("DataForSEO connection successful");
+      const responseData = await response.json();
+      console.log("DataForSEO connection successful", responseData);
+      
       setApiStates(prev => ({
         ...prev,
         dataForSeo: { 
           status: "success", 
-          message: "API connection verified" 
+          message: "API connection verified",
+          details: {
+            username: login,
+            isActive: true
+          }
         }
       }));
     } else {
       const errorData = await response.json();
+      console.error("DataForSEO API error:", errorData);
       throw new Error(`DataForSEO API returned ${response.status}: ${errorData?.message || "Unknown error"}`);
     }
   } catch (error) {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,8 @@ const KeywordResearch = ({
     try {
       // Get DataForSEO credentials
       const credentials = getApiKey("dataforseo");
+      console.log("DataForSEO API credentials retrieved:", credentials ? "Found credentials" : "No credentials found");
+      
       if (!credentials) {
         toast.error("DataForSEO API credentials not configured");
         toast.info("Go to API Integrations tab to configure your DataForSEO credentials", {
@@ -93,6 +96,7 @@ const KeywordResearch = ({
             onClick: () => navigate("/settings")
           }
         });
+        setIsSearching(false);
         return;
       }
 
@@ -110,6 +114,9 @@ const KeywordResearch = ({
         keywords: keywordList
       }]);
       
+      console.log(`Making DataForSEO API request to ${DATAFORSEO_KEYWORDS_API_URL}`);
+      console.log(`Request body: ${requestBody}`);
+      
       const response = await fetch(DATAFORSEO_KEYWORDS_API_URL, {
         method: "POST",
         headers: {
@@ -119,18 +126,24 @@ const KeywordResearch = ({
         body: requestBody
       });
 
+      console.log(`DataForSEO API response status: ${response.status}`);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`DataForSEO API error response: ${errorText}`);
         throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
       }
 
       const data = await response.json();
+      console.log("DataForSEO API response data:", data);
       
       if (data.status_code !== 20000) {
+        console.error("DataForSEO API returned non-success status code:", data.status_code, data.status_message);
         throw new Error(`DataForSEO API error: ${data.status_message || "Unknown error"}`);
       }
       
       if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result) {
+        console.error("No results returned from DataForSEO API");
         throw new Error("No results returned from DataForSEO API");
       }
 
@@ -169,11 +182,14 @@ const KeywordResearch = ({
         if (relatedKeywords.length > 0) {
           groups.push({
             parentKeyword: seedKeyword,
-            keywords: relatedKeywords
+            keywords: relatedKeywords,
+            isExpanded: false
           });
         }
       });
 
+      console.log(`Found ${processedKeywords.length} related keywords across ${groups.length} groups`);
+      
       setKeywords(processedKeywords);
       setKeywordGroups(groups);
       
@@ -192,6 +208,10 @@ const KeywordResearch = ({
             onClick: () => navigate("/settings")
           }
         });
+      } else if (errorMessage.includes("429")) {
+        toast.info("Rate limit exceeded. Please try again later or upgrade your DataForSEO plan.");
+      } else if (errorMessage.includes("500")) {
+        toast.info("Server error at DataForSEO. Please try again later.");
       }
     } finally {
       setIsSearching(false);

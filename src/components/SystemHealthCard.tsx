@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Activity, X, ExternalLink } from "lucide-react";
+import { Activity, X, ExternalLink, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { ApiStates } from "@/types/systemHealth";
 import { ApiCardDetail } from "./system-health/ApiCardDetail";
@@ -21,10 +21,10 @@ const SystemHealthCard = () => {
   const [apiStates, setApiStates] = useState<ApiStates>({
     pinecone: { status: "idle" },
     openai: { status: "idle", models: [
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", capabilities: ["text", "vision", "function calling"] },
-      { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "openai", capabilities: ["text", "function calling"] },
       { id: "gpt-4o", name: "GPT-4o", provider: "openai", capabilities: ["text", "vision", "function calling"] },
       { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: ["text", "function calling"] },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", capabilities: ["text", "vision", "function calling"] },
+      { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "openai", capabilities: ["text", "function calling"] },
       { id: "text-embedding-3-small", name: "Text Embedding v3 Small", provider: "openai", capabilities: ["embeddings"] },
       { id: "text-embedding-3-large", name: "Text Embedding v3 Large", provider: "openai", capabilities: ["embeddings"] },
     ] },
@@ -55,6 +55,8 @@ const SystemHealthCard = () => {
   }, []);
   
   const checkApiStatuses = async () => {
+    console.log("Checking API statuses...");
+    
     // Check Pinecone
     await checkPineconeHealth(setApiStates);
     
@@ -66,6 +68,8 @@ const SystemHealthCard = () => {
     
     // Check other APIs
     checkOtherApis(setApiStates);
+    
+    console.log("API status check completed");
   };
   
   const retryApiConnection = (apiName: keyof ApiStates) => {
@@ -107,6 +111,34 @@ const SystemHealthCard = () => {
     warning: "text-amber-500",
     critical: "text-red-500"
   }[systemHealth];
+
+  const openDocsForApi = (api: keyof ApiStates) => {
+    let docsUrl = "";
+    
+    switch(api) {
+      case "openai":
+        docsUrl = "https://platform.openai.com/docs/introduction";
+        break;
+      case "dataForSeo":
+        docsUrl = "https://docs.dataforseo.com/";
+        break;
+      case "pinecone":
+        docsUrl = "https://docs.pinecone.io/";
+        break;
+      case "googleAds":
+        docsUrl = "https://developers.google.com/google-ads/api/docs/start";
+        break;
+      case "rapidApi":
+        docsUrl = "https://docs.rapidapi.com/";
+        break;
+      default:
+        docsUrl = "";
+    }
+    
+    if (docsUrl) {
+      window.open(docsUrl, "_blank");
+    }
+  };
   
   return (
     <Card className={cn(
@@ -140,6 +172,7 @@ const SystemHealthCard = () => {
                 expanded={expanded}
                 onRetry={retryApiConnection}
                 onTestModels={api === "openai" ? () => setShowModelDialog(true) : undefined}
+                onOpenDocs={api !== "googleAds" && api !== "rapidApi" ? () => openDocsForApi(api) : undefined}
               />
             );
           })}

@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
-import { Activity, BrainCircuit } from "lucide-react";
+import { Activity, BrainCircuit, BookOpen } from "lucide-react";
 import { ApiCardDetailProps } from "@/types/systemHealth";
 import { getApiIcon, getApiName, getFixSuggestion } from "./ApiIcon";
 import { getStatusBadge } from "./ApiStatusIndicator";
@@ -17,7 +17,8 @@ export const ApiCardDetail = ({
   state, 
   expanded, 
   onRetry,
-  onTestModels 
+  onTestModels,
+  onOpenDocs 
 }: ApiCardDetailProps) => {
   return (
     <div className="text-xs">
@@ -43,6 +44,26 @@ export const ApiCardDetail = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Retry connection</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {onOpenDocs && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={onOpenDocs}
+                  >
+                    <BookOpen className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View Documentation</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -120,6 +141,21 @@ export const ApiCardDetail = ({
             <div className="flex items-center gap-2">
               <span className="font-medium">Dimension:</span>
               <span>{state.details.dimension}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {expanded && state.status === "success" && api === "dataForSeo" && (
+        <div className="pl-6 pt-1">
+          <div className="text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Status:</span>
+              <span>Connected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Format:</span>
+              <span>username:password</span>
             </div>
           </div>
         </div>
