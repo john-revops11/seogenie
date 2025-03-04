@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,6 @@ import { Loader2, Search, Zap, Target } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { OPENAI_API_KEY } from "@/services/keywords/apiConfig";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
 import { fetchRelatedKeywords } from "@/services/keywords/api";
@@ -28,61 +28,6 @@ interface ResearchKeyword {
   relatedKeywords: string[];
 }
 
-const getSampleKeywords = (searchTerm: string): ResearchKeyword[] => {
-  const baseKeywords = [
-    {
-      keyword: `${searchTerm} analytics`,
-      volume: Math.floor(Math.random() * 5000) + 500,
-      difficulty: Math.floor(Math.random() * 70) + 20,
-      cpc: parseFloat((Math.random() * 5 + 1).toFixed(2)),
-      recommendation: "Create a dedicated landing page focusing on analytics solutions",
-      relatedKeywords: ["data analytics", "business analytics", "analytics dashboard", "metrics tracking"]
-    },
-    {
-      keyword: `${searchTerm} software`,
-      volume: Math.floor(Math.random() * 8000) + 1000,
-      difficulty: Math.floor(Math.random() * 60) + 30,
-      cpc: parseFloat((Math.random() * 8 + 2).toFixed(2)),
-      recommendation: "Develop a product comparison page highlighting software benefits",
-      relatedKeywords: ["SaaS platforms", "business software", "software solutions", "cloud software"]
-    },
-    {
-      keyword: `${searchTerm} management`,
-      volume: Math.floor(Math.random() * 6000) + 800,
-      difficulty: Math.floor(Math.random() * 50) + 20,
-      cpc: parseFloat((Math.random() * 6 + 1.5).toFixed(2)),
-      recommendation: "Write detailed guides on management best practices",
-      relatedKeywords: ["management strategies", "team management", "performance management"]
-    },
-    {
-      keyword: `best ${searchTerm} tools`,
-      volume: Math.floor(Math.random() * 4000) + 600,
-      difficulty: Math.floor(Math.random() * 40) + 10,
-      cpc: parseFloat((Math.random() * 4 + 0.8).toFixed(2)),
-      recommendation: "Create a listicle comparing the top tools in the industry",
-      relatedKeywords: ["top tools", "recommended tools", "tool comparison", "productivity tools"]
-    },
-    {
-      keyword: `${searchTerm} examples`,
-      volume: Math.floor(Math.random() * 3000) + 400,
-      difficulty: Math.floor(Math.random() * 30) + 10,
-      cpc: parseFloat((Math.random() * 3 + 0.5).toFixed(2)),
-      recommendation: "Showcase real-world examples and case studies",
-      relatedKeywords: ["case studies", "success stories", "implementation examples"]
-    },
-    {
-      keyword: `${searchTerm} strategies`,
-      volume: Math.floor(Math.random() * 3500) + 450,
-      difficulty: Math.floor(Math.random() * 45) + 15,
-      cpc: parseFloat((Math.random() * 4 + 1.2).toFixed(2)),
-      recommendation: "Develop long-form content on strategic approaches",
-      relatedKeywords: ["growth strategies", "optimization strategies", "strategic planning"]
-    }
-  ];
-  
-  return baseKeywords.slice(0, Math.floor(Math.random() * 3) + 4);
-};
-
 const KeywordResearch = ({ 
   domain, 
   competitorDomains, 
@@ -103,116 +48,43 @@ const KeywordResearch = ({
 
     setIsSearching(true);
     try {
-      try {
-        toast.info("Fetching keyword data from DataForSEO API...");
-        console.log("Calling DataForSEO API with keyword:", searchTerm);
-        const dataForSeoResults = await fetchRelatedKeywords([searchTerm]);
-        
-        if (dataForSeoResults && dataForSeoResults.length > 0) {
-          const formattedKeywords: ResearchKeyword[] = dataForSeoResults.map(kw => ({
-            keyword: kw.keyword,
-            volume: kw.monthly_search || 0,
-            difficulty: kw.competition_index || 50,
-            cpc: kw.cpc || 0,
-            recommendation: getRecommendationForKeyword(kw.keyword),
-            relatedKeywords: getRelatedKeywordsFor(kw.keyword)
-          }));
-          
-          setKeywords(formattedKeywords);
-          toast.success(`Found ${formattedKeywords.length} keywords from DataForSEO API`);
-          setIsSearching(false);
-          return;
-        } else {
-          console.log("DataForSEO API returned empty results, falling back to AI");
-          toast.warning("DataForSEO API returned no results, trying alternative methods...");
-        }
-      } catch (dataForSeoError) {
-        console.error("Error with DataForSEO API:", dataForSeoError);
-        toast.warning(`Could not retrieve data from DataForSEO API: ${(dataForSeoError as Error).message}. Trying alternative methods...`);
-      }
+      toast.info("Fetching keyword data from DataForSEO API...");
+      console.log("Calling DataForSEO API with keyword:", searchTerm);
+      const dataForSeoResults = await fetchRelatedKeywords([searchTerm]);
       
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [
-              {
-                role: 'system',
-                content: 'You are an expert SEO researcher who can identify valuable keyword opportunities and provide actionable recommendations.'
-              },
-              {
-                role: 'user',
-                content: `Generate keyword research data for the term "${searchTerm}" related to domain "${domain}". 
-                
-                For each keyword, provide:
-                - Estimated monthly search volume (number between 10-10000)
-                - SEO difficulty score (1-100 scale where higher is more difficult)
-                - Estimated CPC in USD (0.1-20.0)
-                - A specific implementation recommendation for how to use this keyword
-                - 3-5 related secondary keywords that would complement this keyword
-                
-                Generate 5-8 keywords total.
-                
-                Format your response EXACTLY like this JSON example:
-                {
-                  "keywords": [
-                    {
-                      "keyword": "example keyword 1",
-                      "volume": 1200,
-                      "difficulty": 45,
-                      "cpc": 2.50,
-                      "recommendation": "Use as primary H1 on a dedicated landing page with informational content",
-                      "relatedKeywords": ["related term 1", "related term 2", "related term 3"]
-                    },
-                    {
-                      "keyword": "example keyword 2",
-                      "volume": 800,
-                      "difficulty": 30,
-                      "cpc": 1.75,
-                      "recommendation": "Create a blog post that targets this long-tail keyword for higher conversion potential",
-                      "relatedKeywords": ["related term 4", "related term 5", "related term 6", "related term 7"]
-                    }
-                  ]
-                }`
-              }
-            ],
-            temperature: 0.7,
-            response_format: { type: 'json_object' }
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const parsedData = JSON.parse(data.choices[0].message.content);
+      if (dataForSeoResults && dataForSeoResults.length > 0) {
+        const formattedKeywords: ResearchKeyword[] = dataForSeoResults.map(kw => ({
+          keyword: kw.keyword,
+          volume: kw.monthly_search || 0,
+          difficulty: kw.competition_index || 50,
+          cpc: kw.cpc || 0,
+          recommendation: getRecommendationForKeyword(kw.keyword),
+          relatedKeywords: getRelatedKeywordsFor(kw.keyword)
+        }));
         
-        if (!parsedData.keywords || !Array.isArray(parsedData.keywords)) {
-          throw new Error("Invalid response format from OpenAI");
-        }
-
-        setKeywords(parsedData.keywords);
-        toast.success(`Found ${parsedData.keywords.length} keyword opportunities using AI`);
-      } catch (apiError) {
-        console.error("Error with OpenAI API, using sample data:", apiError);
-        const sampleKeywords = getSampleKeywords(searchTerm);
-        setKeywords(sampleKeywords);
-        toast.success(`Generated ${sampleKeywords.length} keyword ideas for "${searchTerm}"`);
-        toast.info("Using sample data for demonstration purposes");
+        setKeywords(formattedKeywords);
+        toast.success(`Found ${formattedKeywords.length} keywords from DataForSEO API`);
+      } else {
+        toast.error("No keywords found. Please try a different search term or check your DataForSEO API configuration.");
       }
     } catch (error) {
-      console.error("Error researching keywords:", error);
-      toast.error(`Research failed: ${(error as Error).message}`);
+      console.error("Error with DataForSEO API:", error);
       
-      const sampleKeywords = getSampleKeywords(searchTerm);
-      setKeywords(sampleKeywords);
-      toast.info("Using sample data for demonstration purposes");
+      // Provide specific error guidance based on the error message
+      const errorMessage = (error as Error).message || "Unknown error";
+      
+      if (errorMessage.includes("401") || errorMessage.includes("authentication") || errorMessage.includes("Authorization")) {
+        toast.error("DataForSEO API authentication failed. Please check your API credentials in the API Integrations tab.");
+      } else if (errorMessage.includes("429") || errorMessage.includes("rate limit")) {
+        toast.error("DataForSEO API rate limit exceeded. Please wait a moment and try again.");
+      } else if (errorMessage.includes("No valid keywords")) {
+        toast.error("No valid keywords found. Please try a different search term.");
+      } else {
+        toast.error(`DataForSEO API error: ${errorMessage}. Please check your API configuration.`);
+      }
+      
+      // Show recovery steps
+      toast.info("To fix this issue: 1) Check your DataForSEO API credentials in API Integrations, 2) Verify your account has sufficient credits, 3) Try a different keyword");
     } finally {
       setIsSearching(false);
     }

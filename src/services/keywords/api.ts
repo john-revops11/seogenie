@@ -24,7 +24,7 @@ function getCompetitionLabel(difficulty: number): string {
   return "high";
 }
 
-// New function to fetch related keywords using DataForSEO API
+// Function to fetch related keywords using DataForSEO API
 export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<KeywordData[]> => {
   try {
     console.log(`Fetching related keywords from DataForSEO API for keywords:`, seedKeywords);
@@ -46,7 +46,8 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
         location_code: 2840, // US location code
         language_code: "en",
         keywords: filteredKeywords,
-        sort_by: "relevance"
+        sort_by: "relevance",
+        limit: 50 // Add limit for better results
       }
     ]);
     
@@ -72,6 +73,12 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
     
     // Debug the actual response structure
     console.log("DataForSEO keywords response:", JSON.stringify(data).substring(0, 500) + "...");
+    
+    // Check for DataForSEO API-specific error status
+    if (data.status_code !== 20000) {
+      const errorMsg = data.status_message || "Unknown DataForSEO API error";
+      throw new Error(`DataForSEO API error: ${errorMsg}`);
+    }
     
     // Check if we have a valid response with tasks
     if (!data.tasks || data.tasks.length === 0) {

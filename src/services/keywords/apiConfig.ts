@@ -1,3 +1,4 @@
+
 // API configuration and keys
 
 // DataForSEO API configuration
@@ -14,7 +15,6 @@ export const SEMRUSH_API_URL = "https://api.semrush.com/analytics/v1/";
 export const API_HOST = "keyword-tool.p.rapidapi.com";
 export const API_KEY = "795e7799e2116908b7e00f6992fb812d1da70905"; // Updated API key
 export const API_URL = "https://keyword-tool.p.rapidapi.com/urlextract/";
-export const OPENAI_API_KEY = "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";
 
 // Google Keyword Insight API configuration
 export const GOOGLE_KEYWORD_API_HOST = "google-keyword-insight1.p.rapidapi.com";
