@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { KeywordData } from '../types';
 import { 
@@ -446,6 +445,123 @@ export const getDataForSEOTaskResults = async (taskId: string): Promise<KeywordD
     }
   } catch (error) {
     console.error(`Error retrieving DataForSEO task results:`, error);
+    throw error;
+  }
+};
+
+/**
+ * New function to fetch keywords for multiple seed keywords
+ */
+export const fetchKeywordsForMultipleKeywords = async (
+  seedKeywords: string[],
+  locationCode: number = 2840
+): Promise<KeywordData[]> => {
+  try {
+    console.log(`Fetching keywords from DataForSEO API for keywords:`, seedKeywords);
+    
+    // Get API credentials from dynamic API keys
+    const dataForSeoCredentials = getApiKey("dataforseo");
+    
+    if (!dataForSeoCredentials) {
+      throw new Error("DataForSEO API credentials not configured");
+    }
+    
+    let login, password;
+    
+    // Check if credentials are in username:password format
+    if (dataForSeoCredentials.includes(':')) {
+      [login, password] = dataForSeoCredentials.split(':');
+    } else {
+      // Fall back to default credentials if format is incorrect
+      login = DATAFORSEO_LOGIN;
+      password = DATAFORSEO_PASSWORD;
+    }
+    
+    // Create authorization string
+    const credentials = `${login}:${password}`;
+    const encodedCredentials = btoa(credentials);
+    
+    // Filter out empty keywords
+    const filteredKeywords = seedKeywords.filter(kw => kw.trim() !== "");
+    
+    if (filteredKeywords.length === 0) {
+      throw new Error("No valid keywords provided");
+    }
+    
+    // Prepare the request body
+    const requestBody = JSON.stringify([
+      {
+        location_code: locationCode,
+        language_code: "en",
+        keywords: filteredKeywords
+      }
+    ]);
+    
+    console.log("DataForSEO keywords request body:", requestBody);
+    
+    const response = await fetch(DATAFORSEO_KEYWORDS_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json"
+      },
+      body: requestBody
+    });
+
+    // Check for API errors
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`DataForSEO API error ${response.status}: ${errorText}`);
+      throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
+    }
+
+    const data = await response.json();
+    
+    // Debug the actual response structure
+    console.log("DataForSEO keywords response:", JSON.stringify(data).substring(0, 500) + "...");
+    
+    // Check for DataForSEO API-specific error status
+    if (data.status_code !== 20000) {
+      const errorMsg = data.status_message || "Unknown DataForSEO API error";
+      throw new Error(`DataForSEO API error: ${errorMsg}`);
+    }
+    
+    // Parse the response
+    if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result) {
+      console.warn(`DataForSEO API returned no results for keywords`);
+      throw new Error("API returned no results");
+    }
+    
+    // Process the keywords from the response
+    const keywords: KeywordData[] = [];
+    
+    // Loop through each result
+    for (const item of data.tasks[0].result) {
+      if (item.keyword_data && item.keyword_data.keywords) {
+        // Process each keyword
+        for (const keywordItem of item.keyword_data.keywords) {
+          keywords.push({
+            keyword: keywordItem.keyword,
+            monthly_search: keywordItem.search_volume || 0,
+            competition: getCompetitionLabel(keywordItem.competition_index || 50),
+            competition_index: keywordItem.competition_index || 50,
+            cpc: keywordItem.cpc || 0,
+            position: null,
+            rankingUrl: null,
+          });
+        }
+      }
+    }
+    
+    if (keywords.length === 0) {
+      console.warn(`DataForSEO API returned no valid keywords`);
+      throw new Error("API returned no valid keywords");
+    }
+    
+    console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
+    return keywords;
+  } catch (error) {
+    console.error(`Error fetching keywords for multiple keywords:`, error);
     throw error;
   }
 };

@@ -10,7 +10,8 @@ export {
   fetchRelatedKeywords, 
   fetchDataForSEOKeywords, 
   createDataForSEOKeywordTask, 
-  getDataForSEOTaskResults 
+  getDataForSEOTaskResults,
+  fetchKeywordsForMultipleKeywords 
 } from './api/dataForSeoApi';
 export { fetchGoogleKeywordInsights } from './api/googleKeywordApi';
 export { fetchFallbackDomainKeywords } from './api/fallbackApi';
