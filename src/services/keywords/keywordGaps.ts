@@ -130,6 +130,39 @@ export const findKeywordGaps = async (
     // Fall back to OpenAI for analysis if we don't have enough direct gaps
     console.log("Using OpenAI to analyze keyword gaps");
     
+    // Check if OpenAI API key is available
+    if (!OPENAI_API_KEY) {
+      console.error("OpenAI API key is not configured");
+      toast.error("OpenAI API key is not configured. Please add it in API settings.");
+      
+      // Return the potential gaps we've already found instead of nothing
+      if (potentialGaps.length > 0) {
+        console.log("Falling back to direct analysis without AI due to missing API key");
+        return potentialGaps.slice(0, Math.min(potentialGaps.length, targetGapCount)).map(kw => {
+          // Convert to KeywordGap format
+          const opportunity: 'high' | 'medium' | 'low' = 
+            kw.monthly_search > 500 && kw.competition_index < 30 ? 'high' :
+            kw.monthly_search < 100 && kw.competition_index > 60 ? 'low' : 'medium';
+          
+          // Find first competitor that ranks for this keyword
+          const competitorEntry = Object.entries(kw.competitorRankings || {})
+            .find(([comp, pos]) => competitorDomainNames.includes(comp) && pos !== null && pos <= 30);
+          
+          return {
+            keyword: kw.keyword,
+            volume: kw.monthly_search,
+            difficulty: kw.competition_index,
+            opportunity: opportunity,
+            competitor: competitorEntry?.[0] || competitorDomainNames[0],
+            rank: competitorEntry?.[1] || 30,
+            isTopOpportunity: false
+          };
+        });
+      }
+      
+      return [];
+    }
+    
     // Ensure we're requesting up to 50 gaps per competitor
     const minGapsPerCompetitor = 50;
     const adjustedGapCount = minGapsPerCompetitor * competitorDomains.length;
@@ -141,7 +174,7 @@ export const findKeywordGaps = async (
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

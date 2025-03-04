@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Loader2, Check, ChevronLeft, ChevronRight, Plus, AlertCircle } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { findKeywordGaps } from "@/services/keywordService";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const keywordGapsCache = {
   data: null as KeywordGap[] | null,
@@ -75,6 +76,7 @@ const prioritizeKeywords = (keywords: KeywordGap[]): KeywordGap[] => {
 export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading }: KeywordGapCardProps) {
   const [keywordGaps, setKeywordGaps] = useState<KeywordGap[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
   const [currentPage, setCurrentPage] = useState(keywordGapsCache.page || 1);
   const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 15);
@@ -96,6 +98,7 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
       }
       
       setLoading(true);
+      setError(null);
       
       try {
         console.log(`Generating keyword gaps for ${domain} vs`, competitorDomains);
@@ -123,10 +126,12 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
         } else {
           console.warn("No keyword gaps found or service returned empty array");
           setKeywordGaps([]);
+          setError("No keyword gaps found. This could be due to missing API configuration or insufficient data.");
           toast.warning("No keyword gaps found between your domain and competitors");
         }
       } catch (error) {
         console.error("Error generating keyword gaps:", error);
+        setError(`Failed to analyze keyword gaps: ${(error as Error).message}`);
         toast.error(`Failed to generate keyword gaps: ${(error as Error).message}`);
         setKeywordGaps([]);
       } finally {
@@ -243,6 +248,43 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
     return Array.from(competitors);
   };
 
+  const refreshAnalysis = async () => {
+    keywordGapsCache.data = null;
+    setKeywordGaps(null);
+    setError(null);
+    
+    setLoading(true);
+    try {
+      console.log(`Refreshing keyword gaps for ${domain} vs`, competitorDomains);
+      
+      const gaps = await findKeywordGaps(domain, competitorDomains, keywords);
+      
+      if (gaps && gaps.length > 0) {
+        console.log(`Found ${gaps.length} keyword gaps`);
+        
+        keywordGapsCache.data = gaps;
+        keywordGapsCache.domain = domain;
+        keywordGapsCache.competitorDomains = [...competitorDomains];
+        keywordGapsCache.keywordsLength = keywords.length;
+        
+        setKeywordGaps(gaps);
+        toast.success(`Found ${gaps.length} keyword gaps for analysis`);
+      } else {
+        console.warn("No keyword gaps found or service returned empty array");
+        setKeywordGaps([]);
+        setError("No keyword gaps found. Check API configuration or try different competitors.");
+        toast.warning("No keyword gaps found between your domain and competitors");
+      }
+    } catch (error) {
+      console.error("Error refreshing keyword gaps:", error);
+      setError(`Failed to analyze keyword gaps: ${(error as Error).message}`);
+      toast.error(`Failed to refresh keyword gaps: ${(error as Error).message}`);
+      setKeywordGaps([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="animate-fade-in">
       <CardHeader>
@@ -263,6 +305,26 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive" className="bg-amber-50 text-amber-800 border-amber-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Analysis Issue</AlertTitle>
+            <AlertDescription>
+              {error}
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshAnalysis}
+                  className="bg-white hover:bg-white/90"
+                >
+                  Try Again
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {loading || isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -287,6 +349,14 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
                 <Badge variant="outline">
                   {totalKeywords} keyword gaps found
                 </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshAnalysis}
+                  className="text-xs"
+                >
+                  Refresh Analysis
+                </Button>
               </div>
             </div>
             
@@ -337,7 +407,21 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
           </>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            No keyword gaps found. This could mean you're ranking well for most keywords in your niche!
+            {error ? (
+              <div>
+                <p>Unable to analyze keyword gaps. Please check API configuration in settings.</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshAnalysis}
+                  className="mt-4"
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : (
+              <p>No keyword gaps found. This could mean you're ranking well for most keywords in your niche!</p>
+            )}
           </div>
         )}
       </CardContent>
