@@ -105,6 +105,7 @@ const KeywordResearch = ({
     try {
       try {
         toast.info("Fetching keyword data from DataForSEO API...");
+        console.log("Calling DataForSEO API with keyword:", searchTerm);
         const dataForSeoResults = await fetchRelatedKeywords([searchTerm]);
         
         if (dataForSeoResults && dataForSeoResults.length > 0) {
@@ -127,7 +128,7 @@ const KeywordResearch = ({
         }
       } catch (dataForSeoError) {
         console.error("Error with DataForSEO API:", dataForSeoError);
-        toast.warning("Could not retrieve data from DataForSEO API, trying alternative methods...");
+        toast.warning(`Could not retrieve data from DataForSEO API: ${(dataForSeoError as Error).message}. Trying alternative methods...`);
       }
       
       try {

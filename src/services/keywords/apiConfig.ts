@@ -1,12 +1,10 @@
-
 // API configuration and keys
 
 // DataForSEO API configuration
 export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";
 export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf"; // Updated password for all DataForSEO APIs
 export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_site/live";
-export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/task_post";
-export const DATAFORSEO_KEYWORDS_PASSWORD = "ab4016dc9302b8cf"; // Now using the same password
+export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live";
 
 // SemRush API configuration
 export const SEMRUSH_API_KEY = ""; // Will be populated from ApiIntegrationManager
