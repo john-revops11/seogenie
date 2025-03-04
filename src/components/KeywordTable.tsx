@@ -63,14 +63,12 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
   useEffect(() => {
     let filtered = [...keywords];
     
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(k => 
         k.keyword.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
-    // Apply intent filter
     if (intentFilter !== "all") {
       filtered = filtered.filter(k => {
         const intent = categorizeKeywordIntent(k.keyword, k.competition_index, k.monthly_search);
@@ -273,7 +271,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
     setLoadingCompetitor(true);
     
     try {
-      // Fetch keywords for this competitor before adding
       toast.info(`Fetching keywords for ${formattedUrl}...`);
       await fetchDomainKeywords(formattedUrl);
       
@@ -313,6 +310,57 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
       toast.error("Remove competitor function not available");
     }
   };
+
+  const handleRunRevologySeoStrategy = async () => {
+    if (!domain || competitorDomains.length === 0 || keywords.length === 0) {
+      toast.error("Please ensure you have domain and competitor data first");
+      return;
+    }
+
+    setIsRunningSeoStrategy(true);
+    try {
+      await runRevologySeoActions(domain, competitorDomains, keywords);
+      toast.success("SEO strategy for Revology Analytics completed successfully");
+    } catch (error) {
+      console.error("Error running SEO strategy:", error);
+      toast.error(`Failed to run SEO strategy: ${(error as Error).message}`);
+    } finally {
+      setIsRunningSeoStrategy(false);
+    }
+  };
+
+  const RankingLink = ({ url, position }: { url: string | null | undefined, position: number | null | undefined }) => {
+    if (!url || !position) return <Badge variant="outline">-</Badge>;
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center gap-1"
+            >
+              <Badge className={`${getRankingBadgeColor(position)}`}>
+                {position} <ExternalLink className="ml-1 h-3 w-3" />
+              </Badge>
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs truncate max-w-56">{url}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  const uniqueIntents = useMemo(() => {
+    const intents = keywords.map(item => 
+      categorizeKeywordIntent(item.keyword, item.competition_index, item.monthly_search)
+    );
+    return Array.from(new Set(intents));
+  }, [keywords]);
 
   return (
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl overflow-hidden">
@@ -422,7 +470,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
           </div>
         )}
         
-        {/* Filter by intent */}
         {keywords.length > 0 && (
           <div className="mt-4 flex items-center gap-2">
             <div className="flex items-center gap-2">
@@ -445,7 +492,6 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
           </div>
         )}
 
-        {/* Display list of competitors with remove button */}
         {competitorDomains.length > 0 && (
           <div className="mt-4">
             <div className="text-sm text-muted-foreground mb-2">Competitors:</div>
