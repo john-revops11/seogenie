@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,12 +20,10 @@ const SystemHealthCard = () => {
   const [apiStates, setApiStates] = useState<ApiStates>({
     pinecone: { status: "idle" },
     openai: { status: "idle", models: [
-      { id: "gpt-4o", name: "GPT-4o", provider: "openai", capabilities: ["text", "vision", "function calling"] },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", capabilities: ["text", "vision", "function calling"] },
+      { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "openai", capabilities: ["text", "function calling"] },
+      { id: "gpt-4o", name: "GPT-4o", provider: "openai", capabilities: ["text", "vision", "function calling"] },
       { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai", capabilities: ["text", "function calling"] },
-      { id: "gpt-4o-2024-05-13", name: "GPT-4o (May 13)", provider: "openai", capabilities: ["text", "vision", "function calling"] },
-      { id: "gpt-4-vision", name: "GPT-4 Vision", provider: "openai", capabilities: ["text", "vision"] },
-      { id: "gpt-4o-1106", name: "GPT-4 O1", provider: "openai", capabilities: ["text", "vision", "function calling", "advanced reasoning"] },
       { id: "text-embedding-3-small", name: "Text Embedding v3 Small", provider: "openai", capabilities: ["embeddings"] },
       { id: "text-embedding-3-large", name: "Text Embedding v3 Large", provider: "openai", capabilities: ["embeddings"] },
     ] },

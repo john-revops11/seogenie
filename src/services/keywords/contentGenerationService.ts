@@ -20,27 +20,32 @@ export const generateFullContent = async (
   try {
     // First try RAG if enabled and configured
     if (useRag && isPineconeConfigured()) {
-      const ragContent = await generateContentWithRAG(
-        title,
-        outline,
-        keywords,
-        contentType,
-        creativity
-      );
-      
-      if (ragContent) {
-        // Fill in the actual content blocks using OpenAI
-        const filledContent = await fillContentBlocks(
-          ragContent,
+      try {
+        const ragContent = await generateContentWithRAG(
+          title,
           outline,
           keywords,
           contentType,
-          creativity,
-          preferences
+          creativity
         );
         
-        return filledContent;
-      } else {
+        if (ragContent) {
+          // Fill in the actual content blocks using OpenAI
+          const filledContent = await fillContentBlocks(
+            ragContent,
+            outline,
+            keywords,
+            contentType,
+            creativity,
+            preferences
+          );
+          
+          return filledContent;
+        } else {
+          toast.warning("RAG generation failed, falling back to standard generation");
+        }
+      } catch (ragError) {
+        console.error("Error in RAG content generation:", ragError);
         toast.warning("RAG generation failed, falling back to standard generation");
       }
     }
@@ -178,25 +183,105 @@ const fillContentBlocks = async (
   }
   
   try {
-    // Logic to generate content with OpenAI for each block
-    // This is a placeholder for demo purposes
+    // Now we'll actually generate the content with OpenAI
+    const updatedBlocks = [...content.blocks];
+    let promptHeader = `Generate high-quality content for a ${contentType} about "${content.title}" targeting these keywords: ${keywords.join(', ')}.\n`;
+    promptHeader += `Creativity level: ${creativity}%.\n`;
     
-    // In a real implementation, we would:
-    // 1. Create a prompt for each section
-    // 2. Call OpenAI API for each section
-    // 3. Parse and format the responses
-    // 4. Update the blocks with the generated content
+    if (preferences.length > 0) {
+      promptHeader += `Content preferences: ${preferences.join(', ')}.\n`;
+    }
     
-    // For this demo, we'll simulate the process with mock data
-    const updatedBlocks = content.blocks.map(block => {
+    // Generate content for each paragraph block
+    for (let i = 0; i < updatedBlocks.length; i++) {
+      const block = updatedBlocks[i];
+      
       if (block.type === 'paragraph') {
-        return {
-          ...block,
-          content: `<p>This is AI-generated content for ${content.title}. It would include keywords like ${keywords.slice(0, 3).join(', ')}. The content would be tailored to the ${contentType} format, with a creativity level of ${creativity}%. ${content.generationMethod === 'rag' ? 'This content is enhanced with retrieved information from our knowledge base.' : ''}</p>`
-        };
+        let contextHeading = '';
+        
+        // Find the preceding heading to provide context
+        for (let j = i - 1; j >= 0; j--) {
+          if (updatedBlocks[j].type.startsWith('heading')) {
+            contextHeading = updatedBlocks[j].content.replace(/<\/?[^>]+(>|$)/g, ""); // Remove HTML tags
+            break;
+          }
+        }
+        
+        let prompt = promptHeader;
+        if (contextHeading) {
+          prompt += `\nGenerate a detailed paragraph for the section "${contextHeading}".\n`;
+        }
+        
+        // Generate the content with OpenAI
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini', // Using a more reliable model instead of GPT-4o
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: creativity / 100, // Convert creativity percentage to temperature
+            max_tokens: 500
+          })
+        });
+        
+        if (!response.ok) {
+          // If gpt-4o-mini fails, try gpt-3.5-turbo as a fallback
+          console.warn("Primary model failed, trying fallback model...");
+          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENAI_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'gpt-3.5-turbo', // Fallback model
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+                },
+                {
+                  role: 'user',
+                  content: prompt
+                }
+              ],
+              temperature: creativity / 100,
+              max_tokens: 500
+            })
+          });
+          
+          if (!fallbackResponse.ok) {
+            throw new Error(`OpenAI API error: ${fallbackResponse.status}`);
+          }
+          
+          const fallbackData = await fallbackResponse.json();
+          const generatedContent = fallbackData.choices[0].message.content.trim();
+          updatedBlocks[i] = {
+            ...block,
+            content: `<p>${generatedContent}</p>`
+          };
+        } else {
+          const data = await response.json();
+          const generatedContent = data.choices[0].message.content.trim();
+          updatedBlocks[i] = {
+            ...block,
+            content: `<p>${generatedContent}</p>`
+          };
+        }
       }
-      return block;
-    });
+    }
     
     // Update the content with the filled blocks
     return {

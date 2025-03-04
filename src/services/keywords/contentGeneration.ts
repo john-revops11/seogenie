@@ -69,6 +69,7 @@ export const generateContent = async (
     };
   } catch (error) {
     console.error("Error in generateContent:", error);
+    toast.error(`Content generation failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     throw error;
   }
 };

@@ -76,9 +76,11 @@ export const checkOpenAIHealth = async (setApiStates: (callback: (prev: ApiState
     
     if (response.ok) {
       const data = await response.json();
+      
+      // Filter for models that are actually accessible
       const availableModels = data.data
         .filter((model: any) => 
-          model.id.includes("gpt-4o") || 
+          model.id.includes("gpt-") || 
           model.id.includes("embedding")
         )
         .map((model: any) => model.id);
@@ -307,38 +309,83 @@ export const testAiModel = async (
       setTestResponse(`✅ Success! Generated ${dimensions}-dimensional embedding vector.`);
       setTestModelStatus("success");
     } else {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer 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`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful assistant that provides brief, accurate responses."
+      // Try the specified model first
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer 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`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: [
+              {
+                role: "system",
+                content: "You are a helpful assistant that provides brief, accurate responses."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 150
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error with model ${modelId}: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const responseText = data.choices[0].message.content;
+        
+        setTestResponse(responseText);
+        setTestModelStatus("success");
+      } catch (error) {
+        console.warn(`Error with model ${modelId}, trying fallback model:`, error);
+        
+        // Try fallback model if the first one fails
+        const fallbackModel = "gpt-3.5-turbo";
+        
+        try {
+          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer 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`,
+              'Content-Type': 'application/json'
             },
-            {
-              role: "user",
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 150
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
+            body: JSON.stringify({
+              model: fallbackModel,
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a helpful assistant that provides brief, accurate responses."
+                },
+                {
+                  role: "user",
+                  content: prompt
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 150
+            })
+          });
+  
+          if (!fallbackResponse.ok) {
+            throw new Error(`Error with fallback model: ${fallbackResponse.status} ${fallbackResponse.statusText}`);
+          }
+  
+          const fallbackData = await fallbackResponse.json();
+          const fallbackResponseText = fallbackData.choices[0].message.content;
+          
+          setTestResponse(`ℹ️ Used fallback model (${fallbackModel}):\n${fallbackResponseText}`);
+          setTestModelStatus("success");
+        } catch (fallbackError) {
+          throw new Error(`Original error: ${error.message}, Fallback error: ${fallbackError.message}`);
+        }
       }
-
-      const data = await response.json();
-      const responseText = data.choices[0].message.content;
-      
-      setTestResponse(responseText);
-      setTestModelStatus("success");
     }
   } catch (error) {
     console.error("Error testing AI model:", error);
