@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,8 @@ import {
   ExternalLink,
   PlusCircle,
   Target,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,9 +33,10 @@ interface KeywordTableProps {
   keywords: KeywordData[];
   isLoading: boolean;
   onAddCompetitor?: (newCompetitor: string) => void;
+  onRemoveCompetitor?: (competitorToRemove: string) => void;
 }
 
-const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCompetitor }: KeywordTableProps) => {
+const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCompetitor, onRemoveCompetitor }: KeywordTableProps) => {
   const [filteredKeywords, setFilteredKeywords] = useState<KeywordData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{column: string; direction: 'asc' | 'desc'}>({
@@ -300,57 +301,18 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
     setShowCompetitorInput(false);
   };
 
-  const RankingLink = ({ url, position }: { url: string | null | undefined, position: number | null | undefined }) => {
-    if (!url || !position) return <Badge variant="outline">-</Badge>;
-    
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a 
-              href={url} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-flex items-center gap-1"
-            >
-              <Badge className={`${getRankingBadgeColor(position)}`}>
-                {position} <ExternalLink className="ml-1 h-3 w-3" />
-              </Badge>
-            </a>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs truncate max-w-56">{url}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
-
-  const handleRunRevologySeoStrategy = async () => {
-    if (!domain || competitorDomains.length === 0 || keywords.length === 0) {
-      toast.error("Please ensure you have domain and competitor data first");
+  const handleRemoveCompetitor = (competitor: string) => {
+    if (isLoading) {
+      toast.error("Cannot remove competitors during analysis");
       return;
     }
-
-    setIsRunningSeoStrategy(true);
-    try {
-      await runRevologySeoActions(domain, competitorDomains, keywords);
-      toast.success("SEO strategy for Revology Analytics completed successfully");
-    } catch (error) {
-      console.error("Error running SEO strategy:", error);
-      toast.error(`Failed to run SEO strategy: ${(error as Error).message}`);
-    } finally {
-      setIsRunningSeoStrategy(false);
+    
+    if (onRemoveCompetitor) {
+      onRemoveCompetitor(competitor);
+    } else {
+      toast.error("Remove competitor function not available");
     }
   };
-
-  // Get unique intents for the filter
-  const uniqueIntents = useMemo(() => {
-    const intents = keywords.map(item => 
-      categorizeKeywordIntent(item.keyword, item.competition_index, item.monthly_search)
-    );
-    return Array.from(new Set(intents));
-  }, [keywords]);
 
   return (
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl overflow-hidden">
@@ -480,6 +442,31 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        )}
+
+        {/* Display list of competitors with remove button */}
+        {competitorDomains.length > 0 && (
+          <div className="mt-4">
+            <div className="text-sm text-muted-foreground mb-2">Competitors:</div>
+            <div className="flex flex-wrap gap-2">
+              {competitorDomains.map((competitor, index) => (
+                <Badge key={index} variant="outline" className="flex items-center gap-1 px-3 py-1">
+                  {extractDomainName(competitor)}
+                  {onRemoveCompetitor && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 ml-1 text-muted-foreground hover:text-destructive p-0"
+                      onClick={() => handleRemoveCompetitor(competitor)}
+                      disabled={isLoading}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
       </CardHeader>
