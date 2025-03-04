@@ -35,6 +35,7 @@ interface ResearchKeyword {
 interface KeywordGroup {
   parentKeyword: string;
   keywords: ResearchKeyword[];
+  isExpanded?: boolean;
 }
 
 const KeywordResearch = ({ 
