@@ -1,0 +1,53 @@
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+interface KeywordGapFilterProps {
+  filterCompetitor: string;
+  onFilterChange: (value: string) => void;
+  uniqueCompetitors: string[];
+  totalKeywords: number;
+  onRefreshAnalysis: () => void;
+}
+
+export function KeywordGapFilter({
+  filterCompetitor,
+  onFilterChange,
+  uniqueCompetitors,
+  totalKeywords,
+  onRefreshAnalysis
+}: KeywordGapFilterProps) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
+      <div className="w-full sm:w-auto">
+        <Select value={filterCompetitor} onValueChange={onFilterChange}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Filter by competitor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Competitors</SelectItem>
+            {uniqueCompetitors.map(comp => (
+              <SelectItem key={comp} value={comp}>{comp}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2 items-center">
+        <Badge variant="outline">
+          {totalKeywords} keyword gaps found
+        </Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefreshAnalysis}
+          className="text-xs"
+        >
+          Refresh Analysis
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default KeywordGapFilter;

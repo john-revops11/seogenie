@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { keywordGapsCache } from "@/components/KeywordGapCard";
+import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 import { SeoRecommendation, KeywordGap } from "@/services/keywordService";
 
 export const useKeywordGaps = () => {
