@@ -108,15 +108,27 @@ function mockDataForSEOGaps(
     const keyword = keywords[i];
     if (!keyword) continue;
     
+    // Determine opportunity level based on volume and difficulty
+    let opportunity: 'high' | 'medium' | 'low' = 'medium';
+    const volume = keyword.monthly_search || Math.floor(Math.random() * 5000) + 100;
+    const difficulty = Math.floor(Math.random() * 70) + 10;
+    
+    if (volume > 1000 && difficulty < 30) {
+      opportunity = 'high';
+    } else if (volume < 100 || difficulty > 60) {
+      opportunity = 'low';
+    }
+    
     gaps.push({
       keyword: keyword.keyword,
       competitor,
       rank: Math.floor(Math.random() * 10) + 1, // Competitor ranks 1-10
-      volume: keyword.monthly_search || Math.floor(Math.random() * 5000) + 100,
-      difficulty: Math.floor(Math.random() * 70) + 10,
+      volume: volume,
+      difficulty: difficulty,
       relevance: Math.floor(Math.random() * 100) + 1,
       competitiveAdvantage: Math.floor(Math.random() * 100) + 1,
       isTopOpportunity: Math.random() > 0.7, // 30% chance of being a top opportunity
+      opportunity: opportunity // Add the required 'opportunity' property
     });
   }
   
