@@ -28,7 +28,7 @@ export const analyzeKeywordsWithAI = async (
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o', // Using a better model for improved analysis
         messages: [
           {
             role: 'system',
@@ -41,7 +41,7 @@ export const analyzeKeywordsWithAI = async (
             
             I need up to ${targetGapCount} keyword gaps for EACH competitor domain (${adjustedGapCount} total gaps maximum).
             
-            Keyword data: ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 100)))}
+            Keyword data: ${JSON.stringify(keywords.slice(0, Math.min(keywords.length, 150)))}
             
             For each keyword gap, include these properties:
             - keyword: string (the keyword)
@@ -52,6 +52,7 @@ export const analyzeKeywordsWithAI = async (
             - relevance: number (1-100 scale where higher indicates higher relevance to the main domain's business)
             - competitiveAdvantage: number (1-100 scale indicating how likely the main domain could outrank competitors)
             - isTopOpportunity: boolean (mark the top 5 keywords with highest potential value as true)
+            - rank: number (the competitor's current ranking position for this keyword)
             
             Format your response EXACTLY like this JSON example:
             {
@@ -64,7 +65,8 @@ export const analyzeKeywordsWithAI = async (
                   "competitor": "competitor1.com",
                   "relevance": 85,
                   "competitiveAdvantage": 72,
-                  "isTopOpportunity": true
+                  "isTopOpportunity": true,
+                  "rank": 3
                 },
                 {
                   "keyword": "example keyword 2",
@@ -74,7 +76,8 @@ export const analyzeKeywordsWithAI = async (
                   "competitor": "competitor2.com",
                   "relevance": 65,
                   "competitiveAdvantage": 58,
-                  "isTopOpportunity": false
+                  "isTopOpportunity": false,
+                  "rank": 8
                 }
               ]
             }
@@ -85,7 +88,8 @@ export const analyzeKeywordsWithAI = async (
             - Competitive Advantage (1-100) should assess how likely the main domain could outrank competitors based on difficulty, competition position, and search volume.
             - You must include the competitor property for each gap to identify which competitor ranks for each keyword.
             - Try to provide up to ${targetGapCount} keywords for each competitor (evenly distributed if possible).
-            - Mark exactly 5 keywords total as isTopOpportunity: true based on their overall value and potential impact for the main domain.`
+            - Mark exactly 5 keywords total as isTopOpportunity: true based on their overall value and potential impact for the main domain.
+            - Perform a deep analysis to provide accurate and valuable gaps.`
           }
         ],
         temperature: 0.7,

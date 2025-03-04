@@ -12,7 +12,7 @@ import KeywordGapList from "./keyword-gaps/KeywordGapList";
 import KeywordGapPagination from "./keyword-gaps/KeywordGapPagination";
 import KeywordGapEmpty from "./keyword-gaps/KeywordGapEmpty";
 import KeywordGapLoader from "./keyword-gaps/KeywordGapLoader";
-import { keywordGapsCache, getUniqueCompetitors, haveCompetitorsChanged } from "./keyword-gaps/KeywordGapUtils";
+import { keywordGapsCache, getUniqueCompetitors } from "./keyword-gaps/KeywordGapUtils";
 
 export { keywordGapsCache };
 
@@ -33,6 +33,19 @@ export function KeywordGapCard({ domain, competitorDomains, keywords, isLoading 
   const [displayedKeywords, setDisplayedKeywords] = useState<KeywordGap[]>([]);
   const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
   const { haveCompetitorsChanged: checkCompetitorsChanged } = useKeywordGaps();
+  const [lastKeywordsLength, setLastKeywordsLength] = useState(0);
+
+  // Check if keywords array has changed (new analysis or competitor added)
+  useEffect(() => {
+    if (keywords.length !== lastKeywordsLength && keywords.length > 0) {
+      console.log(`Keywords array changed: ${lastKeywordsLength} -> ${keywords.length}`);
+      setLastKeywordsLength(keywords.length);
+      // If we already have keyword gaps, this means a competitor was likely added
+      if (keywordGapsCache.data && keywordGapsCache.data.length > 0) {
+        refreshAnalysis();
+      }
+    }
+  }, [keywords.length, lastKeywordsLength]);
 
   useEffect(() => {
     const generateKeywordGaps = async () => {

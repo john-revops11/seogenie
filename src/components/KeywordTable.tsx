@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,12 +16,16 @@ import {
   ChevronRight, 
   ExternalLink,
   PlusCircle,
-  Target
+  Target,
+  Filter
 } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchDomainKeywords } from "@/services/keywordService";
+import { categorizeKeywordIntent } from "@/components/keyword-gaps/KeywordGapUtils";
 
 interface KeywordTableProps {
   domain: string;
@@ -39,13 +44,15 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
   });
   
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [paginatedKeywords, setPaginatedKeywords] = useState<KeywordData[]>([]);
   
   const [newCompetitor, setNewCompetitor] = useState("");
   const [showCompetitorInput, setShowCompetitorInput] = useState(false);
+  const [loadingCompetitor, setLoadingCompetitor] = useState(false);
   
   const [isRunningSeoStrategy, setIsRunningSeoStrategy] = useState(false);
+  const [intentFilter, setIntentFilter] = useState<string>("all");
 
   useEffect(() => {
     setFilteredKeywords(keywords);
@@ -53,22 +60,32 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
   }, [keywords]);
   
   useEffect(() => {
+    let filtered = [...keywords];
+    
+    // Apply search filter
     if (searchQuery) {
-      const filtered = keywords.filter(k => 
+      filtered = filtered.filter(k => 
         k.keyword.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredKeywords(filtered);
-      setCurrentPage(1);
-    } else {
-      setFilteredKeywords(keywords);
     }
-  }, [searchQuery, keywords]);
+    
+    // Apply intent filter
+    if (intentFilter !== "all") {
+      filtered = filtered.filter(k => {
+        const intent = categorizeKeywordIntent(k.keyword, k.competition_index, k.monthly_search);
+        return intent === intentFilter;
+      });
+    }
+    
+    setFilteredKeywords(filtered);
+    setCurrentPage(1);
+  }, [searchQuery, keywords, intentFilter]);
   
   useEffect(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
     setPaginatedKeywords(filteredKeywords.slice(startIndex, endIndex));
-  }, [filteredKeywords, currentPage]);
+  }, [filteredKeywords, currentPage, rowsPerPage]);
   
   const handleSort = (column: string) => {
     const newDirection = 
@@ -128,6 +145,33 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
     if (difficulty < 60) return "text-amber-600";
     return "text-red-600";
   };
+  
+  const getIntentLabel = (keyword: string, difficulty: number, volume: number): string => {
+    const intent = categorizeKeywordIntent(keyword, difficulty, volume);
+    switch (intent) {
+      case 'informational': return 'Info';
+      case 'navigational': return 'Nav';
+      case 'commercial': return 'Com';
+      case 'transactional': return 'Trans';
+      default: return 'Info';
+    }
+  };
+  
+  const getIntentBadgeColor = (keyword: string, difficulty: number, volume: number): string => {
+    const intent = categorizeKeywordIntent(keyword, difficulty, volume);
+    switch (intent) {
+      case 'informational':
+        return "bg-blue-100 text-blue-800";
+      case 'navigational':
+        return "bg-purple-100 text-purple-800";
+      case 'commercial':
+        return "bg-amber-100 text-amber-800";
+      case 'transactional':
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   const extractDomainName = (url: string): string => {
     try {
@@ -151,7 +195,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
   const exportToCsv = () => {
     if (keywords.length === 0) return;
     
-    let csvContent = "Keyword,Volume,Difficulty,CPC,$,";
+    let csvContent = "Keyword,Volume,Difficulty,CPC,$,Intent,";
     csvContent += `${domain},${domain} URL,`;
     competitorDomains.forEach(comp => {
       csvContent += `${comp},${comp} URL,`;
@@ -159,7 +203,8 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
     csvContent += "\n";
     
     keywords.forEach(item => {
-      csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},`;
+      const intent = getIntentLabel(item.keyword, item.competition_index, item.monthly_search);
+      csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},$,${intent},`;
       csvContent += `${item.position || "-"},${item.rankingUrl || "-"},`;
       competitorDomains.forEach(comp => {
         const domainName = extractDomainName(comp);
@@ -198,7 +243,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
     }
   };
 
-  const confirmAddCompetitor = () => {
+  const confirmAddCompetitor = async () => {
     if (!newCompetitor.trim()) {
       toast.error("Please enter a competitor domain");
       return;
@@ -224,12 +269,30 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
       formattedUrl = 'https://' + formattedUrl;
     }
     
-    if (onAddCompetitor) {
-      onAddCompetitor(formattedUrl);
-    }
+    setLoadingCompetitor(true);
     
-    setNewCompetitor("");
-    setShowCompetitorInput(false);
+    try {
+      // Fetch keywords for this competitor before adding
+      toast.info(`Fetching keywords for ${formattedUrl}...`);
+      await fetchDomainKeywords(formattedUrl);
+      
+      if (onAddCompetitor) {
+        onAddCompetitor(formattedUrl);
+      }
+      
+      toast.success(`Added ${normalizedNewCompetitor} to competitors list`);
+    } catch (error) {
+      console.error("Error fetching competitor keywords:", error);
+      toast.warning(`Added ${normalizedNewCompetitor} but couldn't fetch keywords. Will use sample data.`);
+      
+      if (onAddCompetitor) {
+        onAddCompetitor(formattedUrl);
+      }
+    } finally {
+      setLoadingCompetitor(false);
+      setNewCompetitor("");
+      setShowCompetitorInput(false);
+    }
   };
 
   const cancelAddCompetitor = () => {
@@ -280,6 +343,14 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
       setIsRunningSeoStrategy(false);
     }
   };
+
+  // Get unique intents for the filter
+  const uniqueIntents = useMemo(() => {
+    const intents = keywords.map(item => 
+      categorizeKeywordIntent(item.keyword, item.competition_index, item.monthly_search)
+    );
+    return Array.from(new Set(intents));
+  }, [keywords]);
 
   return (
     <Card className="glass-panel transition-all duration-300 hover:shadow-xl overflow-hidden">
@@ -338,10 +409,19 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
               size="sm"
               className="transition-all border-revology/30 text-revology hover:text-revology hover:bg-revology-light/50"
               onClick={handleAddCompetitor}
-              disabled={isLoading || showCompetitorInput}
+              disabled={isLoading || showCompetitorInput || loadingCompetitor}
             >
-              <PlusCircle className="mr-1 h-4 w-4" />
-              <span className="hidden sm:inline">Add Competitor</span>
+              {loadingCompetitor ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Add Competitor</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -360,16 +440,46 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
               size="sm" 
               onClick={confirmAddCompetitor}
               className="bg-revology hover:bg-revology-dark whitespace-nowrap"
+              disabled={loadingCompetitor}
             >
-              Add
+              {loadingCompetitor ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : "Add"}
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={cancelAddCompetitor}
+              disabled={loadingCompetitor}
             >
               Cancel
             </Button>
+          </div>
+        )}
+        
+        {/* Filter by intent */}
+        {keywords.length > 0 && (
+          <div className="mt-4 flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filter by intent:</span>
+            </div>
+            <Select value={intentFilter} onValueChange={setIntentFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Select intent" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All intents</SelectItem>
+                {uniqueIntents.map(intent => (
+                  <SelectItem key={intent} value={intent}>
+                    {intent.charAt(0).toUpperCase() + intent.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </CardHeader>
@@ -411,6 +521,9 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
                       )}
                     </div>
                   </TableHead>
+                  <TableHead className="w-[100px]">
+                    Intent
+                  </TableHead>
                   <TableHead onClick={() => handleSort('position')} className="cursor-pointer">
                     <div className="flex items-center">
                       {domain} <ArrowUpDown className="ml-1 h-3 w-3" />
@@ -426,7 +539,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5 + competitorDomains.length} className="h-24 text-center">
+                    <TableCell colSpan={6 + competitorDomains.length} className="h-24 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <Loader2 className="w-6 h-6 text-primary animate-spin mb-2" />
                         <p className="text-sm text-muted-foreground">Fetching keyword data...</p>
@@ -442,6 +555,11 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
                         <span className={getDifficultyColor(item.competition_index)}>{item.competition_index}/100</span>
                       </TableCell>
                       <TableCell>${item.cpc.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge className={getIntentBadgeColor(item.keyword, item.competition_index, item.monthly_search)}>
+                          {getIntentLabel(item.keyword, item.competition_index, item.monthly_search)}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <RankingLink url={item.rankingUrl} position={item.position} />
                       </TableCell>
@@ -460,7 +578,7 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5 + competitorDomains.length} className="h-24 text-center">
+                    <TableCell colSpan={6 + competitorDomains.length} className="h-24 text-center">
                       {keywords.length === 0 ? "No keywords found. Start an analysis first." : "No matching keywords found."}
                     </TableCell>
                   </TableRow>
@@ -471,32 +589,50 @@ const KeywordTable = ({ domain, competitorDomains, keywords, isLoading, onAddCom
         </div>
         
         {filteredKeywords.length > 0 && (
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-4">
             <div className="text-xs text-muted-foreground">
               Showing {paginatedKeywords.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {Math.min(currentPage * rowsPerPage, filteredKeywords.length)} of {filteredKeywords.length} keywords
             </div>
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1 || isLoading}
-                className="h-8 w-8 p-0"
+            
+            <div className="flex items-center gap-4">
+              <Select 
+                value={rowsPerPage.toString()} 
+                onValueChange={(value) => setRowsPerPage(Number(value))}
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="text-xs">
-                Page {currentPage} of {totalPages || 1}
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Rows per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="25">25 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                  <SelectItem value="100">100 per page</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1 || isLoading}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-xs">
+                  Page {currentPage} of {totalPages || 1}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         )}

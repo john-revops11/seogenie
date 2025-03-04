@@ -2,6 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 interface KeywordGapFilterProps {
   filterCompetitor: string;
@@ -18,6 +19,17 @@ export function KeywordGapFilter({
   totalKeywords,
   onRefreshAnalysis
 }: KeywordGapFilterProps) {
+  const [prevCompetitorCount, setPrevCompetitorCount] = useState(uniqueCompetitors.length);
+  
+  // Detect when new competitors are added
+  useEffect(() => {
+    if (uniqueCompetitors.length > prevCompetitorCount) {
+      console.log("New competitor detected in keyword gaps filter");
+      onRefreshAnalysis();
+    }
+    setPrevCompetitorCount(uniqueCompetitors.length);
+  }, [uniqueCompetitors.length, prevCompetitorCount, onRefreshAnalysis]);
+
   return (
     <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
       <div className="w-full sm:w-auto">
