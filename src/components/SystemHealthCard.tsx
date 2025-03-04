@@ -10,7 +10,9 @@ import {
   Activity,
   Zap,
   Database,
-  MessageSquareText
+  MessageSquareText,
+  BrainCircuit,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,13 +24,41 @@ import {
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 type ApiStatus = "idle" | "loading" | "success" | "error";
+
+interface AiModel {
+  id: string;
+  name: string;
+  provider: "openai" | "anthropic" | "perplexity" | "cohere" | "google";
+  capabilities: string[];
+  status?: ApiStatus;
+  response?: string;
+}
 
 interface ApiState {
   status: ApiStatus;
   message?: string;
   details?: Record<string, any>;
+  models?: AiModel[];
+  selectedModel?: string;
 }
 
 interface ApiStates {
@@ -42,13 +72,23 @@ interface ApiStates {
 const SystemHealthCard = () => {
   const [apiStates, setApiStates] = useState<ApiStates>({
     pinecone: { status: "idle" },
-    openai: { status: "idle" },
+    openai: { status: "idle", models: [
+      { id: "gpt-4o", name: "GPT-4o", provider: "openai", capabilities: ["text", "vision", "function calling"] },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", capabilities: ["text", "vision", "function calling"] },
+      { id: "text-embedding-3-small", name: "Text Embedding v3 Small", provider: "openai", capabilities: ["embeddings"] },
+      { id: "text-embedding-3-large", name: "Text Embedding v3 Large", provider: "openai", capabilities: ["embeddings"] },
+    ] },
     googleAds: { status: "idle" },
     dataForSeo: { status: "idle" },
     rapidApi: { status: "idle" }
   });
   
   const [expanded, setExpanded] = useState(false);
+  const [selectedModelToTest, setSelectedModelToTest] = useState<string>("");
+  const [testModelStatus, setTestModelStatus] = useState<ApiStatus>("idle");
+  const [testPrompt, setTestPrompt] = useState<string>("Explain how keyword research works in 20 words or less.");
+  const [testResponse, setTestResponse] = useState<string>("");
+  const [showModelDialog, setShowModelDialog] = useState(false);
   
   useEffect(() => {
     checkApiStatuses();
@@ -113,7 +153,10 @@ const SystemHealthCard = () => {
     try {
       setApiStates(prev => ({
         ...prev,
-        openai: { status: "loading" }
+        openai: { 
+          ...prev.openai,
+          status: "loading" 
+        }
       }));
       
       // Use a simple request to test the OpenAI API
@@ -126,12 +169,20 @@ const SystemHealthCard = () => {
       
       if (response.ok) {
         const data = await response.json();
+        const availableModels = data.data
+          .filter((model: any) => 
+            model.id.includes("gpt-4o") || 
+            model.id.includes("embedding")
+          )
+          .map((model: any) => model.id);
+        
         setApiStates(prev => ({
           ...prev,
           openai: { 
+            ...prev.openai,
             status: "success", 
             details: {
-              availableModels: ["gpt-4o", "gpt-4o-mini", "text-embedding-3-small"]
+              availableModels: availableModels
             }
           }
         }));
@@ -143,6 +194,7 @@ const SystemHealthCard = () => {
       setApiStates(prev => ({
         ...prev,
         openai: { 
+          ...prev.openai,
           status: "error", 
           message: error instanceof Error ? error.message : "Unknown error" 
         }
@@ -239,13 +291,95 @@ const SystemHealthCard = () => {
     
     setApiStates(prev => ({
       ...prev,
-      [apiName]: { status: "loading" }
+      [apiName]: { 
+        ...prev[apiName],
+        status: "loading" 
+      }
     }));
     
     // Simulate retry with a timeout
     setTimeout(() => {
       checkApiStatuses();
     }, 1000);
+  };
+
+  const testAiModel = async () => {
+    if (!selectedModelToTest) {
+      toast.error("Please select a model to test");
+      return;
+    }
+
+    setTestModelStatus("loading");
+    setTestResponse("");
+
+    try {
+      // Only handling OpenAI models for now
+      const isEmbeddingModel = selectedModelToTest.includes("embedding");
+      
+      if (isEmbeddingModel) {
+        // Test embedding model
+        const response = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer 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`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: selectedModelToTest,
+            input: testPrompt
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const embedding = data.data[0].embedding;
+        const dimensions = embedding.length;
+        
+        setTestResponse(`✅ Success! Generated ${dimensions}-dimensional embedding vector.`);
+        setTestModelStatus("success");
+      } else {
+        // Test chat completion model
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer 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`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: selectedModelToTest,
+            messages: [
+              {
+                role: "system",
+                content: "You are a helpful assistant that provides brief, accurate responses."
+              },
+              {
+                role: "user",
+                content: testPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 150
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const responseText = data.choices[0].message.content;
+        
+        setTestResponse(responseText);
+        setTestModelStatus("success");
+      }
+    } catch (error) {
+      console.error("Error testing AI model:", error);
+      setTestResponse(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setTestModelStatus("error");
+    }
   };
   
   // Calculate overall system health
@@ -381,6 +515,27 @@ const SystemHealthCard = () => {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    
+                    {/* Add test models button for AI services */}
+                    {api === "openai" && apiState.status === "success" && apiState.models && apiState.models.length > 0 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => setShowModelDialog(true)}
+                            >
+                              <BrainCircuit className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Test AI models</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 </div>
                 
@@ -402,7 +557,7 @@ const SystemHealthCard = () => {
                     <div className="text-[10px] text-muted-foreground">
                       <span className="font-medium">Available Models: </span>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {apiState.details.availableModels.map((model: string) => (
+                        {apiState.details.availableModels.slice(0, 3).map((model: string) => (
                           <Badge 
                             key={model} 
                             variant="outline" 
@@ -411,6 +566,14 @@ const SystemHealthCard = () => {
                             {model}
                           </Badge>
                         ))}
+                        {apiState.details.availableModels.length > 3 && (
+                          <Badge 
+                            variant="outline" 
+                            className="px-1.5 py-0 h-4 text-[9px] bg-blue-50"
+                          >
+                            +{apiState.details.availableModels.length - 3} more
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -434,6 +597,86 @@ const SystemHealthCard = () => {
             );
           })}
         </div>
+
+        {/* AI Model Testing Dialog */}
+        <Dialog open={showModelDialog} onOpenChange={setShowModelDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Test AI Models</DialogTitle>
+              <DialogDescription>
+                Select an AI model to test its capabilities and response
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Model</label>
+                <Select value={selectedModelToTest} onValueChange={setSelectedModelToTest}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apiStates.openai.models?.map(model => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{model.name}</span>
+                          <Badge variant="outline" className="ml-2 text-[10px]">
+                            {model.capabilities[0]}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {selectedModelToTest && !selectedModelToTest.includes("embedding") && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Test Prompt</label>
+                  <textarea 
+                    className="w-full min-h-[80px] p-2 text-sm border rounded-md" 
+                    value={testPrompt}
+                    onChange={(e) => setTestPrompt(e.target.value)}
+                    placeholder="Enter a test prompt for the model"
+                  />
+                </div>
+              )}
+              
+              <Button 
+                onClick={testAiModel} 
+                className="w-full"
+                disabled={testModelStatus === "loading"}
+              >
+                {testModelStatus === "loading" ? (
+                  <>
+                    <Activity className="mr-2 h-4 w-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Test Model
+                  </>
+                )}
+              </Button>
+              
+              {testResponse && (
+                <div className="mt-4 space-y-2">
+                  <Separator />
+                  <div className="pt-2">
+                    <h4 className="text-sm font-medium mb-2">Response:</h4>
+                    <div className={cn(
+                      "p-3 text-sm rounded-md",
+                      testModelStatus === "success" ? "bg-green-50" : "bg-red-50"
+                    )}>
+                      {testResponse}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
