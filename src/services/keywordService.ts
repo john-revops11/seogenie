@@ -6,7 +6,15 @@ export * from './keywords/domainAnalysis';
 export * from './keywords/contentGeneration';
 export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
-export * from './keywords/semrushApi';
+
+// Re-export SemRush API functions with renamed export to avoid conflict
+export { 
+  fetchDomainOverview,
+  fetchKeywordData,
+  fetchDomainKeywords as fetchSemrushDomainKeywords, // Rename to avoid conflict
+  testSemrushConnection,
+  isSemrushConfigured
+} from './keywords/semrushApi';
 
 // Export new specialized functions for Revology Analytics
 export * from './keywords/revologySeoStrategy';
