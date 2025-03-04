@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CircleInfo } from "lucide-react";
+import { Info } from "lucide-react";
 
 interface AddApiDialogProps {
   onAdd: (name: string, key: string, description: string) => void;
