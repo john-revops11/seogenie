@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
 import { OPENAI_API_KEY } from './apiConfig';
@@ -15,7 +14,6 @@ export const findKeywordGaps = async (
       return [];
     }
     
-    // Extract domain names for better readability in the results
     const extractDomain = (url: string) => {
       try {
         return new URL(url).hostname.replace(/^www\./, '');
@@ -29,12 +27,9 @@ export const findKeywordGaps = async (
     
     console.log(`Finding keyword gaps for ${mainDomainName} vs ${competitorDomainNames.join(', ')}`);
     
-    // Filter keywords to find ones where competitors rank but the main domain doesn't or ranks poorly
     const potentialGaps = keywords.filter(kw => {
-      // Check if the main domain doesn't rank for this keyword or ranks poorly (position > 30)
       const mainDoesntRank = kw.position === null || kw.position > 30;
       
-      // Check if at least one competitor ranks for this keyword
       const anyCompetitorRanks = kw.competitorRankings && 
         Object.keys(kw.competitorRankings).some(comp => 
           competitorDomainNames.includes(comp) && 
@@ -47,43 +42,33 @@ export const findKeywordGaps = async (
     
     console.log(`Found ${potentialGaps.length} potential keyword gaps before AI analysis`);
     
-    // If we have enough gaps from the data, use them directly with local analysis
     if (potentialGaps.length > 0) {
       console.log("Using directly identified gaps with local analysis");
       
-      // Convert to KeywordGap format
       const directGaps: KeywordGap[] = [];
       
-      // Create a map to track gaps by competitor to ensure even distribution
       const gapsByCompetitor = new Map<string, KeywordGap[]>();
       competitorDomainNames.forEach(comp => gapsByCompetitor.set(comp, []));
       
       for (const kw of potentialGaps) {
-        // Find all competitors that rank for this keyword
         if (kw.competitorRankings) {
           for (const [competitor, position] of Object.entries(kw.competitorRankings)) {
-            // Only process competitors that are in our competitor domains list
             if (position !== null && position <= 30 && competitorDomainNames.includes(competitor)) {
-              // Calculate opportunity based on search volume and competition
               let opportunity: 'high' | 'medium' | 'low' = 'medium';
               
-              // Calculate relevance score (0-100) based on competition index and search intent match
               const relevance = Math.min(100, Math.max(0, 
                 100 - kw.competition_index + 
                 (kw.keyword.toLowerCase().includes(mainDomainName.toLowerCase()) ? 20 : 0)
               ));
               
-              // Calculate competitive advantage (0-100) based on competitor position and search volume
               const competitiveAdvantage = Math.min(100, Math.max(0,
-                Math.round(((30 - position) / 30) * 50) + // Position factor (better position = higher advantage)
-                Math.min(50, Math.round(kw.monthly_search / 100)) // Volume factor
+                Math.round(((30 - position) / 30) * 50) + 
+                Math.min(50, Math.round(kw.monthly_search / 100))
               ));
               
-              // High opportunity: High volume, low competition, high relevance
               if (kw.monthly_search > 500 && kw.competition_index < 30 && relevance > 70) {
                 opportunity = 'high';
               } 
-              // Low opportunity: Low volume, high competition, low relevance
               else if (kw.monthly_search < 100 && kw.competition_index > 60 && relevance < 40) {
                 opportunity = 'low';
               }
@@ -96,13 +81,12 @@ export const findKeywordGaps = async (
                 competitor: competitor,
                 rank: position,
                 isTopOpportunity: false,
-                relevance: relevance, // Add relevance score
-                competitiveAdvantage: competitiveAdvantage // Add competitive advantage score
+                relevance: relevance,
+                competitiveAdvantage: competitiveAdvantage
               };
               
-              // Add to the competitor's gaps array
               const competitorGaps = gapsByCompetitor.get(competitor) || [];
-              if (competitorGaps.length < targetGapCount) { // Limit to targetGapCount per competitor
+              if (competitorGaps.length < targetGapCount) {
                 competitorGaps.push(gap);
                 gapsByCompetitor.set(competitor, competitorGaps);
               }
@@ -111,22 +95,17 @@ export const findKeywordGaps = async (
         }
       }
       
-      // Combine all gaps from all competitors
       for (const competitorGaps of gapsByCompetitor.values()) {
         directGaps.push(...competitorGaps);
       }
       
-      // Identify top opportunity keywords across all competitors based on combined scoring
-      // Sort by a combined score of relevance, competitive advantage, and volume
       const sortedGaps = [...directGaps].sort((a, b) => {
         const scoreA = (a.relevance || 0) * 0.4 + (a.competitiveAdvantage || 0) * 0.4 + Math.min(100, a.volume / 10) * 0.2;
         const scoreB = (b.relevance || 0) * 0.4 + (b.competitiveAdvantage || 0) * 0.4 + Math.min(100, b.volume / 10) * 0.2;
         return scoreB - scoreA;
       });
       
-      // Mark the top 5 as high opportunity
       sortedGaps.slice(0, 5).forEach(gap => {
-        // Find this gap in the original array and mark it
         const originalGap = directGaps.find(g => g.keyword === gap.keyword && g.competitor === gap.competitor);
         if (originalGap) {
           originalGap.isTopOpportunity = true;
@@ -137,19 +116,12 @@ export const findKeywordGaps = async (
       return directGaps;
     }
     
-    // Fall back to OpenAI for analysis if we don't have enough direct gaps
-    console.log("Using OpenAI to analyze keyword gaps");
-    
-    // Check if OpenAI API key is available
     if (!OPENAI_API_KEY) {
       console.error("OpenAI API key is not configured");
       toast.error("OpenAI API key is not configured. Please add it in API settings.");
-      
-      // Return empty array if we have an error - we're not falling back to mock data anymore
       return [];
     }
     
-    // Ensure we're requesting up to targetGapCount gaps per competitor
     const adjustedGapCount = targetGapCount * competitorDomains.length;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -242,7 +214,6 @@ export const findKeywordGaps = async (
         throw new Error("Invalid response format from OpenAI");
       }
       
-      // Verify we have at least some gaps for each competitor
       const gapsByCompetitor = new Map<string, number>();
       gaps.forEach(gap => {
         const competitor = gap.competitor || "unknown";
@@ -259,8 +230,6 @@ export const findKeywordGaps = async (
   } catch (error) {
     console.error("Error finding keyword gaps:", error);
     toast.error(`Failed to find keyword gaps: ${(error as Error).message}`);
-    
-    // Return empty array if we have an error - we're not falling back to mock data anymore
     return [];
   }
 };

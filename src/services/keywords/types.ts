@@ -1,3 +1,4 @@
+
 // Common type definitions for keyword services
 
 export interface KeywordData {
@@ -53,7 +54,9 @@ export interface KeywordGap {
   opportunity: 'high' | 'medium' | 'low';
   competitor: string;
   rank?: number;
-  isTopOpportunity?: boolean; // Add this property
+  isTopOpportunity?: boolean;
+  relevance?: number; // Added: 1-100 scale indicating relevance to the main domain
+  competitiveAdvantage?: number; // Added: 1-100 scale indicating advantage potential
 }
 
 export interface SeoRecommendation {
