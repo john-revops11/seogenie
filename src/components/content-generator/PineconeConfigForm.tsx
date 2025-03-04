@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +31,13 @@ export const PineconeConfigForm = ({ onConfigSuccess }: PineconeConfigFormProps)
   const [apiKey, setApiKey] = useState("");
   const [indexName, setIndexName] = useState("content-index");
   const [isConfigured, setIsConfigured] = useState(isPineconeConfigured());
-  const [configDetails, setConfigDetails] = useState(getPineconeConfig());
+  const [configDetails, setConfigDetails] = useState(() => {
+    try {
+      return getPineconeConfig();
+    } catch (error) {
+      return { apiKey: "", index: "", environment: "" };
+    }
+  });
   
   const handleSaveConfig = () => {
     if (!apiKey.trim()) {
@@ -47,7 +52,6 @@ export const PineconeConfigForm = ({ onConfigSuccess }: PineconeConfigFormProps)
       toast.success("Pinecone configured successfully");
       setApiKey(""); // Clear for security
       
-      // Call the success callback if provided
       if (onConfigSuccess) {
         onConfigSuccess();
       }
