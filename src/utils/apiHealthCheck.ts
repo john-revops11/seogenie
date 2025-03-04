@@ -1,0 +1,321 @@
+
+import { ApiStates } from "@/types/systemHealth";
+import { getApiKey } from "@/services/keywords/apiConfig";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
+
+export const checkPineconeHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
+  try {
+    setApiStates(prev => ({
+      ...prev,
+      pinecone: { status: "loading" }
+    }));
+    
+    if (isPineconeConfigured()) {
+      const response = await fetch(`https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io/describe_index_stats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Api-Key': 'pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797'
+        },
+        body: JSON.stringify({ filter: {} })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.info("Pinecone connection successful:", data);
+        setApiStates(prev => ({
+          ...prev,
+          pinecone: { 
+            status: "success", 
+            details: {
+              vectorCount: data.totalVectorCount,
+              dimension: data.dimension
+            }
+          }
+        }));
+      } else {
+        throw new Error(`Pinecone API returned ${response.status}`);
+      }
+    } else {
+      setApiStates(prev => ({
+        ...prev,
+        pinecone: { 
+          status: "error", 
+          message: "Pinecone API not configured" 
+        }
+      }));
+    }
+  } catch (error) {
+    console.error("Error testing Pinecone connection:", error);
+    setApiStates(prev => ({
+      ...prev,
+      pinecone: { 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      }
+    }));
+  }
+};
+
+export const checkOpenAIHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
+  try {
+    setApiStates(prev => ({
+      ...prev,
+      openai: { 
+        ...prev.openai,
+        status: "loading" 
+      }
+    }));
+    
+    const response = await fetch('https://api.openai.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer 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`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const availableModels = data.data
+        .filter((model: any) => 
+          model.id.includes("gpt-4o") || 
+          model.id.includes("embedding")
+        )
+        .map((model: any) => model.id);
+      
+      setApiStates(prev => ({
+        ...prev,
+        openai: { 
+          ...prev.openai,
+          status: "success", 
+          details: {
+            availableModels: availableModels
+          }
+        }
+      }));
+    } else {
+      throw new Error(`OpenAI API returned ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error testing OpenAI connection:", error);
+    setApiStates(prev => ({
+      ...prev,
+      openai: { 
+        ...prev.openai,
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      }
+    }));
+  }
+};
+
+export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
+  try {
+    setApiStates(prev => ({
+      ...prev,
+      dataForSeo: { status: "loading" }
+    }));
+    
+    const dataForSeoApiKey = getApiKey("dataforseo");
+    if (!dataForSeoApiKey) {
+      setApiStates(prev => ({
+        ...prev,
+        dataForSeo: { 
+          status: "error", 
+          message: "DataForSEO API not configured" 
+        }
+      }));
+      return;
+    }
+    
+    const credentials = `armin@revologyanalytics.com:ab4016dc9302b8cf`;
+    const encodedCredentials = btoa(credentials);
+    
+    const response = await fetch("https://api.dataforseo.com/v3/merchant/google/locations", {
+      method: "GET",
+      headers: {
+        "Authorization": `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json"
+      }
+    });
+    
+    if (response.ok) {
+      console.info("DataForSEO connection successful");
+      setApiStates(prev => ({
+        ...prev,
+        dataForSeo: { 
+          status: "success", 
+          message: "API connection verified" 
+        }
+      }));
+    } else {
+      const errorData = await response.json();
+      throw new Error(`DataForSEO API returned ${response.status}: ${errorData?.message || "Unknown error"}`);
+    }
+  } catch (error) {
+    console.error("Error testing DataForSEO connection:", error);
+    setApiStates(prev => ({
+      ...prev,
+      dataForSeo: { 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      }
+    }));
+  }
+};
+
+export const checkOtherApis = (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
+  // Google Ads
+  try {
+    setApiStates(prev => ({
+      ...prev,
+      googleAds: { status: "loading" }
+    }));
+    
+    const googleAdsApiKey = getApiKey("googleads");
+    if (!googleAdsApiKey) {
+      setApiStates(prev => ({
+        ...prev,
+        googleAds: { 
+          status: "error", 
+          message: "Google Ads API not configured" 
+        }
+      }));
+    } else {
+      setTimeout(() => {
+        setApiStates(prev => ({
+          ...prev,
+          googleAds: { 
+            status: "error", 
+            message: "Failed to fetch Google Ads API" 
+          }
+        }));
+      }, 1000);
+    }
+  } catch (error) {
+    console.error("Error testing Google Ads API connection:", error);
+    setApiStates(prev => ({
+      ...prev,
+      googleAds: { 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      }
+    }));
+  }
+  
+  // RapidAPI
+  try {
+    setApiStates(prev => ({
+      ...prev,
+      rapidApi: { status: "loading" }
+    }));
+    
+    const rapidApiKey = getApiKey("rapidapi");
+    if (!rapidApiKey) {
+      setApiStates(prev => ({
+        ...prev,
+        rapidApi: { 
+          status: "error", 
+          message: "RapidAPI key not configured" 
+        }
+      }));
+    } else {
+      setTimeout(() => {
+        setApiStates(prev => ({
+          ...prev,
+          rapidApi: { 
+            status: "error", 
+            message: "Monthly quota exceeded (429)" 
+          }
+        }));
+      }, 600);
+    }
+  } catch (error) {
+    console.error("Error testing RapidAPI connection:", error);
+    setApiStates(prev => ({
+      ...prev,
+      rapidApi: { 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      }
+    }));
+  }
+};
+
+export const testAiModel = async (
+  modelId: string, 
+  prompt: string,
+  setTestModelStatus: (status: "idle" | "loading" | "success" | "error") => void,
+  setTestResponse: (response: string) => void
+) => {
+  if (!modelId) return;
+
+  setTestModelStatus("loading");
+  setTestResponse("");
+
+  try {
+    const isEmbeddingModel = modelId.includes("embedding");
+    
+    if (isEmbeddingModel) {
+      const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer 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`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          input: prompt
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const embedding = data.data[0].embedding;
+      const dimensions = embedding.length;
+      
+      setTestResponse(`✅ Success! Generated ${dimensions}-dimensional embedding vector.`);
+      setTestModelStatus("success");
+    } else {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer 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`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful assistant that provides brief, accurate responses."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 150
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.choices[0].message.content;
+      
+      setTestResponse(responseText);
+      setTestModelStatus("success");
+    }
+  } catch (error) {
+    console.error("Error testing AI model:", error);
+    setTestResponse(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    setTestModelStatus("error");
+  }
+};
