@@ -19,7 +19,11 @@ export const processCompetitorData = async (
     if (useRealData) {
       try {
         console.log(`Attempting to fetch keywords for competitor: ${domain} with location code: ${locationCode}`);
-        keywords = await fetchDomainKeywords(domain);
+        
+        // Updated to pass locationCode to the imported fetchDomainKeywords function
+        const { fetchDataForSEOKeywords } = await import('../api/dataForSeoApi');
+        keywords = await fetchDataForSEOKeywords(domain, locationCode);
+        
         console.log(`Successfully fetched ${keywords.length} keywords for competitor ${domain}`);
       } catch (error) {
         console.warn(`Error fetching real competitor keywords for ${domain}, using mock data:`, error);
