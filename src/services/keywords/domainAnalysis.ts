@@ -1,63 +1,10 @@
+
 import { toast } from "sonner";
 import { KeywordData } from './types';
 import { fetchDomainKeywords, ensureValidUrl } from './api';
-
-// Helper function to generate sample ranking URL
-const generateSampleUrl = (domain: string, keyword: string): string => {
-  // Remove protocol and trailing slashes to get clean domain
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  
-  // Convert keyword to URL-friendly slug
-  const slug = keyword.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-  
-  // Randomly select a common URL pattern
-  const patterns = [
-    `https://${cleanDomain}/${slug}/`,
-    `https://${cleanDomain}/blog/${slug}/`,
-    `https://${cleanDomain}/services/${slug}/`,
-    `https://${cleanDomain}/product/${slug}/`,
-    `https://${cleanDomain}/resources/${slug}/`,
-  ];
-  
-  return patterns[Math.floor(Math.random() * patterns.length)];
-};
-
-// Generate mock keyword data for demonstration purposes
-const generateMockKeywords = (domain: string, count: number = 15): KeywordData[] => {
-  const keywordPrefixes = ['analytics', 'data', 'business', 'revenue', 'growth', 
-    'marketing', 'strategy', 'insight', 'performance', 'metrics', 'dashboard',
-    'reporting', 'forecast', 'prediction', 'trends', 'visualization'];
-  
-  const keywordSuffixes = ['software', 'platform', 'service', 'tool', 'solution',
-    'management', 'analysis', 'optimization', 'tracking', 'reporting', 'dashboard',
-    'integration', 'automation', 'intelligence', 'framework', 'methodology'];
-  
-  const keywords: KeywordData[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    const prefix = keywordPrefixes[Math.floor(Math.random() * keywordPrefixes.length)];
-    const suffix = keywordSuffixes[Math.floor(Math.random() * keywordSuffixes.length)];
-    const keyword = `${prefix} ${suffix}`;
-    
-    // Generate realistic-looking data
-    const monthlySearch = Math.floor(Math.random() * 10000) + 100;
-    const competitionIndex = Math.floor(Math.random() * 100) + 1;
-    const cpc = (Math.random() * 10 + 0.5).toFixed(2);
-    const position = Math.floor(Math.random() * 100) + 1;
-    
-    keywords.push({
-      keyword,
-      monthly_search: monthlySearch,
-      competition: competitionIndex < 30 ? "low" : competitionIndex < 70 ? "medium" : "high",
-      competition_index: competitionIndex,
-      cpc: parseFloat(cpc),
-      position,
-      rankingUrl: generateSampleUrl(domain, keyword),
-    });
-  }
-  
-  return keywords;
-};
+import { generateMockKeywords } from './utils/mockDataGenerator';
+import { processCompetitorData } from './utils/competitorDataProcessor';
+import { mergeKeywordData } from './utils/keywordDataMerger';
 
 export const analyzeDomains = async (
   mainDomain: string, 
@@ -87,13 +34,13 @@ export const analyzeDomains = async (
       if (!mainKeywords.length) {
         console.warn(`No real keywords found for ${formattedMainDomain}, using mock data`);
         useRealData = false;
-        mainKeywords = generateMockKeywords(formattedMainDomain, 30); // Generate more keywords
+        mainKeywords = generateMockKeywords(formattedMainDomain, 30);
         toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`);
       }
     } catch (error) {
       console.warn(`Error fetching real keywords for ${formattedMainDomain}, using mock data:`, error);
       useRealData = false;
-      mainKeywords = generateMockKeywords(formattedMainDomain, 30); // Generate more keywords
+      mainKeywords = generateMockKeywords(formattedMainDomain, 30);
       toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`);
     }
     
@@ -101,114 +48,19 @@ export const analyzeDomains = async (
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
-      try {
-        toast.info(`Analyzing competitor: ${domain}`);
-        let keywords = [];
-        
-        if (useRealData) {
-          try {
-            console.log(`Attempting to fetch keywords for competitor: ${domain}`);
-            keywords = await fetchDomainKeywords(domain);
-            console.log(`Successfully fetched ${keywords.length} keywords for competitor ${domain}`);
-          } catch (error) {
-            console.warn(`Error fetching real competitor keywords for ${domain}, using mock data:`, error);
-            keywords = generateMockKeywords(domain, 25); // Generate more competitor keywords
-            toast.warning(`API error when fetching keywords for competitor ${domain}, using sample data`);
-          }
-        } else {
-          keywords = generateMockKeywords(domain, 25); // Generate more competitor keywords
-        }
-        
-        if (keywords.length > 0) {
-          competitorResults.push({ domain, keywords });
-          toast.success(`Found ${keywords.length} keywords for ${domain}`);
-        } else {
-          console.warn(`No keywords found for ${domain}, generating mock data`);
-          const mockKeywords = generateMockKeywords(domain, 25);
-          competitorResults.push({ domain, keywords: mockKeywords });
-          toast.success(`Generated ${mockKeywords.length} sample keywords for ${domain}`);
-        }
-      } catch (error) {
-        console.error(`Error analyzing competitor ${domain}:`, error);
-        toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
-        
-        // Generate mock data even if analysis fails
-        const mockKeywords = generateMockKeywords(domain, 25);
-        competitorResults.push({ domain, keywords: mockKeywords });
-        toast.success(`Generated ${mockKeywords.length} sample keywords for ${domain} (fallback)`);
-      }
+      const result = await processCompetitorData(domain, useRealData);
+      competitorResults.push(result);
     }
     
     // Process and merge data
-    const keywordMap = new Map<string, KeywordData>();
-    
-    // Add main domain keywords first
-    mainKeywords.forEach(kw => {
-      // Simulate a ranking position and URL for the main domain
-      const position = kw.position || Math.floor(Math.random() * 100) + 1;
-      const rankingUrl = kw.rankingUrl || generateSampleUrl(formattedMainDomain, kw.keyword);
-      
-      keywordMap.set(kw.keyword, {
-        keyword: kw.keyword,
-        monthly_search: kw.monthly_search,
-        competition: kw.competition,
-        competition_index: kw.competition_index,
-        cpc: kw.cpc,
-        position: position, // Simulate ranking position
-        rankingUrl: rankingUrl, // Add ranking URL
-        competitorRankings: {},
-        competitorUrls: {}
-      });
-    });
-    
-    // Add competitor keywords and rankings
-    competitorResults.forEach(({ domain, keywords }) => {
-      // Extract just the domain name without protocol and www prefix for cleaner display
-      const domainName = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
-      
-      keywords.forEach(kw => {
-        if (keywordMap.has(kw.keyword)) {
-          // Update existing keyword with competitor ranking
-          const existing = keywordMap.get(kw.keyword)!;
-          if (!existing.competitorRankings) {
-            existing.competitorRankings = {};
-          }
-          if (!existing.competitorUrls) {
-            existing.competitorUrls = {};
-          }
-          
-          // Simulate a ranking position and URL for this competitor
-          const position = kw.position || Math.floor(Math.random() * 100) + 1;
-          const rankingUrl = kw.rankingUrl || generateSampleUrl(domain, kw.keyword);
-          
-          existing.competitorRankings[domainName] = position;
-          existing.competitorUrls[domainName] = rankingUrl;
-        } else {
-          // Add new keyword that main domain doesn't have
-          const position = kw.position || Math.floor(Math.random() * 100) + 1;
-          const rankingUrl = kw.rankingUrl || generateSampleUrl(domain, kw.keyword);
-          
-          keywordMap.set(kw.keyword, {
-            keyword: kw.keyword,
-            monthly_search: kw.monthly_search,
-            competition: kw.competition,
-            competition_index: kw.competition_index,
-            cpc: kw.cpc,
-            position: null, // Main domain doesn't rank for this
-            rankingUrl: null,
-            competitorRankings: {
-              [domainName]: position
-            },
-            competitorUrls: {
-              [domainName]: rankingUrl
-            }
-          });
-        }
-      });
-    });
+    const mergedKeywords = mergeKeywordData(
+      formattedMainDomain,
+      mainKeywords,
+      competitorResults
+    );
     
     return {
-      keywords: Array.from(keywordMap.values()),
+      keywords: mergedKeywords,
       success: true
     };
   } catch (error) {

@@ -7,6 +7,11 @@ export * from './keywords/contentGeneration';
 export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
 
+// Re-export utilities for keyword analysis
+export * from './keywords/utils/mockDataGenerator';
+export * from './keywords/utils/competitorDataProcessor';
+export * from './keywords/utils/keywordDataMerger';
+
 // Re-export updated keyword analysis
 export {
   getHighValueKeywords,
