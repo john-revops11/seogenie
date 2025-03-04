@@ -20,6 +20,9 @@ export const API_URL = "https://keyword-tool.p.rapidapi.com/urlextract/";
 export const GOOGLE_KEYWORD_API_HOST = "google-keyword-insight1.p.rapidapi.com";
 export const GOOGLE_KEYWORD_API_URL = "https://google-keyword-insight1.p.rapidapi.com/globalurl/";
 
+// OpenAI API configuration
+export const OPENAI_API_KEY = ""; // This will be populated dynamically via the ApiIntegrationManager
+
 // Dynamic API key accessor - allows getting API keys that are set at runtime
 let dynamicApiKeys: Record<string, string> = {};
 
