@@ -39,6 +39,12 @@ export const generateContent = async (
     console.log("generateContent: Starting with title:", title);
     console.log("generateContent: Keywords:", keywords);
     console.log("generateContent: Content type:", contentType);
+    console.log("generateContent: Domain:", domain);
+    console.log("generateContent: Creativity:", creativity);
+    console.log("generateContent: Preferences:", preferences);
+    console.log("generateContent: Use RAG:", useRag);
+    
+    toast.info("Generating content outline...", { id: "content-gen" });
     
     // Generate content outline with headings and FAQs
     const outline: ContentOutline = await generateContentOutline(
@@ -48,6 +54,7 @@ export const generateContent = async (
     );
     
     console.log("generateContent: Generated outline:", outline);
+    toast.info("Creating content blocks...", { id: "content-gen" });
     
     // Generate the full content with blocks
     const result = await generateFullContent(
@@ -65,6 +72,7 @@ export const generateContent = async (
     }
     
     console.log("generateContent: Generated content result:", result);
+    toast.success("Content generation completed!", { id: "content-gen" });
     
     // Convert blocks to HTML string for the existing interface
     const contentHtml = result.blocks.map(block => block.content).join('\n');
@@ -77,7 +85,7 @@ export const generateContent = async (
     };
   } catch (error) {
     console.error("Error in generateContent:", error);
-    toast.error(`Content generation failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    toast.error(`Content generation failed: ${error instanceof Error ? error.message : "Unknown error"}`, { id: "content-gen" });
     throw error;
   }
 };

@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { ContentBlock, ContentOutline, ContentTemplate, GeneratedContent } from './types';
 import { generateContentWithRAG } from '../vector/ragService';
@@ -77,6 +76,7 @@ const generateStandardContent = async (
   creativity: number = 50,
   preferences: string[] = []
 ): Promise<GeneratedContent> => {
+  console.log("generateStandardContent: Starting generation for", title);
   const metaDescription = `${title} - Comprehensive guide covering ${keywords.slice(0, 3).join(', ')}`;
   
   // Initialize empty content blocks
@@ -183,6 +183,7 @@ const fillContentBlocks = async (
   }
   
   try {
+    console.log("fillContentBlocks: Starting to fill content blocks with AI");
     // Now we'll actually generate the content with OpenAI
     const updatedBlocks = [...content.blocks];
     let promptHeader = `Generate high-quality content for a ${contentType} about "${content.title}" targeting these keywords: ${keywords.join(', ')}.\n`;
@@ -210,124 +211,33 @@ const fillContentBlocks = async (
         let prompt = promptHeader;
         if (contextHeading) {
           prompt += `\nGenerate a detailed paragraph for the section "${contextHeading}".\n`;
+          console.log(`Generating content for section: "${contextHeading}"`);
         }
         
-        // Try primary model (GPT-4o-mini) first
+        // Try to generate content
         try {
-          const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
-                },
-                {
-                  role: 'user',
-                  content: prompt
-                }
-              ],
-              temperature: creativity / 100,
-              max_tokens: 500
-            })
-          });
+          const generatedContent = await generateParagraphContent(prompt, creativity);
           
-          if (!response.ok) {
-            throw new Error(`OpenAI API error with gpt-4o-mini: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          const generatedContent = data.choices[0].message.content.trim();
-          updatedBlocks[i] = {
-            ...block,
-            content: `<p>${generatedContent}</p>`
-          };
-        } catch (primaryModelError) {
-          console.warn("Primary model (gpt-4o-mini) failed, trying GPT-4:", primaryModelError);
-          
-          // Try GPT-4 as first fallback
-          try {
-            const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'gpt-4',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
-                  },
-                  {
-                    role: 'user',
-                    content: prompt
-                  }
-                ],
-                temperature: creativity / 100,
-                max_tokens: 500
-              })
-            });
-            
-            if (!fallbackResponse.ok) {
-              throw new Error(`OpenAI API error with gpt-4: ${fallbackResponse.status}`);
-            }
-            
-            const fallbackData = await fallbackResponse.json();
-            const generatedContent = fallbackData.choices[0].message.content.trim();
+          // Update the block with the generated content
+          if (generatedContent && generatedContent.trim() !== '') {
             updatedBlocks[i] = {
               ...block,
               content: `<p>${generatedContent}</p>`
             };
-          } catch (gpt4Error) {
-            console.warn("GPT-4 fallback failed, trying GPT-3.5-turbo as final fallback:", gpt4Error);
-            
-            // Try GPT-3.5-turbo as final fallback
-            try {
-              const finalFallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  model: 'gpt-3.5-turbo',
-                  messages: [
-                    {
-                      role: 'system',
-                      content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
-                    },
-                    {
-                      role: 'user',
-                      content: prompt
-                    }
-                  ],
-                  temperature: creativity / 100,
-                  max_tokens: 500
-                })
-              });
-              
-              if (!finalFallbackResponse.ok) {
-                throw new Error(`All models failed. Final error: ${finalFallbackResponse.status}`);
-              }
-              
-              const finalFallbackData = await finalFallbackResponse.json();
-              const generatedContent = finalFallbackData.choices[0].message.content.trim();
-              updatedBlocks[i] = {
-                ...block,
-                content: `<p>${generatedContent}</p>`
-              };
-            } catch (finalError) {
-              console.error("All OpenAI models failed:", finalError);
-              throw new Error("All available AI models failed to generate content");
-            }
+            console.log(`Successfully generated content for ${contextHeading || 'section'}`);
+          } else {
+            console.warn("Empty content returned from AI generation");
+            updatedBlocks[i] = {
+              ...block,
+              content: `<p>Content generation failed for this section. Please try regenerating or edit manually.</p>`
+            };
           }
+        } catch (genError) {
+          console.error("Error generating paragraph content:", genError);
+          updatedBlocks[i] = {
+            ...block,
+            content: `<p>Content generation failed for this section. Error: ${genError instanceof Error ? genError.message : "Unknown error"}</p>`
+          };
         }
       }
     }
@@ -341,6 +251,99 @@ const fillContentBlocks = async (
     console.error("Error filling content blocks:", error);
     toast.error(`Content generation failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     return content;
+  }
+};
+
+/**
+ * Generates a single paragraph of content using the OpenAI API
+ */
+const generateParagraphContent = async (prompt: string, creativity: number): Promise<string> => {
+  console.log("Attempting to generate paragraph with prompt:", prompt.substring(0, 100) + "...");
+  
+  // Try primary model (GPT-4o-mini) first
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: creativity / 100,
+        max_tokens: 800
+      })
+    });
+    
+    if (!response.ok) {
+      console.error(`OpenAI API error with gpt-4o-mini: ${response.status}`, await response.text());
+      throw new Error(`OpenAI API error with gpt-4o-mini: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log("Generation response received:", data);
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Invalid response format from OpenAI:", data);
+      throw new Error("Invalid response format from OpenAI");
+    }
+    
+    return data.choices[0].message.content.trim();
+  } catch (primaryModelError) {
+    console.warn("Primary model (gpt-4o-mini) failed, using fallback model:", primaryModelError);
+    
+    // Fallback to GPT-3.5-turbo
+    try {
+      const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: creativity / 100,
+          max_tokens: 800
+        })
+      });
+      
+      if (!fallbackResponse.ok) {
+        console.error(`OpenAI API error with fallback model: ${fallbackResponse.status}`, await fallbackResponse.text());
+        throw new Error(`All OpenAI models failed to generate content`);
+      }
+      
+      const fallbackData = await fallbackResponse.json();
+      
+      if (!fallbackData.choices || !fallbackData.choices[0] || !fallbackData.choices[0].message) {
+        console.error("Invalid response format from OpenAI fallback:", fallbackData);
+        throw new Error("Invalid response format from OpenAI fallback");
+      }
+      
+      return fallbackData.choices[0].message.content.trim();
+    } catch (fallbackError) {
+      console.error("All OpenAI models failed:", fallbackError);
+      throw new Error("All available AI models failed to generate content");
+    }
   }
 };
 
