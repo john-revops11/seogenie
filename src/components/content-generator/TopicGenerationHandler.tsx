@@ -15,7 +15,11 @@ const TopicGenerationHandler: React.FC<TopicGenerationHandlerProps> = ({
       
       if (primaryKeyword) {
         console.log("TopicGenerationHandler received event:", event.detail);
+        toast.info(`Generating content for "${primaryKeyword}"`, { id: "keyword-gen" });
         onGenerateFromKeyword(primaryKeyword, relatedKeywords || []);
+      } else {
+        console.error("TopicGenerationHandler received event without primaryKeyword:", event.detail);
+        toast.error("Missing primary keyword for content generation");
       }
     };
     

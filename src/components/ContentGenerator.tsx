@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -215,6 +216,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     
     setIsGenerating(true);
     try {
+      console.log("Starting content generation with the following parameters:");
+      console.log("Domain:", domain);
+      console.log("Title:", title);
+      console.log("Selected Keywords:", selectedKeywords);
+      console.log("Content Type:", contentType);
+      console.log("Creativity:", creativity);
+      console.log("Content Preferences:", contentPreferences);
+      console.log("RAG Enabled:", ragEnabled && isPineconeConfigured());
+      
       if (ragEnabled && isPineconeConfigured()) {
         toast.info("Using RAG to enhance content with related keywords and context", {
           duration: 3000
@@ -231,7 +241,12 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
         ragEnabled && isPineconeConfigured()
       );
       
+      console.log("Content generation result:", result);
       setGeneratedContent(result);
+      
+      if (!result) {
+        throw new Error("Content generation returned empty result");
+      }
       
       const blocks = result.content.split('\n').map((html, index) => {
         let type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' = 'paragraph';

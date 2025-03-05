@@ -36,12 +36,18 @@ export const generateContent = async (
   }
   
   try {
+    console.log("generateContent: Starting with title:", title);
+    console.log("generateContent: Keywords:", keywords);
+    console.log("generateContent: Content type:", contentType);
+    
     // Generate content outline with headings and FAQs
     const outline: ContentOutline = await generateContentOutline(
       title,
       keywords,
       contentType
     );
+    
+    console.log("generateContent: Generated outline:", outline);
     
     // Generate the full content with blocks
     const result = await generateFullContent(
@@ -57,6 +63,8 @@ export const generateContent = async (
     if (!result) {
       throw new Error("Failed to generate content");
     }
+    
+    console.log("generateContent: Generated content result:", result);
     
     // Convert blocks to HTML string for the existing interface
     const contentHtml = result.blocks.map(block => block.content).join('\n');
