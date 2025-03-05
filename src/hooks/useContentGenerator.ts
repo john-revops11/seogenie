@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { generateContent, getAvailableContentTemplates, getSuggestedTitles } from "@/services/keywords/contentGeneration";
@@ -290,7 +289,6 @@ export const useContentGenerator = (domain: string, allKeywords: string[]) => {
   };
 
   return {
-    // State
     topics,
     titleSuggestions,
     selectedTopic,
@@ -306,8 +304,8 @@ export const useContentGenerator = (domain: string, allKeywords: string[]) => {
     selectedTemplateId,
     generatedContentData,
     selectedKeywords,
+    setGeneratedContentData,
     
-    // Actions
     setActiveStep,
     setSelectedTemplateId,
     handleGenerateFromKeyword,

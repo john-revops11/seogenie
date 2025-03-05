@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
@@ -31,6 +30,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     selectedTemplateId,
     generatedContentData,
     selectedKeywords,
+    setGeneratedContentData,
     
     // Actions
     setActiveStep,
