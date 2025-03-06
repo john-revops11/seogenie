@@ -69,3 +69,14 @@ export const generateTitleSuggestions = (
   
   return suggestions;
 };
+
+/**
+ * Legacy function to maintain backward compatibility
+ */
+export const getTopicTitles = async (
+  topic: string,
+  keywords: string[] = [],
+  contentType: string = 'blog'
+): Promise<string[]> => {
+  return generateTitleSuggestions(topic, keywords, contentType);
+};

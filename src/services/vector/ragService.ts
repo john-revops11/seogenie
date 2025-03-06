@@ -125,3 +125,52 @@ export const generateContentOutline = async (
     faqs
   };
 };
+
+/**
+ * Simple function to enhance content with RAG
+ */
+export const enhanceWithRAG = async (
+  prompt: string,
+  heading: string,
+  title: string, 
+  keywords: string[]
+): Promise<string> => {
+  // For now, just returning a placeholder implementation
+  // In a real implementation, this would use RAG to enhance the content
+  const combinedQuery = `${title} ${heading} ${keywords.join(' ')}`;
+  
+  try {
+    // Check if Pinecone is configured
+    if (!isPineconeConfigured()) {
+      console.log("Pinecone not configured for RAG enhancement");
+      // Return null to allow fallback to standard generation
+      return `Content for ${heading} (RAG not available)`;
+    }
+    
+    // Retrieve documents from Pinecone (or any vector database)
+    const relevantDocs = await retrieveSimilarDocuments(combinedQuery, 3);
+    
+    if (relevantDocs.length === 0) {
+      console.log("No relevant documents found for RAG enhancement");
+      return prompt;
+    }
+    
+    // Extract context from the retrieved documents
+    const context = relevantDocs
+      .map(doc => doc.metadata.text || "")
+      .join("\n\n");
+    
+    // Enhanced prompt with the retrieved context
+    const enhancedPrompt = `
+      ${prompt}
+      
+      Use the following context to enhance your response:
+      ${context}
+    `;
+    
+    return enhancedPrompt;
+  } catch (error) {
+    console.error("Error enhancing with RAG:", error);
+    return prompt; // Return the original prompt if RAG enhancement fails
+  }
+};

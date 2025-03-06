@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
-import { useContentGenerator } from "@/hooks/useContentGenerator";
+import useContentGenerator from "@/hooks/useContentGenerator";
 import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne";
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
@@ -32,6 +32,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     selectedTemplateId,
     generatedContentData,
     selectedKeywords,
+    aiProvider,
+    aiModel,
     
     // State setters
     setGeneratedContent,
@@ -51,7 +53,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     handleContentPreferenceToggle,
     handleRagToggle,
     handleGenerateContent,
-    handleAddCustomTopic
+    handleAddCustomTopic,
+    setAIProvider,
+    setAIModel
   } = useContentGenerator(domain, allKeywords);
 
   // Convert GeneratedContentType to the format expected by setGeneratedContent
@@ -122,6 +126,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             creativity={creativity}
             ragEnabled={ragEnabled}
             isGenerating={isGenerating}
+            aiProvider={aiProvider}
+            aiModel={aiModel}
+            onAIProviderChange={setAIProvider}
+            onAIModelChange={setAIModel}
             onGenerateContent={handleGenerateContent}
             onBack={() => setActiveStep(2)}
           />

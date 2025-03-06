@@ -5,12 +5,11 @@
 import { useState, useEffect } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
-import { generateContent } from "@/services/keywords/contentGenerationService";
-import { generateContentOutline } from "@/services/keywords/generation/contentStructureService";
-import { getTopicTitles } from "@/services/keywords/generation/titleGenerator";
-import { getFileNamesFromTopics } from "@/utils/topicGenerator";
+import { generateFullContent } from "@/services/keywords/contentGenerationService";
+import { generateContentOutline } from "@/services/vector/ragService";
+import { generateTitleSuggestions } from "@/services/keywords/generation/titleGenerator";
+import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
-import { enhanceWithRAG } from "@/services/vector/ragService";
 import { AIProvider } from "@/types/aiModels";
 
 type GeneratedContentType = {
@@ -22,15 +21,22 @@ type GeneratedContentType = {
 
 export type StepType = 1 | 2 | 3 | 4;
 
-export default function useContentGenerator() {
-  const [step, setStep] = useState<StepType>(1);
+// Export as default instead of a named export
+export default function useContentGenerator(domain: string = "", allKeywords: string[] = []) {
+  const [activeStep, setActiveStep] = useState<StepType>(1);
   const [contentType, setContentType] = useState("blog");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [title, setTitle] = useState("");
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(allKeywords.slice(0, 3));
   const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContentType | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<{
+    title: string;
+    metaDescription: string;
+    outline: string[];
+    content: string;
+  } | null>(null);
+  const [generatedContentData, setGeneratedContentData] = useState<GeneratedContentType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topics, setTopics] = useState<string[]>([]);
@@ -50,7 +56,7 @@ export default function useContentGenerator() {
   }, [selectedTopic]);
 
   // Generate topics based on selected keywords
-  const generateTopics = async () => {
+  const handleGenerateTopics = async () => {
     if (selectedKeywords.length === 0) {
       toast.error("Please select at least one keyword");
       return;
@@ -58,13 +64,15 @@ export default function useContentGenerator() {
 
     setIsLoadingTopics(true);
     try {
-      const generatedTopics = await getFileNamesFromTopics(selectedKeywords);
+      // Generate topics using the utility function
+      const generatedTopics = await generateTopicSuggestions(domain, [], null, selectedKeywords);
       setTopics(generatedTopics);
 
       // Generate title suggestions for each topic
       const suggestions: { [topic: string]: string[] } = {};
       for (const topic of generatedTopics) {
-        const titles = await getTopicTitles(topic, selectedKeywords);
+        // Use the imported function for generating titles
+        const titles = await generateTitleSuggestions(topic, selectedKeywords, contentType);
         suggestions[topic] = titles;
       }
       setTitleSuggestions(suggestions);
@@ -80,8 +88,13 @@ export default function useContentGenerator() {
     }
   };
 
+  // Handle regenerating topics
+  const handleRegenerateTopics = () => {
+    handleGenerateTopics();
+  };
+
   // Generate content based on all parameters
-  const generateContentForTopic = async () => {
+  const handleGenerateContent = async () => {
     if (!title) {
       toast.error("Please provide a title");
       return;
@@ -101,8 +114,7 @@ export default function useContentGenerator() {
       const outline = await generateContentOutline(
         title,
         selectedKeywords,
-        contentType,
-        contentPreferences
+        contentType
       );
 
       toast.info("Generating content blocks...");
@@ -110,7 +122,7 @@ export default function useContentGenerator() {
       const blocks = [];
       
       // Generate each content block
-      for (const heading of outline) {
+      for (const heading of outline.headings) {
         let prompt = `Write a detailed section for an article titled "${title}" focusing on the section heading "${heading}". `;
         prompt += `Incorporate these keywords naturally: ${selectedKeywords.join(", ")}. `;
         prompt += `The content type is ${contentType}. `;
@@ -122,8 +134,8 @@ export default function useContentGenerator() {
         let blockContent;
         
         if (ragEnabled) {
-          // Use RAG to enhance the content
-          blockContent = await enhanceWithRAG(prompt, heading, title, selectedKeywords);
+          // Use standard AI generation for RAG-enabled content for now
+          blockContent = await generateWithAI(aiProvider, aiModel, prompt, creativity);
         } else {
           // Use the selected AI provider and model
           blockContent = await generateWithAI(aiProvider, aiModel, prompt, creativity);
@@ -139,15 +151,27 @@ export default function useContentGenerator() {
       const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
       const metaDescription = await generateWithAI(aiProvider, aiModel, metaPrompt, 30);
 
+      const contentData = {
+        title,
+        metaDescription,
+        outline: outline.headings,
+        blocks
+      };
+
+      setGeneratedContentData(contentData);
+
+      // Convert blocks to HTML string for the existing interface
+      const contentHtml = blocks.map(block => block.content).join('\n');
+
       setGeneratedContent({
         title,
         metaDescription,
-        outline,
-        blocks
+        outline: outline.headings,
+        content: contentHtml
       });
 
       // Move to final step
-      setStep(4);
+      setActiveStep(4);
       toast.success("Content generated successfully!");
     } catch (error) {
       console.error("Error generating content:", error);
@@ -157,7 +181,41 @@ export default function useContentGenerator() {
     }
   };
 
-  const toggleContentPreference = (preference: string) => {
+  // Generate from a keyword directly
+  const handleGenerateFromKeyword = (keyword: string) => {
+    if (keyword) {
+      setSelectedKeywords([keyword]);
+      toast.info(`Selected keyword: ${keyword}`);
+    }
+  };
+
+  // Handle selecting a topic
+  const handleSelectTopic = (topic: string) => {
+    setSelectedTopic(topic);
+  };
+
+  // Handle selecting a title
+  const handleSelectTitle = (title: string) => {
+    setTitle(title);
+  };
+
+  // Handle deleting a topic
+  const handleDeleteTopic = (topic: string) => {
+    if (topics.length <= 1) {
+      toast.error("Cannot delete the only topic");
+      return;
+    }
+    
+    const newTopics = topics.filter(t => t !== topic);
+    setTopics(newTopics);
+    
+    if (selectedTopic === topic) {
+      setSelectedTopic(newTopics[0]);
+    }
+  };
+
+  // Toggle content preference
+  const handleContentPreferenceToggle = (preference: string) => {
     setContentPreferences(prev => 
       prev.includes(preference) 
         ? prev.filter(p => p !== preference) 
@@ -165,7 +223,8 @@ export default function useContentGenerator() {
     );
   };
 
-  const addCustomTopic = (topic: string) => {
+  // Add custom topic
+  const handleAddCustomTopic = (topic: string) => {
     if (!topic.trim()) return;
     
     if (topics.includes(topic)) {
@@ -177,7 +236,7 @@ export default function useContentGenerator() {
     setSelectedTopic(topic);
     
     // Generate title suggestions for the new topic
-    getTopicTitles(topic, selectedKeywords).then(titles => {
+    generateTitleSuggestions(topic, selectedKeywords, contentType).then(titles => {
       setTitleSuggestions(prev => ({
         ...prev,
         [topic]: titles
@@ -185,37 +244,67 @@ export default function useContentGenerator() {
     });
   };
 
+  // Toggle RAG
+  const handleRagToggle = () => {
+    setRagEnabled(prev => !prev);
+  };
+
+  // Handle content type change
+  const handleContentTypeChange = (type: string) => {
+    setContentType(type);
+  };
+
+  // Handle creativity change
+  const handleCreativityChange = (value: number) => {
+    setCreativity(value);
+  };
+
   return {
-    step,
-    setStep,
+    // State
+    activeStep,
     contentType,
-    setContentType,
     selectedTemplateId,
-    setSelectedTemplateId,
     title,
-    setTitle,
     selectedKeywords,
-    setSelectedKeywords,
     creativity,
-    setCreativity,
     contentPreferences,
     generatedContent,
-    setGeneratedContent,
+    generatedContentData,
     isGenerating,
     isLoadingTopics,
     topics,
     titleSuggestions,
     selectedTopic,
-    setSelectedTopic,
-    generateTopics,
-    generateContentForTopic,
-    toggleContentPreference,
-    addCustomTopic,
     ragEnabled,
-    setRagEnabled,
     aiProvider,
-    setAIProvider,
     aiModel,
-    setAIModel
+    
+    // State setters
+    setGeneratedContent,
+    setGeneratedContentData,
+    
+    // Actions
+    setActiveStep,
+    setContentType,
+    setSelectedTemplateId,
+    setTitle,
+    setSelectedKeywords,
+    setCreativity,
+    setSelectedTopic,
+    setRagEnabled,
+    setAIProvider,
+    setAIModel,
+    handleGenerateTopics,
+    handleRegenerateTopics,
+    handleSelectTopic,
+    handleSelectTitle,
+    handleDeleteTopic,
+    handleContentTypeChange,
+    handleCreativityChange,
+    handleContentPreferenceToggle,
+    handleRagToggle,
+    handleGenerateContent,
+    handleAddCustomTopic,
+    handleGenerateFromKeyword
   };
 }
