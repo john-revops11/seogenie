@@ -23,23 +23,24 @@ export function useContentActions(
     setContentPreferences: (preferences: string[]) => void,
     preference: string
   ) => {
-    // Create a function that takes the previous preferences and returns the new array
-    const updatePreferences = (prevPreferences: string[]) => 
-      prevPreferences.includes(preference)
-        ? prevPreferences.filter(p => p !== preference)
-        : [...prevPreferences, preference];
-    
-    // Pass this function to setContentPreferences
-    setContentPreferences(updatePreferences);
+    // Instead of using a callback function, get the current preferences first
+    // and then compute the new value before passing it to the setter
+    return (currentPreferences: string[]) => {
+      const newPreferences = currentPreferences.includes(preference)
+        ? currentPreferences.filter(p => p !== preference)
+        : [...currentPreferences, preference];
+      
+      setContentPreferences(newPreferences);
+    };
   };
 
   // Handle RAG toggle
   const handleRagToggle = (setRagEnabled: (enabled: boolean) => void) => {
-    // Create a function that takes the previous state and returns the new boolean
-    const updateRagEnabled = (prevState: boolean) => !prevState;
-    
-    // Pass this function to setRagEnabled
-    setRagEnabled(updateRagEnabled);
+    // Instead of using a callback function, return a function that takes
+    // the current value and then updates it
+    return (currentValue: boolean) => {
+      setRagEnabled(!currentValue);
+    };
   };
 
   // Generate content with specified parameters

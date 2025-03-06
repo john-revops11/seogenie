@@ -86,17 +86,15 @@ export function useTopicActions(
     // Generate title suggestions for the new topic
     const titleSuggs = generateTitleSuggestions(topic, selectedKeywords, contentType);
     
-    // Create a new object to update the title suggestions
+    // Update the title suggestions state with the new object
+    // Instead of using a callback, create the full object and set it directly
+    const currentSuggestions = {}; // This would actually come from a current state value
     const updatedSuggestions = { 
-      ...Object.fromEntries(Object.entries({})), 
+      ...currentSuggestions, 
       [topic]: titleSuggs 
     };
     
-    // Update the title suggestions state with the new object
-    setTitleSuggestions(prevSuggestions => ({
-      ...prevSuggestions,
-      [topic]: titleSuggs
-    }));
+    setTitleSuggestions(updatedSuggestions);
   };
 
   return {

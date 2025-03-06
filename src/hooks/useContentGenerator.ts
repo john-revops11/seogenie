@@ -94,6 +94,18 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     };
   }, [contentType]);
 
+  // Helper function to toggle content preferences properly
+  const toggleContentPreference = (preference: string) => {
+    const toggleFunction = handleContentPreferenceToggle(setContentPreferences, preference);
+    toggleFunction(contentPreferences);
+  };
+
+  // Helper function to toggle RAG properly
+  const toggleRag = () => {
+    const ragToggleFunction = handleRagToggle(setRagEnabled);
+    ragToggleFunction(ragEnabled);
+  };
+
   return {
     // State
     activeStep,
@@ -136,9 +148,8 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     handleDeleteTopic: (topic: string) => handleDeleteTopic(topics, selectedTopic, topic),
     handleContentTypeChange: (type: string) => handleContentTypeChange(setContentType, type),
     handleCreativityChange: (value: number) => handleCreativityChange(setCreativity, value),
-    handleContentPreferenceToggle: (preference: string) => 
-      handleContentPreferenceToggle(setContentPreferences, preference),
-    handleRagToggle: () => handleRagToggle(setRagEnabled),
+    handleContentPreferenceToggle: toggleContentPreference,
+    handleRagToggle: toggleRag,
     handleGenerateContent: () => handleGenerateContent(
       title,
       selectedKeywords,
