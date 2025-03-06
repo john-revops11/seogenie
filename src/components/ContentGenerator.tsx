@@ -7,6 +7,7 @@ import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
 import ContentGeneratorStepFour from "./content-generator/ContentGeneratorStepFour";
+import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -52,6 +53,22 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     handleGenerateContent,
     handleAddCustomTopic
   } = useContentGenerator(domain, allKeywords);
+
+  // Convert GeneratedContentType to the format expected by setGeneratedContent
+  const handleContentDataUpdate = (contentData: GeneratedContentType) => {
+    setGeneratedContentData(contentData);
+    
+    // Convert blocks to HTML string
+    const contentHtml = contentData.blocks.map(block => block.content).join('\n');
+    
+    // Update the generatedContent with the new format
+    setGeneratedContent({
+      title: contentData.title,
+      metaDescription: contentData.metaDescription,
+      outline: contentData.outline,
+      content: contentHtml
+    });
+  };
 
   const renderStepContent = () => {
     switch (activeStep) {
@@ -116,7 +133,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             generatedContent={generatedContent}
             generatedContentData={generatedContentData}
             contentType={contentType}
-            onContentUpdate={content => generatedContentData && setGeneratedContent(content)}
+            onContentUpdate={handleContentDataUpdate}
             onBack={() => setActiveStep(3)}
           />
         );
