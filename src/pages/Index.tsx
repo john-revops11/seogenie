@@ -1,35 +1,24 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { 
-  ChevronRight, 
-  Plus, 
-  X, 
-  Search, 
-  BarChart2, 
-  FileText, 
-  Settings, 
-  Loader2, 
-  Zap,
-  RotateCcw
-} from "lucide-react";
-import { KeywordGapCard } from "@/components/KeywordGapCard";
-import { SeoRecommendationsCard } from "@/components/SeoRecommendationsCard";
-import ContentGenerator from "@/components/ContentGenerator";
+import { BarChart2, FileText, Settings } from "lucide-react";
 import Layout from "@/components/Layout";
 import { analyzeDomains } from "@/services/keywordService";
-import KeywordTable from "@/components/KeywordTable";
-import KeywordResearch from "@/components/KeywordResearch";
+import ContentGenerator from "@/components/ContentGenerator";
 import ApiIntegrationManager from "@/components/ApiIntegrationManager";
+import { Header } from "@/components/page/Header";
+import { DomainAnalysisForm } from "@/components/domain-analysis/DomainAnalysisForm";
+import { AnalysisError } from "@/components/domain-analysis/AnalysisError";
+import { DashboardContent } from "@/components/domain-analysis/DashboardContent";
+import { ContentEmptyState } from "@/components/content/ContentEmptyState";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -242,18 +231,6 @@ const Index = () => {
     }
   };
 
-  const renderProgressStatus = () => {
-    if (progress < 25) return "Gathering keyword data...";
-    if (progress < 50) return "Analyzing competitor domains...";
-    if (progress < 75) return "Identifying keyword gaps...";
-    if (progress < 95) return "Generating SEO recommendations...";
-    return "Finalizing results...";
-  };
-
-  const keywordStrings = Array.isArray(keywordData) ? keywordData.map(kw => kw.keyword) : [];
-
-  const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
-
   const handleAddCompetitorFromTable = (newCompetitor: string) => {
     if (isAnalyzing) return;
     
@@ -305,80 +282,13 @@ const Index = () => {
     // Any additional logic for SEO strategy execution would go here
   };
 
-  const renderDashboardContent = () => {
-    return (
-      <div className="space-y-6 animate-slide-up">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-          <div className="md:col-span-2 lg:col-span-2">
-            <KeywordTable 
-              domain={mainDomain} 
-              competitorDomains={validCompetitorDomains} 
-              keywords={keywordData || []}
-              isLoading={isAnalyzing}
-              onAddCompetitor={handleAddCompetitorFromTable}
-              onRemoveCompetitor={removeCompetitorFromAnalysis}
-            />
-          </div>
-          
-          <div className="lg:col-span-1">
-            <KeywordGapCard 
-              domain={mainDomain} 
-              competitorDomains={validCompetitorDomains} 
-              keywords={keywordData || []}
-              isLoading={isAnalyzing}
-            />
-          </div>
-          
-          <div className="lg:col-span-1">
-            <SeoRecommendationsCard 
-              domain={mainDomain} 
-              keywords={keywordData || []}
-              isLoading={isAnalyzing}
-            />
-          </div>
-        </div>
-        
-        <KeywordResearch 
-          domain={mainDomain}
-          competitorDomains={validCompetitorDomains}
-          keywords={keywordData || []}
-          onGenerateContent={handleGenerateContentFromKeyword}
-          onRunSeoStrategy={handleRunSeoStrategy}
-        />
-      </div>
-    );
-  };
+  const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
+  const keywordStrings = Array.isArray(keywordData) ? keywordData.map(kw => kw.keyword) : [];
 
   return (
     <Layout>
       <div className="container px-4 py-8 mx-auto max-w-7xl animate-fade-in">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <Badge className="mb-2 bg-revology-light text-revology hover:bg-revology-light/80 transition-all">SEO Analysis Tool</Badge>
-            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
-              <span className="text-revology">Revology Analytics</span>
-              <span className="text-2xl font-normal text-muted-foreground">|</span>
-              <span>SeoCrafter</span>
-            </h1>
-            <p className="mt-2 text-muted-foreground">Keyword analysis and AI-driven content generation</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {analysisComplete && (
-              <Button 
-                variant="outline" 
-                onClick={handleReset} 
-                className="flex items-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Reset Data
-              </Button>
-            )}
-            <Avatar className="w-12 h-12 border-2 border-revology">
-              <AvatarImage src="https://ui.shadcn.com/avatars/01.png" />
-              <AvatarFallback className="bg-revology-light text-revology">RA</AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
+        <Header analysisComplete={analysisComplete} onReset={handleReset} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-3 w-full max-w-md">
@@ -396,16 +306,7 @@ const Index = () => {
           <TabsContent value="dashboard" className="space-y-6">
             {analysisError ? (
               <div className="space-y-6">
-                <Card className="border-destructive/50">
-                  <CardHeader>
-                    <CardTitle className="text-destructive">Analysis Error</CardTitle>
-                    <CardDescription>There was a problem analyzing the domains</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm">{analysisError}</p>
-                    <Button onClick={handleReset} variant="outline">Try Again</Button>
-                  </CardContent>
-                </Card>
+                <AnalysisError errorMessage={analysisError} onReset={handleReset} />
                 
                 <KeywordResearch 
                   domain={mainDomain || "example.com"}
@@ -417,94 +318,17 @@ const Index = () => {
               </div>
             ) : !analysisComplete ? (
               <div className="space-y-6">
-                <Card className="glass-panel transition-all duration-300 hover:shadow-xl border-revology/10">
-                  <CardHeader>
-                    <CardTitle>Domain Analysis</CardTitle>
-                    <CardDescription>Enter your main domain and competitor domains to analyze</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="main-domain">Main Domain</Label>
-                        <Input
-                          id="main-domain"
-                          placeholder="example.com"
-                          value={mainDomain}
-                          onChange={(e) => setMainDomain(e.target.value)}
-                          className="transition-all focus:ring-2 focus:ring-revology/20"
-                          disabled={isAnalyzing}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Competitor Domains</Label>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={addCompetitorDomain}
-                            className="text-xs transition-all border-revology/30 text-revology hover:text-revology hover:bg-revology-light/50"
-                            disabled={isAnalyzing}
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add
-                          </Button>
-                        </div>
-                        
-                        {competitorDomains.map((domain, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <Input
-                              placeholder={`competitor${index + 1}.com`}
-                              value={domain}
-                              onChange={(e) => updateCompetitorDomain(index, e.target.value)}
-                              className="transition-all focus:ring-2 focus:ring-revology/20"
-                              disabled={isAnalyzing}
-                            />
-                            {competitorDomains.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeCompetitorDomain(index)}
-                                className="h-8 w-8 hover:text-revology hover:bg-revology-light/50"
-                                disabled={isAnalyzing}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
-                      className="w-full mt-4 transition-all bg-revology hover:bg-revology-dark"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="w-4 h-4 mr-2" />
-                          Analyze Keywords
-                        </>
-                      )}
-                    </Button>
-                    
-                    {isAnalyzing && (
-                      <div className="space-y-2 mt-4 animate-fade-in">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>{renderProgressStatus()}</span>
-                          <span>{Math.round(progress)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2 transition-all progress-bar-animated bg-muted" />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <DomainAnalysisForm 
+                  mainDomain={mainDomain}
+                  competitorDomains={competitorDomains}
+                  isAnalyzing={isAnalyzing}
+                  progress={progress}
+                  onMainDomainChange={setMainDomain}
+                  onAddCompetitorDomain={addCompetitorDomain}
+                  onRemoveCompetitorDomain={removeCompetitorDomain}
+                  onUpdateCompetitorDomain={updateCompetitorDomain}
+                  onAnalyze={handleAnalyze}
+                />
                 
                 <KeywordResearch 
                   domain={mainDomain || "example.com"}
@@ -515,35 +339,22 @@ const Index = () => {
                 />
               </div>
             ) : (
-              renderDashboardContent()
+              <DashboardContent 
+                domain={mainDomain}
+                competitorDomains={validCompetitorDomains}
+                keywords={keywordData}
+                isAnalyzing={isAnalyzing}
+                onAddCompetitor={handleAddCompetitorFromTable}
+                onRemoveCompetitor={removeCompetitorFromAnalysis}
+                onGenerateContentFromKeyword={handleGenerateContentFromKeyword}
+                onRunSeoStrategy={handleRunSeoStrategy}
+              />
             )}
           </TabsContent>
           
           <TabsContent value="content" className="space-y-6">
             {!analysisComplete ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Content Generation</CardTitle>
-                  <CardDescription>Run a keyword analysis first to get content recommendations</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center py-10">
-                  <div className="text-center">
-                    <Zap className="w-12 h-12 mx-auto mb-4 text-revology opacity-50" />
-                    <h3 className="text-lg font-medium">No keyword data available</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Please complete a keyword analysis first to enable AI-driven content generation
-                    </p>
-                    <Button 
-                      onClick={() => {
-                        setActiveTab("dashboard");
-                      }}
-                      className="mt-6 bg-revology hover:bg-revology-dark"
-                    >
-                      Go to Analysis <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <ContentEmptyState onGoToAnalysis={() => setActiveTab("dashboard")} />
             ) : (
               <ContentGenerator 
                 domain={mainDomain} 
