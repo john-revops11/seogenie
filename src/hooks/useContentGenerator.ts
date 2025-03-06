@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { GeneratedContent } from "@/services/keywords/types";
@@ -6,7 +5,7 @@ import { AIProvider } from "@/types/aiModels";
 import { generateTopicsAndTitles } from "./content-generator/topicGenerator";
 import { generateContent } from "./content-generator/contentGenerator";
 
-// Import the title generator function
+// Import the title generator function from the correct location
 import { generateTitleSuggestions } from "@/services/keywords/generation/titleGenerator";
 
 export type StepType = 1 | 2 | 3 | 4;
@@ -180,7 +179,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     );
   };
 
-  // Add custom topic
+  // Handle adding a custom topic
   const handleAddCustomTopic = (topic: string) => {
     if (!topic.trim()) return;
     
