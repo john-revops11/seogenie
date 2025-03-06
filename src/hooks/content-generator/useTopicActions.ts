@@ -79,15 +79,16 @@ export function useTopicActions(
       return;
     }
     
-    setTopics(prev => [topic, ...prev]);
+    const newTopics = [topic, ...topics];
+    setTopics(newTopics);
     setSelectedTopic(topic);
     
     // Generate title suggestions for the new topic
     const titles = generateTitleSuggestions(topic, selectedKeywords, contentType);
-    setTitleSuggestions(prev => ({
-      ...prev,
+    setTitleSuggestions({
+      ...titles,
       [topic]: titles
-    }));
+    });
   };
 
   return {
