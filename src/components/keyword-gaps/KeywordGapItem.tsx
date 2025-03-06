@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Plus, FileText, X } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { categorizeKeywordIntent } from "./KeywordGapUtils";
+import { keywordGapsCache } from "./KeywordGapUtils";
 
 interface KeywordGapItemProps {
   gap: KeywordGap;
@@ -13,6 +14,23 @@ interface KeywordGapItemProps {
 
 export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordGapItemProps) {
   const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty, gap.volume);
+  
+  // Function to handle keyword selection/deselection with cache update
+  const handleKeywordSelection = () => {
+    onKeywordSelection(gap.keyword);
+    
+    // Update the cache (the onKeywordSelection function will already update the state)
+    const currentCache = keywordGapsCache.selectedKeywords || [];
+    if (isSelected) {
+      // Remove from cache if selected
+      keywordGapsCache.selectedKeywords = currentCache.filter(k => k !== gap.keyword);
+    } else {
+      // Add to cache if not selected
+      keywordGapsCache.selectedKeywords = [...currentCache, gap.keyword];
+    }
+    
+    console.log("Updated keyword selection cache:", keywordGapsCache.selectedKeywords);
+  };
   
   // Function to trigger content generation directly from keyword
   const handleGenerateContent = (e: React.MouseEvent) => {
@@ -47,7 +65,7 @@ export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordG
           variant={isSelected ? "outline" : "revology"}
           size="sm"
           className={`min-w-[80px] flex items-center justify-center gap-1 shadow-sm hover:translate-y-[-1px] transition-all`}
-          onClick={() => onKeywordSelection(gap.keyword)}
+          onClick={handleKeywordSelection}
         >
           {isSelected ? (
             <>

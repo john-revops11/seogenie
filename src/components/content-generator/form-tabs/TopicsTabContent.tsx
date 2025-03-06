@@ -56,6 +56,7 @@ export const TopicsTabContent: React.FC<TopicsTabContentProps> = ({
   const handleKeywordRemove = (keyword: string) => {
     if (onKeywordRemove) {
       onKeywordRemove(keyword);
+      toast.info(`Removed "${keyword}" from selected keywords`);
     }
   };
 

@@ -1,10 +1,15 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 
 export function useKeywordSelection() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
+
+  // Update the cache whenever selectedKeywords changes
+  useEffect(() => {
+    keywordGapsCache.selectedKeywords = selectedKeywords;
+  }, [selectedKeywords]);
 
   const handleKeywordSelection = (keyword: string) => {
     const updatedSelection = selectedKeywords.includes(keyword)
@@ -17,7 +22,6 @@ export function useKeywordSelection() {
     }
     
     setSelectedKeywords(updatedSelection);
-    keywordGapsCache.selectedKeywords = updatedSelection;
     
     if (selectedKeywords.includes(keyword)) {
       toast.info(`Removed "${keyword}" from selection`);
@@ -26,9 +30,15 @@ export function useKeywordSelection() {
     }
   };
 
+  // Add this getter function to ensure we can access the most current selection
+  const getSelectedKeywords = () => {
+    return selectedKeywords;
+  };
+
   return {
     selectedKeywords,
     setSelectedKeywords,
-    handleKeywordSelection
+    handleKeywordSelection,
+    getSelectedKeywords
   };
 }

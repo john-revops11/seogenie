@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
@@ -8,6 +9,8 @@ import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepT
 import ContentGeneratorStepFour from "./content-generator/ContentGeneratorStepFour";
 import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
 import { useEffect } from "react";
+import { keywordGapsCache } from "./keyword-gaps/KeywordGapUtils";
+import { toast } from "sonner";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -59,14 +62,19 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     setAIModel
   } = useContentGenerator(domain, allKeywords);
 
-  // Update selected keywords when allKeywords prop changes
+  // Sync selected keywords from cache when component mounts
   useEffect(() => {
-    if (allKeywords && allKeywords.length > 0) {
-      // Take up to 3 keywords from allKeywords
+    const cachedKeywords = keywordGapsCache.selectedKeywords || [];
+    if (cachedKeywords.length > 0) {
+      console.log("Loaded selected keywords from cache:", cachedKeywords);
+      setSelectedKeywords(cachedKeywords);
+    } else if (allKeywords && allKeywords.length > 0) {
+      // Take up to 3 keywords from allKeywords if no cached keywords
       const initialKeywords = allKeywords.slice(0, 3);
+      console.log("Initializing with keywords from props:", initialKeywords);
       setSelectedKeywords(initialKeywords);
     }
-  }, [allKeywords, setSelectedKeywords]);
+  }, []);
 
   // Listen for the custom event to handle keyword selection from other components
   useEffect(() => {
@@ -78,6 +86,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
           keywordsToUse.push(...relatedKeywords.slice(0, 2)); // Add up to 2 related keywords
         }
         setSelectedKeywords(keywordsToUse);
+        console.log("Setting keywords from event:", keywordsToUse);
+        // Update cache with the new keywords
+        keywordGapsCache.selectedKeywords = keywordsToUse;
         handleGenerateTopics(); // Automatically generate topics for selected keywords
       }
     };
@@ -91,7 +102,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
 
   // Add function to handle keyword removal
   const handleRemoveKeyword = (keyword: string) => {
-    setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
+    const updatedKeywords = selectedKeywords.filter(k => k !== keyword);
+    setSelectedKeywords(updatedKeywords);
+    // Also update the cache
+    keywordGapsCache.selectedKeywords = updatedKeywords;
+    console.log("Removed keyword:", keyword, "Updated keywords:", updatedKeywords);
+    
+    if (updatedKeywords.length === 0) {
+      toast.warning("No keywords selected. Topics may not be as SEO-optimized.");
+    }
   };
 
   // Handle content data update with proper type conversion
