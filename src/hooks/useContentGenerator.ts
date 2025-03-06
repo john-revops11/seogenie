@@ -1,3 +1,4 @@
+
 // Update this file to modify the useContentGenerator hook
 // Add support for different AI providers and models
 
@@ -10,6 +11,7 @@ import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { AIProvider } from "@/types/aiModels";
 import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
+import { generateAITopics } from "@/utils/aiTopicGenerator";
 
 export type StepType = 1 | 2 | 3 | 4;
 
@@ -50,7 +52,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     }
   }, [selectedTopic]);
 
-  // Generate topics based on selected keywords
+  // Generate topics based on selected keywords with AI fallback mechanism
   const handleGenerateTopics = async () => {
     if (selectedKeywords.length === 0) {
       toast.error("Please select at least one keyword");
@@ -58,17 +60,89 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     }
 
     setIsLoadingTopics(true);
+    
     try {
-      // Generate topics using the utility function
-      const generatedTopics = await generateTopicSuggestions(domain, [], null, selectedKeywords);
+      // First attempt with OpenAI
+      const openaiKey = getApiKey('openai');
+      
+      let generatedTopics: string[] = [];
+      let usedProvider = 'openai';
+      
+      if (openaiKey) {
+        try {
+          // Try to generate topics with OpenAI
+          generatedTopics = await generateAITopics('openai', domain, selectedKeywords, contentType);
+          toast.success("Generated topics using OpenAI");
+        } catch (openaiError) {
+          console.error("OpenAI topics generation failed:", openaiError);
+          
+          // Fallback to Gemini if OpenAI fails
+          const geminiKey = getApiKey('gemini');
+          
+          if (geminiKey) {
+            try {
+              generatedTopics = await generateAITopics('gemini', domain, selectedKeywords, contentType);
+              usedProvider = 'gemini';
+              toast.success("Generated topics using Gemini AI (fallback)");
+            } catch (geminiError) {
+              console.error("Gemini topics generation failed:", geminiError);
+              // If both AI services fail, fall back to the rule-based generator
+              generatedTopics = await generateTopicSuggestions(domain, [], null, selectedKeywords);
+              usedProvider = 'rule-based';
+              toast.info("Using rule-based topic generation (fallback)");
+            }
+          } else {
+            // No Gemini key, fall back to rule-based
+            generatedTopics = await generateTopicSuggestions(domain, [], null, selectedKeywords);
+            usedProvider = 'rule-based';
+            toast.info("Using rule-based topic generation (fallback)");
+          }
+        }
+      } else {
+        // No OpenAI key, try Gemini directly
+        const geminiKey = getApiKey('gemini');
+        
+        if (geminiKey) {
+          try {
+            generatedTopics = await generateAITopics('gemini', domain, selectedKeywords, contentType);
+            usedProvider = 'gemini';
+            toast.success("Generated topics using Gemini AI");
+          } catch (geminiError) {
+            console.error("Gemini topics generation failed:", geminiError);
+            // Fallback to rule-based
+            generatedTopics = await generateTopicSuggestions(domain, [], null, selectedKeywords);
+            usedProvider = 'rule-based';
+            toast.info("Using rule-based topic generation (fallback)");
+          }
+        } else {
+          // No AI keys configured, use rule-based
+          generatedTopics = await generateTopicSuggestions(domain, [], null, selectedKeywords);
+          usedProvider = 'rule-based';
+          toast.info("Using rule-based topic generation (no AI keys configured)");
+        }
+      }
+      
+      // Set the generated topics
       setTopics(generatedTopics);
 
       // Generate title suggestions for each topic
       const suggestions: { [topic: string]: string[] } = {};
       for (const topic of generatedTopics) {
-        // Use the imported function for generating titles
-        suggestions[topic] = generateTitleSuggestions(topic, selectedKeywords, contentType);
+        try {
+          // Try to generate titles with the same provider that succeeded for topics
+          if (usedProvider === 'openai' || usedProvider === 'gemini') {
+            suggestions[topic] = await generateTitlesWithAI(usedProvider, topic, selectedKeywords, contentType);
+          } else {
+            // Fall back to the rule-based approach if AI failed
+            suggestions[topic] = generateTitleSuggestions(topic, selectedKeywords, contentType);
+          }
+        } catch (titleError) {
+          console.error(`Failed to generate titles for topic "${topic}":`, titleError);
+          // Fallback to rule-based title generation if AI fails
+          suggestions[topic] = generateTitleSuggestions(topic, selectedKeywords, contentType);
+        }
       }
+      
       setTitleSuggestions(suggestions);
 
       if (generatedTopics.length > 0) {
@@ -80,6 +154,27 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     } finally {
       setIsLoadingTopics(false);
     }
+  };
+
+  // Helper function to generate titles with AI
+  const generateTitlesWithAI = async (
+    provider: AIProvider,
+    topic: string,
+    keywords: string[],
+    contentType: string
+  ): Promise<string[]> => {
+    const prompt = `Generate 5 SEO-optimized title suggestions for a ${contentType} about "${topic}" that incorporates these keywords: ${keywords.join(", ")}. 
+    Format the output as a simple list of titles, one per line. Include the current year where appropriate.`;
+    
+    const titlesText = await generateWithAI(provider, provider === 'openai' ? 'gpt-4o-mini' : 'gemini-pro', prompt, 50);
+    
+    // Parse the response into individual titles
+    return titlesText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => line.replace(/^\d+\.\s*/, '')) // Remove leading numbers like "1. "
+      .slice(0, 5); // Ensure we have at most 5 titles
   };
 
   // Handle regenerating topics

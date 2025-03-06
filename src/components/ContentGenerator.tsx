@@ -58,7 +58,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     setAIModel
   } = useContentGenerator(domain, allKeywords);
 
-  // Convert GeneratedContentType to the format expected by setGeneratedContent
+  // Handle content data update with proper type conversion
   const handleContentDataUpdate = (contentData: GeneratedContentType) => {
     // Safely update generatedContentData with the incoming data
     setGeneratedContentData(contentData);

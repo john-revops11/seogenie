@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface TopicGenerationHandlerProps {
-  onGenerateFromKeyword: (primaryKeyword: string, relatedKeywords: string[]) => void;
+  onGenerateFromKeyword: (primaryKeyword: string, relatedKeywords?: string[]) => void;
 }
 
 const TopicGenerationHandler: React.FC<TopicGenerationHandlerProps> = ({ 
