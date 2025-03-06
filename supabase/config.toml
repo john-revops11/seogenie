@@ -1,1 +1,56 @@
-project_id = "rgtptfhlkplnahzehpci"
+
+project_id = 'your-project-id'
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+port = 54329
+pool_mode = 'transaction'
+default_pool_size = 15
+max_client_conn = 100
+
+[realtime]
+enabled = true
+ip_address = '0.0.0.0'
+port = 54323
+max_clients = 200
+
+[studio]
+enabled = true
+port = 54324
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54325
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+
+[storage]
+enabled = true
+
+[analytics]
+enabled = false
+
+[vector]
+enabled = false
+
+[functions]
+enabled = true
+port = 54334
+
+[[functions.function]]
+name = "dataforseo"
+verify_jwt = false

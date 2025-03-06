@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BarChart2, FileText, Settings, History } from "lucide-react";
+import { BarChart2, FileText, Settings, History, Globe } from "lucide-react";
 import Layout from "@/components/Layout";
 import { analyzeDomains } from "@/services/keywordService";
 import ContentGenerator from "@/components/ContentGenerator";
@@ -20,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import ContentHistory from "@/components/content-generator/ContentHistory";
+import DataForSEODashboard from "@/components/dataforseo/DataForSEODashboard";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -292,9 +294,12 @@ const Index = () => {
         <Header analysisComplete={analysisComplete} onReset={handleReset} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-md">
+          <TabsList className="grid grid-cols-5 w-full max-w-md">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4" /> Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="dataforseo" className="flex items-center gap-2">
+              <Globe className="w-4 h-4" /> DataForSEO
             </TabsTrigger>
             <TabsTrigger value="content" className="flex items-center gap-2">
               <FileText className="w-4 h-4" /> Content
@@ -354,6 +359,10 @@ const Index = () => {
                 onRunSeoStrategy={handleRunSeoStrategy}
               />
             )}
+          </TabsContent>
+          
+          <TabsContent value="dataforseo" className="space-y-6">
+            <DataForSEODashboard />
           </TabsContent>
           
           <TabsContent value="content" className="space-y-6">

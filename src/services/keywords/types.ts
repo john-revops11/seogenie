@@ -1,13 +1,62 @@
+import { AIProvider } from "@/types/aiModels";
+
 export interface KeywordData {
   keyword: string;
-  monthly_search: number;
-  competition: string;
-  competition_index: number;
-  cpc: number;
-  position: number | null;
-  rankingUrl?: string | null;
-  competitorRankings?: Record<string, number>;
-  competitorUrls?: Record<string, string>;
+  volume?: number;
+  difficulty?: number;
+  cpc?: number;
+  competition?: number;
+  trending?: number;
+  intent?: string;
+}
+
+export interface CompetitorData {
+  domain: string;
+  keywords?: KeywordData[];
+  traffic?: number;
+  rank?: number;
+}
+
+export interface DomainAnalysisResult {
+  success: boolean;
+  domain?: string;
+  competitors?: CompetitorData[];
+  keywords?: KeywordData[];
+  error?: string;
+}
+
+export interface KeywordTableRow {
+  keyword: string;
+  volume?: number;
+  difficulty?: number;
+  intent?: string;
+  position?: number;
+  url?: string;
+  competitors?: {
+    domain: string;
+    position?: number;
+    url?: string;
+  }[];
+}
+
+export interface ContentBlock {
+  id: string;
+  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image' | 'code';
+  content: string;
+}
+
+export interface GeneratedContent {
+  id?: string;
+  title: string;
+  metaDescription: string;
+  outline: string[];
+  blocks: ContentBlock[];
+  keywords: string[];
+  contentType: string;
+  generationMethod: 'standard' | 'rag';
+  aiProvider?: AIProvider;
+  aiModel?: string;
+  createdAt?: string;
 }
 
 export interface KeywordGap {
@@ -67,29 +116,8 @@ export interface ContentTemplate {
   description: string;
 }
 
-export interface ContentBlock {
-  id: string;
-  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'faq';
-  content: string;
-  metadata?: Record<string, any>;
-}
-
 export interface ContentOutline {
   title: string;
   headings: string[];
   faqs: Array<{question: string, answer: string}>;
-}
-
-export interface GeneratedContent {
-  title: string;
-  metaDescription: string;
-  outline: string[];
-  blocks: ContentBlock[];
-  keywords: string[];
-  contentType: string;
-  generationMethod: 'standard' | 'rag';
-  ragInfo?: {
-    chunksRetrieved: number;
-    relevanceScore: number;
-  };
 }
