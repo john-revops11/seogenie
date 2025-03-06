@@ -1,8 +1,7 @@
-
 // Update this file to modify the useContentGenerator hook
 // Add support for different AI providers and models
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
 import { generateContentOutline } from "@/services/vector/ragService";
@@ -53,7 +52,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
   }, [selectedTopic]);
 
   // Generate topics based on selected keywords with AI fallback mechanism
-  const handleGenerateTopics = async () => {
+  const handleGenerateTopics = useCallback(async () => {
     if (selectedKeywords.length === 0) {
       toast.error("Please select at least one keyword");
       return;
@@ -154,7 +153,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     } finally {
       setIsLoadingTopics(false);
     }
-  };
+  }, [contentType, domain, selectedKeywords]);
 
   // Helper function to generate titles with AI
   const generateTitlesWithAI = async (
@@ -391,13 +390,13 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     // State setters
     setGeneratedContent,
     setGeneratedContentData,
+    setSelectedKeywords,
     
     // Actions
     setActiveStep,
     setContentType,
     setSelectedTemplateId,
     setTitle,
-    setSelectedKeywords,
     setCreativity,
     setSelectedTopic,
     setRagEnabled,

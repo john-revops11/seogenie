@@ -8,6 +8,7 @@ import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
 import ContentGeneratorStepFour from "./content-generator/ContentGeneratorStepFour";
 import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
+import { useEffect } from "react";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -38,6 +39,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     // State setters
     setGeneratedContent,
     setGeneratedContentData,
+    setSelectedKeywords,
     
     // Actions
     setActiveStep,
@@ -57,6 +59,36 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     setAIProvider,
     setAIModel
   } = useContentGenerator(domain, allKeywords);
+
+  // Update selected keywords when allKeywords prop changes
+  useEffect(() => {
+    if (allKeywords && allKeywords.length > 0) {
+      // Take up to 3 keywords from allKeywords
+      const initialKeywords = allKeywords.slice(0, 3);
+      setSelectedKeywords(initialKeywords);
+    }
+  }, [allKeywords, setSelectedKeywords]);
+
+  // Listen for the custom event to handle keyword selection from other components
+  useEffect(() => {
+    const handleGenerateFromKeywordEvent = (event: CustomEvent) => {
+      const { primaryKeyword, relatedKeywords } = event.detail;
+      if (primaryKeyword) {
+        const keywordsToUse = [primaryKeyword];
+        if (relatedKeywords && Array.isArray(relatedKeywords)) {
+          keywordsToUse.push(...relatedKeywords.slice(0, 2)); // Add up to 2 related keywords
+        }
+        setSelectedKeywords(keywordsToUse);
+        handleGenerateTopics(); // Automatically generate topics for selected keywords
+      }
+    };
+
+    window.addEventListener('generate-content-from-keyword', handleGenerateFromKeywordEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('generate-content-from-keyword', handleGenerateFromKeywordEvent as EventListener);
+    };
+  }, [handleGenerateTopics, setSelectedKeywords]);
 
   // Handle content data update with proper type conversion
   const handleContentDataUpdate = (contentData: GeneratedContentType) => {
