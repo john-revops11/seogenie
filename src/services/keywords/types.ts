@@ -1,3 +1,4 @@
+
 import { AIProvider } from "@/types/aiModels";
 
 export interface KeywordData {
@@ -5,9 +6,17 @@ export interface KeywordData {
   volume?: number;
   difficulty?: number;
   cpc?: number;
-  competition?: number;
+  competition?: number | string;
   trending?: number;
   intent?: string;
+  
+  // Add the missing properties used by DataForSEO and related components
+  monthly_search?: number;
+  competition_index?: number;
+  position?: number | null;
+  rankingUrl?: string | null;
+  competitorRankings?: Record<string, number>;
+  competitorUrls?: Record<string, string>;
 }
 
 export interface CompetitorData {
@@ -57,6 +66,11 @@ export interface GeneratedContent {
   aiProvider?: AIProvider;
   aiModel?: string;
   createdAt?: string;
+  // Add the missing ragInfo property
+  ragInfo?: {
+    chunksRetrieved: number;
+    relevanceScore: number;
+  };
 }
 
 export interface KeywordGap {

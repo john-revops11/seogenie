@@ -111,10 +111,10 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
         for (const keywordItem of keywordItems) {
           keywords.push({
             keyword: keywordItem.keyword,
-            monthly_search: keywordItem.search_volume || 0,
-            competition: getCompetitionLabel(keywordItem.competition_index || 50),
-            competition_index: keywordItem.competition_index || 50,
-            cpc: keywordItem.cpc || 0,
+            monthly_search: safeNumberConversion(keywordItem.search_volume) || 0,
+            competition: getCompetitionLabel(safeNumberConversion(keywordItem.competition_index) || 50),
+            competition_index: safeNumberConversion(keywordItem.competition_index) || 50,
+            cpc: safeNumberConversion(keywordItem.cpc) || 0,
             position: null,
             rankingUrl: null,
           });
@@ -128,10 +128,10 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
         if (item.keyword) {
           keywords.push({
             keyword: item.keyword,
-            monthly_search: item.search_volume || 0,
-            competition: getCompetitionLabel(item.competition_index || 50),
-            competition_index: item.competition_index || 50,
-            cpc: item.cpc || 0,
+            monthly_search: safeNumberConversion(item.search_volume) || 0,
+            competition: getCompetitionLabel(safeNumberConversion(item.competition_index) || 50),
+            competition_index: safeNumberConversion(item.competition_index) || 50,
+            cpc: safeNumberConversion(item.cpc) || 0,
             position: null,
             rankingUrl: null,
           });
@@ -239,10 +239,10 @@ export const fetchDataForSEOKeywords = async (
       if (item.keyword) {
         keywords.push({
           keyword: item.keyword,
-          monthly_search: item.search_volume || 0,
-          competition: getCompetitionLabel(item.competition_index || 50),
-          competition_index: item.competition_index || 50,
-          cpc: item.cpc || 0,
+          monthly_search: safeNumberConversion(item.search_volume) || 0,
+          competition: getCompetitionLabel(safeNumberConversion(item.competition_index) || 50),
+          competition_index: safeNumberConversion(item.competition_index) || 50,
+          cpc: safeNumberConversion(item.cpc) || 0,
           position: null,
           rankingUrl: null,
         });
@@ -420,10 +420,10 @@ export const getDataForSEOTaskResults = async (taskId: string): Promise<KeywordD
           if (item.keyword) {
             keywords.push({
               keyword: item.keyword,
-              monthly_search: item.search_volume || 0,
-              competition: getCompetitionLabel(item.competition_index || 50),
-              competition_index: item.competition_index || 50,
-              cpc: item.cpc || 0,
+              monthly_search: safeNumberConversion(item.search_volume) || 0,
+              competition: getCompetitionLabel(safeNumberConversion(item.competition_index) || 50),
+              competition_index: safeNumberConversion(item.competition_index) || 50,
+              cpc: safeNumberConversion(item.cpc) || 0,
               position: null,
               rankingUrl: null,
             });
@@ -553,10 +553,10 @@ export const fetchKeywordsForMultipleKeywords = async (
         for (const keywordItem of item.keyword_data.keywords) {
           keywords.push({
             keyword: keywordItem.keyword,
-            monthly_search: keywordItem.search_volume || 0,
-            competition: getCompetitionLabel(keywordItem.competition_index || 50),
-            competition_index: keywordItem.competition_index || 50,
-            cpc: keywordItem.cpc || 0,
+            monthly_search: safeNumberConversion(keywordItem.search_volume) || 0,
+            competition: getCompetitionLabel(safeNumberConversion(keywordItem.competition_index) || 50),
+            competition_index: safeNumberConversion(keywordItem.competition_index) || 50,
+            cpc: safeNumberConversion(keywordItem.cpc) || 0,
             position: null,
             rankingUrl: null,
           });
@@ -565,10 +565,10 @@ export const fetchKeywordsForMultipleKeywords = async (
         // Fallback for different response structure
         keywords.push({
           keyword: item.keyword,
-          monthly_search: item.search_volume || 0,
-          competition: getCompetitionLabel(item.competition_index || 50),
-          competition_index: item.competition_index || 50,
-          cpc: item.cpc || 0,
+          monthly_search: safeNumberConversion(item.search_volume) || 0,
+          competition: getCompetitionLabel(safeNumberConversion(item.competition_index) || 50),
+          competition_index: safeNumberConversion(item.competition_index) || 50,
+          cpc: safeNumberConversion(item.cpc) || 0,
           position: null,
           rankingUrl: null,
         });
@@ -586,4 +586,16 @@ export const fetchKeywordsForMultipleKeywords = async (
     console.error(`Error fetching keywords for multiple keywords:`, error);
     throw error;
   }
+};
+
+/**
+ * Function to safely convert potential string numbers to actual numbers
+ */
+const safeNumberConversion = (value: any): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
 };

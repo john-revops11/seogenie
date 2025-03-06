@@ -41,13 +41,14 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
     }
 
     // Transform the API response to our KeywordData format
+    // Fixed: ensure all numeric values are properly converted and competition is a number
     return data.keywords.map(item => ({
       keyword: item.keyword,
-      monthly_search: item.volume,
-      competition: getCompetitionLabel(item.difficulty),
-      competition_index: item.difficulty,
-      cpc: item.cpc,
-      position: item.current_rank || null,
+      monthly_search: Number(item.volume) || 0,
+      competition: Number(item.difficulty) || 0, // Convert competition to number
+      competition_index: Number(item.difficulty) || 0,
+      cpc: Number(item.cpc) || 0,
+      position: item.current_rank ? Number(item.current_rank) : null,
       rankingUrl: null,
     }));
   } catch (error) {

@@ -21,9 +21,7 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-ip_address = '0.0.0.0'
 port = 54323
-max_clients = 200
 
 [studio]
 enabled = true
@@ -42,9 +40,6 @@ site_url = "http://127.0.0.1:3000"
 enabled = true
 
 [analytics]
-enabled = false
-
-[vector]
 enabled = false
 
 [functions]

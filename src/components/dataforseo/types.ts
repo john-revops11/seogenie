@@ -49,3 +49,6 @@ export interface DataForSEOAnalysisResult {
     error?: string;
   };
 }
+
+// Add Badge variants to adapt to DataForSEODashboard usage
+export type BadgeVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'success' | 'warning';
