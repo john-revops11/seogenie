@@ -7,10 +7,14 @@ import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
 import ContentGeneratorStepFour from "./content-generator/ContentGeneratorStepFour";
+import ContentHistory from "./content-generator/ContentHistory";
 import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { keywordGapsCache } from "./keyword-gaps/KeywordGapUtils";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, History } from "lucide-react";
+import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -18,6 +22,8 @@ interface ContentGeneratorProps {
 }
 
 const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords }) => {
+  const [activeTab, setActiveTab] = useState<"generator" | "history">("generator");
+  
   const {
     // State
     topics,
@@ -61,6 +67,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     setAIProvider,
     setAIModel
   } = useContentGenerator(domain, allKeywords);
+
+  const { saveToHistory } = useContentHistory();
 
   // Sync selected keywords from cache when component mounts
   useEffect(() => {
@@ -128,6 +136,17 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       outline: contentData.outline,
       content: contentHtml
     });
+    
+    // Save to history
+    if (contentData.title && contentData.blocks.length > 0) {
+      // Add aiProvider and aiModel to contentData before saving
+      const contentToSave = {
+        ...contentData,
+        aiProvider,
+        aiModel
+      };
+      saveToHistory(contentToSave);
+    }
   };
 
   const renderStepContent = () => {
@@ -215,15 +234,33 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>AI Content Generator</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>AI Content Generator</CardTitle>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "generator" | "history")} className="ml-auto">
+                <TabsList>
+                  <TabsTrigger value="generator" className="flex items-center">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generator
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="flex items-center">
+                    <History className="mr-2 h-4 w-4" />
+                    History
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </CardHeader>
           <CardContent>
-            {renderStepContent()}
+            {activeTab === "generator" ? (
+              renderStepContent()
+            ) : (
+              <ContentHistory />
+            )}
           </CardContent>
         </Card>
       </div>
       
-      {generatedContent && activeStep !== 4 && (
+      {generatedContent && activeStep !== 4 && activeTab === "generator" && (
         <div className="space-y-4">
           <GeneratedContent 
             generatedContent={generatedContent} 

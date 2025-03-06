@@ -80,6 +80,13 @@ export function useContentActions(
         ragEnabled
       });
 
+      // Include AI provider and model in the generated content data
+      const contentDataWithAIInfo = {
+        ...result.generatedContent,
+        aiProvider,
+        aiModel
+      };
+
       // Update state with generated content
       setGeneratedContent({
         title: result.generatedContent.title,
@@ -88,7 +95,7 @@ export function useContentActions(
         content: Array.isArray(result.content) ? result.content.join("\n\n") : result.content
       });
 
-      setGeneratedContentData(result.generatedContent);
+      setGeneratedContentData(contentDataWithAIInfo);
       toast.success("Content generated successfully!");
       setActiveStep(4); // Move to the final step
     } catch (error) {
