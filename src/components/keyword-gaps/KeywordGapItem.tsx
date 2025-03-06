@@ -1,7 +1,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, FileText } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { categorizeKeywordIntent } from "./KeywordGapUtils";
 
@@ -13,6 +13,17 @@ interface KeywordGapItemProps {
 
 export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordGapItemProps) {
   const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty, gap.volume);
+  
+  // Function to trigger content generation directly from keyword
+  const handleGenerateContent = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selection toggle
+    
+    // Create and dispatch a custom event
+    const event = new CustomEvent('generate-content-from-keyword', {
+      detail: { primaryKeyword: gap.keyword }
+    });
+    window.dispatchEvent(event);
+  };
   
   return (
     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md hover:bg-muted transition-all">
@@ -50,6 +61,17 @@ export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordG
             </>
           )}
         </Button>
+        {isSelected && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-1 flex items-center justify-center gap-1"
+            onClick={handleGenerateContent}
+            title="Generate content with this keyword"
+          >
+            <FileText className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -93,6 +93,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
             contentPreferences={contentPreferences}
             selectedTopic={selectedTopic}
             title={title}
+            selectedKeywords={selectedKeywords}
             onContentTypeChange={onContentTypeChange}
             onCreativityChange={onCreativityChange}
             onContentPreferenceToggle={onContentPreferenceToggle}
@@ -103,6 +104,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
           <AdvancedTabContent 
             ragEnabled={ragEnabled && isPineconeReady}
             onRagToggle={onRagToggle}
+            selectedKeywords={selectedKeywords}
           />
         </TabsContent>
       </Tabs>
@@ -110,7 +112,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
       <Button 
         className="w-full" 
         onClick={onGenerateContent}
-        disabled={isGenerating || !title}
+        disabled={isGenerating || !title || selectedKeywords.length === 0}
       >
         {isGenerating ? (
           <>Generating Content...</>

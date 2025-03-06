@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCcw, Plus } from "lucide-react";
+import { RefreshCcw, Plus, KeySquare } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { TopicsList } from "../TopicsList";
@@ -80,20 +80,22 @@ export const TopicsTabContent: React.FC<TopicsTabContentProps> = ({
         
         {selectedKeywords.length > 0 ? (
           <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">
-              Selected keywords: 
+            <div className="text-sm text-muted-foreground flex items-center">
+              <KeySquare className="w-4 h-4 mr-1 text-revology" />
+              Selected keywords from keyword gap analysis: 
             </div>
             <div className="flex flex-wrap gap-1">
               {selectedKeywords.map(keyword => (
-                <Badge key={keyword} variant="secondary">
+                <Badge key={keyword} variant="secondary" className="bg-revology/10 text-revology">
                   {keyword}
                 </Badge>
               ))}
             </div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">
-            Select keywords from the dashboard to generate topic ideas
+          <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md">
+            <p>No keywords selected. Please select keywords from the Keyword Gap analysis to generate better topics.</p>
+            <p className="mt-1 text-xs">These keywords will be used to generate SEO-optimized topics and content.</p>
           </div>
         )}
       </div>
