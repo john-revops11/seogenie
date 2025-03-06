@@ -6,6 +6,9 @@ import { AIProvider } from "@/types/aiModels";
 import { generateTopicsAndTitles } from "./content-generator/topicGenerator";
 import { generateContent } from "./content-generator/contentGenerator";
 
+// Import the title generator function
+import { generateTitleSuggestions } from "@/services/keywords/generation/titleGenerator";
+
 export type StepType = 1 | 2 | 3 | 4;
 
 // Temporary internal type to maintain compatibility with existing code
