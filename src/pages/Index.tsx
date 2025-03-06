@@ -6,22 +6,30 @@ import { DashboardTabContent } from "@/components/tabs/DashboardTabContent";
 import { ContentTabContent } from "@/components/tabs/ContentTabContent";
 import { DataForSEOTabContent } from "@/components/tabs/DataForSEOTabContent";
 import { HistoryTabContent } from "@/components/tabs/HistoryTabContent";
-import { SettingsTabContent } from "@/components/tabs/SettingsTabContent";
+import SettingsTabContent from "@/components/tabs/SettingsTabContent";
 import { useDomainAnalysis } from "@/hooks/useDomainAnalysis";
 import { useDataForSEO } from "@/hooks/useDataForSEO";
 import { useApiManagement } from "@/hooks/useApiManagement";
-import Header from "@/components/page/Header";
+import { Header } from "@/components/page/Header";
 
 const Index = () => {
   // Domain Analysis State from custom hook
   const {
     mainDomain, setMainDomain,
-    competitors, setCompetitors,
-    keywords, setKeywords,
-    isAnalyzing, setIsAnalyzing,
+    competitorDomains, 
+    isAnalyzing, 
+    progress,
+    analysisComplete,
+    keywordData,
     analysisError, setAnalysisError,
-    keywordGaps, setKeywordGaps,
-    analyzeDomain
+    onMainDomainChange,
+    onAddCompetitorDomain,
+    onRemoveCompetitorDomain,
+    onUpdateCompetitorDomain,
+    handleReset,
+    handleAnalyze,
+    handleAddCompetitorFromTable,
+    removeCompetitorFromAnalysis
   } = useDomainAnalysis();
 
   // DataForSEO state from custom hook
@@ -45,7 +53,7 @@ const Index = () => {
 
   useEffect(() => {
     setAnalysisError(null);
-  }, [mainDomain]);
+  }, [mainDomain, setAnalysisError]);
 
   const goToAnalysisTab = () => {
     const tabsElement = document.getElementById('main-tabs');
@@ -60,7 +68,7 @@ const Index = () => {
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <Header />
+      <Header analysisComplete={analysisComplete} onReset={handleReset} />
       
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">
         <TabsList>
@@ -74,15 +82,22 @@ const Index = () => {
         <TabsContent value="dashboard" className="space-y-4">
           <DashboardTabContent 
             mainDomain={mainDomain}
-            setMainDomain={setMainDomain}
-            competitors={competitors}
-            setCompetitors={setCompetitors}
-            keywords={keywords}
-            setKeywords={setKeywords}
+            competitorDomains={competitorDomains}
             isAnalyzing={isAnalyzing}
+            progress={progress}
+            analysisComplete={analysisComplete}
+            keywordData={keywordData}
             analysisError={analysisError}
-            keywordGaps={keywordGaps}
-            analyzeDomain={analyzeDomain}
+            onMainDomainChange={onMainDomainChange}
+            onAddCompetitorDomain={onAddCompetitorDomain}
+            onRemoveCompetitorDomain={onRemoveCompetitorDomain}
+            onUpdateCompetitorDomain={onUpdateCompetitorDomain}
+            onAnalyze={handleAnalyze}
+            onReset={handleReset}
+            onAddCompetitor={handleAddCompetitorFromTable}
+            onRemoveCompetitor={removeCompetitorFromAnalysis}
+            onGenerateContentFromKeyword={() => {}}
+            onRunSeoStrategy={() => {}}
           />
         </TabsContent>
         
@@ -97,15 +112,18 @@ const Index = () => {
         
         <TabsContent value="content" className="space-y-6">
           <ContentTabContent 
-            analysisComplete={keywords.length > 0} 
+            analysisComplete={analysisComplete} 
             domain={mainDomain}
-            allKeywords={keywords.map(k => k.keyword)}
+            allKeywords={keywordData.map(k => k.keyword)}
             onGoToAnalysis={goToAnalysisTab}
           />
         </TabsContent>
         
         <TabsContent value="history" className="space-y-6">
-          <HistoryTabContent />
+          <HistoryTabContent 
+            analysisComplete={analysisComplete} 
+            onGoToAnalysis={goToAnalysisTab} 
+          />
         </TabsContent>
         
         <TabsContent value="settings" className="space-y-6">

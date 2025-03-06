@@ -40,3 +40,5 @@ export const Header = ({ analysisComplete, onReset }: HeaderProps) => {
     </div>
   );
 };
+
+export default Header;

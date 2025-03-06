@@ -23,7 +23,6 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-ip_address = ""
 port = 54323
 max_clients = 1000
 
@@ -67,6 +66,7 @@ secret = ""
 redirect_uri = ""
 url = ""
 
+# Fixed the functions section format
 [functions]
 enabled = true
 port = 54328
