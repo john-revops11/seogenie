@@ -31,6 +31,7 @@ interface GeneratorFormProps {
   onCustomTopicAdd: (topic: string) => void;
   ragEnabled?: boolean;
   onRagToggle?: (enabled: boolean) => void;
+  onKeywordRemove?: (keyword: string) => void;
 }
 
 export const GeneratorForm: React.FC<GeneratorFormProps> = ({
@@ -55,7 +56,8 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   onGenerateContent,
   onCustomTopicAdd,
   ragEnabled = false,
-  onRagToggle = () => {}
+  onRagToggle = () => {},
+  onKeywordRemove
 }) => {
   const [activeTab, setActiveTab] = useState("topics");
   const isPineconeReady = isPineconeConfigured();
