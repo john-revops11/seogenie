@@ -60,6 +60,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
 
   // Convert GeneratedContentType to the format expected by setGeneratedContent
   const handleContentDataUpdate = (contentData: GeneratedContentType) => {
+    // Safely update generatedContentData with the incoming data
     setGeneratedContentData(contentData);
     
     // Convert blocks to HTML string

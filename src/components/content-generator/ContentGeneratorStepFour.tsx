@@ -14,7 +14,7 @@ interface ContentGeneratorStepFourProps {
   } | null;
   generatedContentData: GeneratedContentType | null;
   contentType: string;
-  onContentUpdate: (content: any) => void; // Change the type to 'any' for now to fix the error
+  onContentUpdate: (content: GeneratedContentType) => void;
   onBack: () => void;
 }
 

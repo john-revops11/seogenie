@@ -1,25 +1,25 @@
-
 // Update this file to modify the useContentGenerator hook
 // Add support for different AI providers and models
 
 import { useState, useEffect } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
-import { generateFullContent } from "@/services/keywords/contentGenerationService";
 import { generateContentOutline } from "@/services/vector/ragService";
 import { generateTitleSuggestions } from "@/services/keywords/generation/titleGenerator";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { AIProvider } from "@/types/aiModels";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 
-type GeneratedContentType = {
+export type StepType = 1 | 2 | 3 | 4;
+
+// Temporary internal type to maintain compatibility with existing code
+interface GeneratedContentInternal {
   title: string;
   metaDescription: string;
   outline: string[];
-  blocks: { heading: string; content: string }[];
-};
-
-export type StepType = 1 | 2 | 3 | 4;
+  content: string;
+}
 
 // Export as default instead of a named export
 export default function useContentGenerator(domain: string = "", allKeywords: string[] = []) {
@@ -30,13 +30,8 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(allKeywords.slice(0, 3));
   const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<{
-    title: string;
-    metaDescription: string;
-    outline: string[];
-    content: string;
-  } | null>(null);
-  const [generatedContentData, setGeneratedContentData] = useState<GeneratedContentType | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContentInternal | null>(null);
+  const [generatedContentData, setGeneratedContentData] = useState<GeneratedContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingTopics, setIsLoadingTopics] = useState(false);
   const [topics, setTopics] = useState<string[]>([]);
@@ -72,8 +67,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
       const suggestions: { [topic: string]: string[] } = {};
       for (const topic of generatedTopics) {
         // Use the imported function for generating titles
-        const titles = await generateTitleSuggestions(topic, selectedKeywords, contentType);
-        suggestions[topic] = titles;
+        suggestions[topic] = generateTitleSuggestions(topic, selectedKeywords, contentType);
       }
       setTitleSuggestions(suggestions);
 
@@ -119,10 +113,25 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
 
       toast.info("Generating content blocks...");
       
-      const blocks = [];
+      // Create proper ContentBlock array with correct types
+      const contentBlocks: ContentBlock[] = [];
+      
+      // Add title heading block
+      contentBlocks.push({
+        id: `block-title-${Date.now()}`,
+        type: 'heading1',
+        content: `<h1>${title}</h1>`
+      });
       
       // Generate each content block
       for (const heading of outline.headings) {
+        // Add heading block
+        contentBlocks.push({
+          id: `block-h2-${Date.now()}-${heading}`,
+          type: 'heading2',
+          content: `<h2>${heading}</h2>`
+        });
+        
         let prompt = `Write a detailed section for an article titled "${title}" focusing on the section heading "${heading}". `;
         prompt += `Incorporate these keywords naturally: ${selectedKeywords.join(", ")}. `;
         prompt += `The content type is ${contentType}. `;
@@ -141,9 +150,11 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
           blockContent = await generateWithAI(aiProvider, aiModel, prompt, creativity);
         }
         
-        blocks.push({
-          heading,
-          content: blockContent
+        // Add paragraph block
+        contentBlocks.push({
+          id: `block-p-${Date.now()}-${heading}`,
+          type: 'paragraph',
+          content: `<p>${blockContent}</p>`
         });
       }
 
@@ -151,17 +162,21 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
       const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
       const metaDescription = await generateWithAI(aiProvider, aiModel, metaPrompt, 30);
 
-      const contentData = {
+      // Create a properly typed GeneratedContent object
+      const contentData: GeneratedContent = {
         title,
         metaDescription,
         outline: outline.headings,
-        blocks
+        blocks: contentBlocks,
+        keywords: selectedKeywords,
+        contentType: contentType,
+        generationMethod: ragEnabled ? 'rag' : 'standard'
       };
 
       setGeneratedContentData(contentData);
 
       // Convert blocks to HTML string for the existing interface
-      const contentHtml = blocks.map(block => block.content).join('\n');
+      const contentHtml = contentBlocks.map(block => block.content).join('\n');
 
       setGeneratedContent({
         title,
@@ -236,12 +251,11 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     setSelectedTopic(topic);
     
     // Generate title suggestions for the new topic
-    generateTitleSuggestions(topic, selectedKeywords, contentType).then(titles => {
-      setTitleSuggestions(prev => ({
-        ...prev,
-        [topic]: titles
-      }));
-    });
+    const titles = generateTitleSuggestions(topic, selectedKeywords, contentType);
+    setTitleSuggestions(prev => ({
+      ...prev,
+      [topic]: titles
+    }));
   };
 
   // Toggle RAG
