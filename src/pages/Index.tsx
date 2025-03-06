@@ -12,6 +12,7 @@ import { DomainAnalysisForm } from "@/components/domain-analysis/DomainAnalysisF
 import { AnalysisError } from "@/components/domain-analysis/AnalysisError";
 import { DashboardContent } from "@/components/domain-analysis/DashboardContent";
 import { ContentEmptyState } from "@/components/content/ContentEmptyState";
+import KeywordResearch from "@/components/KeywordResearch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
