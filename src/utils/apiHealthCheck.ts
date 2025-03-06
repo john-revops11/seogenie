@@ -1,3 +1,4 @@
+
 import { ApiStates } from "@/types/systemHealth";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
@@ -66,10 +67,24 @@ export const checkOpenAIHealth = async (setApiStates: (callback: (prev: ApiState
       }
     }));
     
+    const openaiApiKey = getApiKey('openai');
+    
+    if (!openaiApiKey) {
+      setApiStates(prev => ({
+        ...prev,
+        openai: { 
+          ...prev.openai,
+          status: "error", 
+          message: "OpenAI API key is not configured" 
+        }
+      }));
+      return;
+    }
+    
     const response = await fetch('https://api.openai.com/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer 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`
+        'Authorization': `Bearer ${openaiApiKey}`
       }
     });
     
@@ -297,13 +312,19 @@ export const testAiModel = async (
   setTestResponse("");
 
   try {
+    const openaiApiKey = getApiKey('openai');
+    
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key is not configured");
+    }
+    
     const isEmbeddingModel = modelId.includes("embedding");
     
     if (isEmbeddingModel) {
       const response = await fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer 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`,
+          'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -328,7 +349,7 @@ export const testAiModel = async (
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer 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`,
+            'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

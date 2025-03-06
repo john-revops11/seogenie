@@ -1,4 +1,3 @@
-
 // API configuration and keys
 
 // DataForSEO API configuration
@@ -26,7 +25,8 @@ export const OPENAI_API_KEY = ""; // This will be populated dynamically via the 
 // Dynamic API key accessor - allows getting API keys that are set at runtime
 let dynamicApiKeys: Record<string, string> = {
   // Initialize with default keys that can be overridden
-  dataforseo: `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`
+  dataforseo: `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`,
+  openai: "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"
 };
 
 export const setApiKey = (service: string, key: string) => {

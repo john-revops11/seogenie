@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { OPENAI_API_KEY } from '../apiConfig';
+import { getApiKey } from '../apiConfig';
 
 /**
  * Generates a single paragraph of content using the OpenAI API
@@ -8,7 +8,12 @@ import { OPENAI_API_KEY } from '../apiConfig';
 export const generateParagraphContent = async (prompt: string, creativity: number): Promise<string> => {
   console.log("Attempting to generate paragraph with prompt:", prompt.substring(0, 100) + "...");
   
-  if (!OPENAI_API_KEY) {
+  // Get OpenAI API key dynamically
+  const apiKey = getApiKey('openai');
+  
+  if (!apiKey) {
+    console.error("OpenAI API key is not configured");
+    toast.error("OpenAI API key is not configured. Please check your API settings.");
     throw new Error("OpenAI API key is not configured");
   }
   
@@ -17,7 +22,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -59,7 +64,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
       const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

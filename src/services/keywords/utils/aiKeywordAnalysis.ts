@@ -1,7 +1,7 @@
 
 import { KeywordGap, KeywordData } from '../types';
 import { toast } from "sonner";
-import { OPENAI_API_KEY } from '../apiConfig';
+import { getApiKey } from '../apiConfig';
 
 /**
  * Analyzes keywords using OpenAI to generate keyword gaps
@@ -12,7 +12,10 @@ export const analyzeKeywordsWithAI = async (
   keywords: KeywordData[],
   targetGapCount: number = 100
 ): Promise<KeywordGap[]> => {
-  if (!OPENAI_API_KEY) {
+  // Get OpenAI API key dynamically
+  const openaiApiKey = getApiKey('openai');
+  
+  if (!openaiApiKey) {
     console.error("OpenAI API key is not configured");
     toast.error("OpenAI API key is not configured. Please add it in API settings.");
     return [];
@@ -25,7 +28,7 @@ export const analyzeKeywordsWithAI = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${openaiApiKey}`
       },
       body: JSON.stringify({
         model: 'gpt-4o', // Using a better model for improved analysis

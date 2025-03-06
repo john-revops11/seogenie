@@ -1,5 +1,8 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getApiKey } from "@/services/keywords/apiConfig";
+import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 
 interface ContentGeneratorStepThreeProps {
   contentType: string;
@@ -24,9 +27,42 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
   onGenerateContent,
   onBack
 }) => {
+  const [apiConfigured, setApiConfigured] = useState(true);
+  
+  useEffect(() => {
+    const openaiKey = getApiKey('openai');
+    if (!openaiKey) {
+      setApiConfigured(false);
+      toast.error("OpenAI API key is not configured. Please configure it in API Settings.");
+    } else {
+      setApiConfigured(true);
+    }
+  }, []);
+
+  const handleGenerateClick = () => {
+    if (!apiConfigured) {
+      toast.error("Cannot generate content: OpenAI API key is not configured");
+      return;
+    }
+    onGenerateContent();
+  };
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Step 3: Generate Content</h3>
+      
+      {!apiConfigured && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md flex items-start space-x-2">
+          <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-red-700">API Configuration Error</h4>
+            <p className="text-sm text-red-600">
+              OpenAI API key is not configured. Please go to API Settings to configure your OpenAI API key before generating content.
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div className="space-y-4">
         <div className="p-4 bg-muted/30 rounded-md">
           <h4 className="font-medium">Content Configuration</h4>
@@ -41,11 +77,11 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
         </div>
         
         <button
-          onClick={onGenerateContent}
-          disabled={isGenerating}
+          onClick={handleGenerateClick}
+          disabled={isGenerating || !apiConfigured}
           className="w-full px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
         >
-          {isGenerating ? "Generating Content..." : "Generate Content"}
+          {isGenerating ? "Generating Content..." : !apiConfigured ? "API Not Configured" : "Generate Content"}
         </button>
       </div>
       
