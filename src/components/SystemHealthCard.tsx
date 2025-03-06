@@ -160,10 +160,10 @@ const SystemHealthCard = () => {
   return (
     <Card className={cn(
       "transition-all duration-300", 
-      expanded ? "max-w-md" : "max-w-xs"
+      expanded ? "w-full" : "w-full"
     )}>
       <CardContent className="py-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Activity className={cn("h-5 w-5", healthColor)} />
             <h3 className="font-medium text-sm">System Health</h3>
@@ -178,23 +178,24 @@ const SystemHealthCard = () => {
           </Button>
         </div>
         
-        <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
           {Object.entries(apiStates).map(([apiKey, apiState]) => {
             const api = apiKey as keyof ApiStates;
             return (
-              <ApiCardDetail 
-                key={apiKey}
-                api={api}
-                state={apiState}
-                expanded={expanded}
-                onRetry={retryApiConnection}
-                onTestModels={
-                  api === "openai" ? () => handleTestModels("openai") : 
-                  api === "gemini" ? () => handleTestModels("gemini") : 
-                  undefined
-                }
-                onOpenDocs={api !== "googleAds" && api !== "rapidApi" ? () => openDocsForApi(api) : undefined}
-              />
+              <div key={apiKey} className="flex-1 min-w-[150px]">
+                <ApiCardDetail 
+                  api={api}
+                  state={apiState}
+                  expanded={expanded}
+                  onRetry={retryApiConnection}
+                  onTestModels={
+                    api === "openai" ? () => handleTestModels("openai") : 
+                    api === "gemini" ? () => handleTestModels("gemini") : 
+                    undefined
+                  }
+                  onOpenDocs={api !== "googleAds" && api !== "rapidApi" ? () => openDocsForApi(api) : undefined}
+                />
+              </div>
             );
           })}
         </div>
