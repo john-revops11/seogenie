@@ -19,6 +19,14 @@ export interface ApiStates {
       capabilities: string[];
     }[];
   };
+  gemini: ApiHealth & {
+    models?: {
+      id: string;
+      name: string;
+      provider: string;
+      capabilities: string[];
+    }[];
+  };
   googleAds: ApiHealth;
   dataForSeo: ApiHealth;
   rapidApi: ApiHealth;

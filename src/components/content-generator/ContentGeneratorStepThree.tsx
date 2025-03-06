@@ -2,7 +2,10 @@
 import React, { useEffect, useState } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { defaultAIModels, AIProvider, AIModel, getModelsForProvider } from "@/types/aiModels";
 
 interface ContentGeneratorStepThreeProps {
   contentType: string;
@@ -12,6 +15,10 @@ interface ContentGeneratorStepThreeProps {
   creativity: number;
   ragEnabled: boolean;
   isGenerating: boolean;
+  aiProvider: AIProvider;
+  aiModel: string;
+  onAIProviderChange: (provider: AIProvider) => void;
+  onAIModelChange: (model: string) => void;
   onGenerateContent: () => void;
   onBack: () => void;
 }
@@ -24,24 +31,40 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
   creativity,
   ragEnabled,
   isGenerating,
+  aiProvider,
+  aiModel,
+  onAIProviderChange,
+  onAIModelChange,
   onGenerateContent,
   onBack
 }) => {
   const [apiConfigured, setApiConfigured] = useState(true);
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
   
   useEffect(() => {
-    const openaiKey = getApiKey('openai');
-    if (!openaiKey) {
+    const apiKey = getApiKey(aiProvider);
+    if (!apiKey) {
       setApiConfigured(false);
-      toast.error("OpenAI API key is not configured. Please configure it in API Settings.");
+      toast.error(`${aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured. Please configure it in API Settings.`);
     } else {
       setApiConfigured(true);
     }
-  }, []);
+    
+    // Update available models when AI provider changes
+    setAvailableModels(getModelsForProvider(aiProvider));
+    
+    // If the current model isn't available for this provider, select the first available one
+    if (!availableModels.some(m => m.id === aiModel)) {
+      const firstModel = getModelsForProvider(aiProvider)[0];
+      if (firstModel) {
+        onAIModelChange(firstModel.id);
+      }
+    }
+  }, [aiProvider, aiModel]);
 
   const handleGenerateClick = () => {
     if (!apiConfigured) {
-      toast.error("Cannot generate content: OpenAI API key is not configured");
+      toast.error(`Cannot generate content: ${aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured`);
       return;
     }
     onGenerateContent();
@@ -57,13 +80,56 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
           <div>
             <h4 className="font-medium text-red-700">API Configuration Error</h4>
             <p className="text-sm text-red-600">
-              OpenAI API key is not configured. Please go to API Settings to configure your OpenAI API key before generating content.
+              {aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured. 
+              Please go to API Settings to configure your API key before generating content.
             </p>
           </div>
         </div>
       )}
       
       <div className="space-y-4">
+        <div className="space-y-3">
+          <Label>AI Provider</Label>
+          <Select 
+            value={aiProvider} 
+            onValueChange={(value: string) => onAIProviderChange(value as AIProvider)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select AI provider" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="openai">OpenAI</SelectItem>
+              <SelectItem value="gemini">Gemini AI</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-3">
+          <Label>AI Model</Label>
+          <Select 
+            value={aiModel} 
+            onValueChange={onAIModelChange}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select AI model" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableModels.map(model => (
+                <SelectItem key={model.id} value={model.id}>
+                  <div className="flex flex-col">
+                    <span>{model.name}</span>
+                    <span className="text-xs text-muted-foreground">{model.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {availableModels.find(m => m.id === aiModel)?.description || 
+             "Select a model for content generation"}
+          </p>
+        </div>
+        
         <div className="p-4 bg-muted/30 rounded-md">
           <h4 className="font-medium">Content Configuration</h4>
           <div className="mt-2 text-sm">
@@ -73,6 +139,8 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
             <div><span className="font-medium">Keywords:</span> {selectedKeywords.join(", ")}</div>
             <div><span className="font-medium">Creativity:</span> {creativity}%</div>
             <div><span className="font-medium">Generation Method:</span> {ragEnabled ? "RAG-Enhanced" : "Standard"}</div>
+            <div><span className="font-medium">AI Provider:</span> {aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'}</div>
+            <div><span className="font-medium">AI Model:</span> {availableModels.find(m => m.id === aiModel)?.name || aiModel}</div>
           </div>
         </div>
         

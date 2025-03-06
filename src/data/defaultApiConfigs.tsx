@@ -5,7 +5,8 @@ import {
   Database, 
   MessageSquareText,
   ExternalLink,
-  BarChart
+  BarChart,
+  Sparkles
 } from "lucide-react";
 import { ApiDetails } from "@/types/apiIntegration";
 
@@ -26,6 +27,16 @@ export const getDefaultApiConfigs = (): ApiDetails[] => [
     icon: <MessageSquareText className="h-5 w-5 text-green-600" />,
     iconName: "messageSquareText",
     apiKey: "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",
+    isConfigured: true,
+    isActive: true
+  },
+  {
+    id: "gemini",
+    name: "Gemini AI",
+    description: "Google's AI models for content generation",
+    icon: <Sparkles className="h-5 w-5 text-purple-600" />,
+    iconName: "sparkles",
+    apiKey: "AIzaSyCJIDNvI7w8jpjyWLI9yaPp3PWAeD95AnA",
     isConfigured: true,
     isActive: true
   },

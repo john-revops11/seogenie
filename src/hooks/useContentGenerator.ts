@@ -1,330 +1,221 @@
 
+// Update this file to modify the useContentGenerator hook
+// Add support for different AI providers and models
+
 import { useState, useEffect } from "react";
+import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
-import { generateContent, getAvailableContentTemplates, getSuggestedTitles } from "@/services/keywords/contentGeneration";
-import { generateTopicSuggestions } from "@/utils/topicGenerator";
-import { useKeywordGaps } from "@/hooks/useKeywordGaps";
-import { isPineconeConfigured } from "@/services/vector/pineconeService";
-import { GeneratedContent } from "@/services/keywords/types";
+import { generateContent } from "@/services/keywords/contentGenerationService";
+import { generateContentOutline } from "@/services/keywords/generation/contentStructureService";
+import { getTopicTitles } from "@/services/keywords/generation/titleGenerator";
+import { getFileNamesFromTopics } from "@/utils/topicGenerator";
+import { generateWithAI } from "@/services/keywords/generation/aiService";
+import { enhanceWithRAG } from "@/services/vector/ragService";
+import { AIProvider } from "@/types/aiModels";
 
-export const useContentGenerator = (domain: string, allKeywords: string[]) => {
-  const [topics, setTopics] = useState<string[]>([]);
-  const [titleSuggestions, setTitleSuggestions] = useState<{[topic: string]: string[]}>({});
-  const [selectedTopic, setSelectedTopic] = useState<string>("");
-  const [title, setTitle] = useState<string>("");
-  const [contentType, setContentType] = useState<string>("blog");
-  const [creativity, setCreativity] = useState<number>(50);
+type GeneratedContentType = {
+  title: string;
+  metaDescription: string;
+  outline: string[];
+  blocks: { heading: string; content: string }[];
+};
+
+export type StepType = 1 | 2 | 3 | 4;
+
+export default function useContentGenerator() {
+  const [step, setStep] = useState<StepType>(1);
+  const [contentType, setContentType] = useState("blog");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [title, setTitle] = useState("");
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  const [generatedContent, setGeneratedContent] = useState<{
-    title: string;
-    metaDescription: string;
-    outline: string[];
-    content: string;
-  } | null>(null);
-  const [isLoadingTopics, setIsLoadingTopics] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContentType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingTopics, setIsLoadingTopics] = useState(false);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [titleSuggestions, setTitleSuggestions] = useState<{ [topic: string]: string[] }>({});
+  const [selectedTopic, setSelectedTopic] = useState("");
   const [ragEnabled, setRagEnabled] = useState(false);
-  const [activeStep, setActiveStep] = useState<number>(1);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
-  const [generatedContentData, setGeneratedContentData] = useState<GeneratedContent | null>(null);
-  
-  const { keywordGaps, seoRecommendations, selectedKeywords, handleSelectKeywords } = useKeywordGaps();
+  const [aiProvider, setAIProvider] = useState<AIProvider>("openai");
+  const [aiModel, setAIModel] = useState("gpt-4o-mini");
 
+  // Reset title when topic changes
   useEffect(() => {
-    if (isPineconeConfigured()) {
-      toast.success("Pinecone RAG is available for enhanced content generation");
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const savedPreferences = localStorage.getItem('contentPreferences');
-      if (savedPreferences) {
-        setContentPreferences(JSON.parse(savedPreferences));
-      }
-    } catch (error) {
-      console.error("Error loading saved preferences:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (contentPreferences.length > 0) {
-      localStorage.setItem('contentPreferences', JSON.stringify(contentPreferences));
-    }
-  }, [contentPreferences]);
-
-  const handleGenerateFromKeyword = (primaryKeyword: string, relatedKeywords: string[]) => {
-    console.log(`useContentGenerator: Received keyword "${primaryKeyword}" with related keywords:`, relatedKeywords);
-    
-    const topicSuggestion = `${primaryKeyword} Guide: Best Practices and Strategies`;
-    setTopics(prev => [...prev, topicSuggestion]);
-    setSelectedTopic(topicSuggestion);
-    
-    const titleSuggestions = [
-      `Ultimate Guide to ${primaryKeyword}: Everything You Need to Know`,
-      `${primaryKeyword} in ${new Date().getFullYear()}: Trends and Insights`,
-      `How to Master ${primaryKeyword} for Your Business`,
-      `The Complete ${primaryKeyword} Playbook for Success`,
-      `${primaryKeyword}: Expert Strategies and Tips`
-    ];
-    
-    setTitleSuggestions(prev => ({ 
-      ...prev, 
-      [topicSuggestion]: titleSuggestions 
-    }));
-    
-    setTitle(titleSuggestions[0]);
-    
-    handleSelectKeywords([primaryKeyword, ...relatedKeywords]);
-    
-    setActiveStep(1);
-  };
-
-  const handleGenerateTopics = async () => {
-    setIsLoadingTopics(true);
-    try {
-      const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
-      setTopics(newTopics);
-      
-      const newTitleSuggestions: {[topic: string]: string[]} = {};
-      newTopics.forEach(topic => {
-        newTitleSuggestions[topic] = [
-          `The Ultimate Guide to ${topic}`,
-          `How to Use ${topic} to Improve Your Business`,
-          `Top ${topic} Strategies for Success`,
-          `Everything You Need to Know About ${topic}`,
-          `The Future of ${topic}: Trends and Predictions`
-        ];
-      });
-      setTitleSuggestions(newTitleSuggestions);
-      
-      toast.success(`Generated ${newTopics.length} SEO topics`);
-    } catch (error) {
-      console.error("Error generating topics:", error);
-      toast.error(`Failed to generate topics: ${(error as Error).message}`);
-    } finally {
-      setIsLoadingTopics(false);
-    }
-  };
-
-  const handleRegenerateTopics = async () => {
-    setIsLoadingTopics(true);
-    try {
-      const newTopics = generateTopicSuggestions(domain, keywordGaps, seoRecommendations, selectedKeywords);
-      setTopics(newTopics);
-      
-      const newTitleSuggestions: {[topic: string]: string[]} = {};
-      newTopics.forEach(topic => {
-        newTitleSuggestions[topic] = [
-          `The Ultimate Guide to ${topic}`,
-          `How to Use ${topic} to Improve Your Business`,
-          `Top ${topic} Strategies for Success`,
-          `Everything You Need to Know About ${topic}`,
-          `The Future of ${topic}: Trends and Predictions`
-        ];
-      });
-      setTitleSuggestions(newTitleSuggestions);
-      
-      toast.success(`Refreshed SEO topics`);
-    } catch (error) {
-      console.error("Error regenerating topics:", error);
-      toast.error(`Failed to refresh topics: ${(error as Error).message}`);
-    } finally {
-      setIsLoadingTopics(false);
-    }
-  };
-
-  const handleSelectTopic = (topic: string) => {
-    setSelectedTopic(topic);
-    setTitle(titleSuggestions[topic]?.[0] || "");
-  };
-
-  const handleSelectTitle = (title: string) => {
-    setTitle(title);
-  };
-
-  const handleDeleteTopic = (topic: string) => {
-    setTopics(prev => prev.filter(t => t !== topic));
-    const { [topic]: removed, ...rest } = titleSuggestions;
-    setTitleSuggestions(rest);
-    if (selectedTopic === topic) {
-      setSelectedTopic("");
+    if (selectedTopic && titleSuggestions[selectedTopic]?.[0]) {
+      setTitle(titleSuggestions[selectedTopic][0]);
+    } else {
       setTitle("");
     }
-    toast.success(`Deleted topic "${topic}"`);
-  };
+  }, [selectedTopic]);
 
-  const handleContentTypeChange = (value: string) => {
-    setContentType(value);
-    setSelectedTemplateId("");
-    
-    if (selectedTopic) {
-      const newTitleSuggestions = getSuggestedTitles(
-        selectedTopic,
-        selectedKeywords.slice(1),
-        value
-      );
-      setTitleSuggestions(prev => ({
-        ...prev,
-        [selectedTopic]: newTitleSuggestions
-      }));
-      
-      if (newTitleSuggestions.length > 0) {
-        setTitle(newTitleSuggestions[0]);
-      }
-    }
-  };
-
-  const handleCreativityChange = (value: number) => {
-    setCreativity(value);
-  };
-
-  const handleContentPreferenceToggle = (preference: string) => {
-    setContentPreferences(prev => {
-      if (prev.includes(preference)) {
-        return prev.filter(p => p !== preference);
-      } else {
-        return [...prev, preference];
-      }
-    });
-  };
-
-  const handleRagToggle = (enabled: boolean) => {
-    setRagEnabled(enabled);
-    if (enabled) {
-      toast.info("RAG-enhanced content generation enabled");
-    }
-  };
-
-  const handleGenerateContent = async () => {
-    if (!title) {
-      toast.error("Please select a title");
+  // Generate topics based on selected keywords
+  const generateTopics = async () => {
+    if (selectedKeywords.length === 0) {
+      toast.error("Please select at least one keyword");
       return;
     }
-    
-    setIsGenerating(true);
+
+    setIsLoadingTopics(true);
     try {
-      console.log("Starting content generation with the following parameters:");
-      console.log("Domain:", domain);
-      console.log("Title:", title);
-      console.log("Selected Keywords:", selectedKeywords);
-      console.log("Content Type:", contentType);
-      console.log("Creativity:", creativity);
-      console.log("Content Preferences:", contentPreferences);
-      console.log("RAG Enabled:", ragEnabled && isPineconeConfigured());
+      const generatedTopics = await getFileNamesFromTopics(selectedKeywords);
+      setTopics(generatedTopics);
+
+      // Generate title suggestions for each topic
+      const suggestions: { [topic: string]: string[] } = {};
+      for (const topic of generatedTopics) {
+        const titles = await getTopicTitles(topic, selectedKeywords);
+        suggestions[topic] = titles;
+      }
+      setTitleSuggestions(suggestions);
+
+      if (generatedTopics.length > 0) {
+        setSelectedTopic(generatedTopics[0]);
+      }
+    } catch (error) {
+      console.error("Error generating topics:", error);
+      toast.error("Failed to generate topics");
+    } finally {
+      setIsLoadingTopics(false);
+    }
+  };
+
+  // Generate content based on all parameters
+  const generateContentForTopic = async () => {
+    if (!title) {
+      toast.error("Please provide a title");
+      return;
+    }
+
+    const apiKey = getApiKey(aiProvider);
+    if (!apiKey) {
+      toast.error(`${aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured`);
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedContent(null);
+
+    try {
+      toast.info("Generating content outline...");
+      const outline = await generateContentOutline(
+        title,
+        selectedKeywords,
+        contentType,
+        contentPreferences
+      );
+
+      toast.info("Generating content blocks...");
       
-      if (ragEnabled && isPineconeConfigured()) {
-        toast.info("Using RAG to enhance content with related keywords and context", {
-          duration: 3000
+      const blocks = [];
+      
+      // Generate each content block
+      for (const heading of outline) {
+        let prompt = `Write a detailed section for an article titled "${title}" focusing on the section heading "${heading}". `;
+        prompt += `Incorporate these keywords naturally: ${selectedKeywords.join(", ")}. `;
+        prompt += `The content type is ${contentType}. `;
+        
+        if (contentPreferences.length > 0) {
+          prompt += `Follow these style preferences: ${contentPreferences.join(", ")}. `;
+        }
+        
+        let blockContent;
+        
+        if (ragEnabled) {
+          // Use RAG to enhance the content
+          blockContent = await enhanceWithRAG(prompt, heading, title, selectedKeywords);
+        } else {
+          // Use the selected AI provider and model
+          blockContent = await generateWithAI(aiProvider, aiModel, prompt, creativity);
+        }
+        
+        blocks.push({
+          heading,
+          content: blockContent
         });
       }
-      
-      const result = await generateContent(
-        domain, 
-        title, 
-        selectedKeywords, 
-        contentType, 
-        creativity,
-        contentPreferences,
-        ragEnabled && isPineconeConfigured()
-      );
-      
-      console.log("Content generation result:", result);
-      setGeneratedContent(result);
-      
-      if (!result) {
-        throw new Error("Content generation returned empty result");
-      }
-      
-      const blocks = result.content.split('\n').map((html, index) => {
-        let type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' = 'paragraph';
-        
-        if (html.startsWith('<h1')) type = 'heading1';
-        else if (html.startsWith('<h2')) type = 'heading2';
-        else if (html.startsWith('<h3')) type = 'heading3';
-        
-        return {
-          id: `block-${index}-${Date.now()}`,
-          type,
-          content: html
-        };
+
+      // Generate meta description
+      const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
+      const metaDescription = await generateWithAI(aiProvider, aiModel, metaPrompt, 30);
+
+      setGeneratedContent({
+        title,
+        metaDescription,
+        outline,
+        blocks
       });
-      
-      setGeneratedContentData({
-        title: result.title,
-        metaDescription: result.metaDescription,
-        outline: result.outline,
-        blocks,
-        keywords: selectedKeywords,
-        contentType,
-        generationMethod: ragEnabled && isPineconeConfigured() ? 'rag' : 'standard',
-        ragInfo: ragEnabled && isPineconeConfigured() ? {
-          chunksRetrieved: 5,
-          relevanceScore: 0.85
-        } : undefined
-      });
-      
+
+      // Move to final step
+      setStep(4);
       toast.success("Content generated successfully!");
-      setActiveStep(4);
     } catch (error) {
       console.error("Error generating content:", error);
-      toast.error(`Failed to generate content: ${(error as Error).message}`);
+      toast.error(`Failed to generate content: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleAddCustomTopic = (topic: string) => {
-    setTopics(prev => [...prev, topic]);
-    setTitleSuggestions(prev => ({
-      ...prev,
-      [topic]: [
-        `The Ultimate Guide to ${topic}`,
-        `How to Use ${topic} to Improve Your Business`,
-        `Top ${topic} Strategies for Success`,
-        `Everything You Need to Know About ${topic}`,
-        `The Future of ${topic}: Trends and Predictions`
-      ]
-    }));
-    toast.success(`Added custom topic "${topic}"`);
+  const toggleContentPreference = (preference: string) => {
+    setContentPreferences(prev => 
+      prev.includes(preference) 
+        ? prev.filter(p => p !== preference) 
+        : [...prev, preference]
+    );
+  };
+
+  const addCustomTopic = (topic: string) => {
+    if (!topic.trim()) return;
+    
+    if (topics.includes(topic)) {
+      toast.info("This topic already exists");
+      return;
+    }
+    
+    setTopics(prev => [topic, ...prev]);
+    setSelectedTopic(topic);
+    
+    // Generate title suggestions for the new topic
+    getTopicTitles(topic, selectedKeywords).then(titles => {
+      setTitleSuggestions(prev => ({
+        ...prev,
+        [topic]: titles
+      }));
+    });
   };
 
   return {
-    // State
+    step,
+    setStep,
+    contentType,
+    setContentType,
+    selectedTemplateId,
+    setSelectedTemplateId,
+    title,
+    setTitle,
+    selectedKeywords,
+    setSelectedKeywords,
+    creativity,
+    setCreativity,
+    contentPreferences,
+    generatedContent,
+    setGeneratedContent,
+    isGenerating,
+    isLoadingTopics,
     topics,
     titleSuggestions,
     selectedTopic,
-    title,
-    contentType,
-    creativity,
-    contentPreferences,
-    generatedContent,
-    isLoadingTopics,
-    isGenerating,
+    setSelectedTopic,
+    generateTopics,
+    generateContentForTopic,
+    toggleContentPreference,
+    addCustomTopic,
     ragEnabled,
-    activeStep,
-    selectedTemplateId,
-    generatedContentData,
-    selectedKeywords,
-    
-    // State setters
-    setGeneratedContent,
-    setGeneratedContentData,
-    
-    // Actions
-    setActiveStep,
-    setSelectedTemplateId,
-    handleGenerateFromKeyword,
-    handleGenerateTopics,
-    handleRegenerateTopics,
-    handleSelectTopic,
-    handleSelectTitle,
-    handleDeleteTopic,
-    handleContentTypeChange,
-    handleCreativityChange,
-    handleContentPreferenceToggle,
-    handleRagToggle,
-    handleGenerateContent,
-    handleAddCustomTopic
+    setRagEnabled,
+    aiProvider,
+    setAIProvider,
+    aiModel,
+    setAIModel
   };
-};
+}

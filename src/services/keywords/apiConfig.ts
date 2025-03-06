@@ -1,3 +1,4 @@
+
 // API configuration and keys
 
 // DataForSEO API configuration
@@ -22,11 +23,16 @@ export const GOOGLE_KEYWORD_API_URL = "https://google-keyword-insight1.p.rapidap
 // OpenAI API configuration
 export const OPENAI_API_KEY = ""; // This will be populated dynamically via the ApiIntegrationManager
 
+// Gemini AI configuration
+export const GEMINI_API_KEY = "AIzaSyCJIDNvI7w8jpjyWLI9yaPp3PWAeD95AnA"; // Default API key
+export const GEMINI_PROJECT_ID = "623108624631"; // Default project ID
+
 // Dynamic API key accessor - allows getting API keys that are set at runtime
 let dynamicApiKeys: Record<string, string> = {
   // Initialize with default keys that can be overridden
   dataforseo: `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`,
-  openai: "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"
+  openai: "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",
+  gemini: GEMINI_API_KEY
 };
 
 export const setApiKey = (service: string, key: string) => {

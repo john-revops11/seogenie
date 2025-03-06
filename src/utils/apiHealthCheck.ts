@@ -1,4 +1,3 @@
-
 import { ApiStates } from "@/types/systemHealth";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
@@ -120,6 +119,82 @@ export const checkOpenAIHealth = async (setApiStates: (callback: (prev: ApiState
         ...prev.openai,
         status: "error", 
         message: error instanceof Error ? error.message : "Unknown error" 
+      }
+    }));
+  }
+};
+
+export const checkGeminiHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
+  try {
+    setApiStates(prev => ({
+      ...prev,
+      gemini: { 
+        ...prev.gemini,
+        status: "loading" 
+      }
+    }));
+    
+    const geminiApiKey = getApiKey('gemini');
+    
+    if (!geminiApiKey) {
+      setApiStates(prev => ({
+        ...prev,
+        gemini: { 
+          ...prev.gemini,
+          status: "error", 
+          message: "Gemini API key is not configured" 
+        }
+      }));
+      return;
+    }
+    
+    // Test the Gemini API with a simple request
+    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiApiKey}`;
+    
+    const response = await fetch(url);
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Extract available models
+      const availableModels = data.models
+        .filter((model: any) => 
+          model.name.includes("gemini-") && 
+          !model.name.includes("latest")
+        )
+        .map((model: any) => ({
+          id: model.name.split('/').pop(),
+          name: model.displayName || model.name.split('/').pop(),
+          provider: 'gemini',
+          capabilities: model.supportedGenerationMethods || []
+        }));
+      
+      setApiStates(prev => ({
+        ...prev,
+        gemini: { 
+          ...prev.gemini,
+          status: "success", 
+          models: availableModels,
+          details: {
+            availableModels: availableModels.map((m: any) => m.id)
+          }
+        }
+      }));
+    } else {
+      throw new Error(`Gemini API returned ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error testing Gemini connection:", error);
+    setApiStates(prev => ({
+      ...prev,
+      gemini: { 
+        ...prev.gemini,
+        status: "error", 
+        message: error instanceof Error ? error.message : "Unknown error",
+        models: [
+          { id: "gemini-pro", name: "Gemini Pro", provider: "gemini", capabilities: ["text"] },
+          { id: "gemini-pro-vision", name: "Gemini Pro Vision", provider: "gemini", capabilities: ["text", "vision"] }
+        ]
       }
     }));
   }
@@ -312,16 +387,60 @@ export const testAiModel = async (
   setTestResponse("");
 
   try {
-    const openaiApiKey = getApiKey('openai');
-    
-    if (!openaiApiKey) {
-      throw new Error("OpenAI API key is not configured");
+    // Determine which API to use based on the model ID
+    if (modelId.includes("gemini")) {
+      await testGeminiModel(modelId, prompt, setTestResponse);
+      setTestModelStatus("success");
+    } else {
+      await testOpenAIModel(modelId, prompt, setTestResponse);
+      setTestModelStatus("success");
     }
+  } catch (error) {
+    console.error("Error testing AI model:", error);
+    setTestResponse(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    setTestModelStatus("error");
+  }
+};
+
+const testOpenAIModel = async (
+  modelId: string, 
+  prompt: string,
+  setTestResponse: (response: string) => void
+) => {
+  const openaiApiKey = getApiKey('openai');
+  
+  if (!openaiApiKey) {
+    throw new Error("OpenAI API key is not configured");
+  }
+  
+  const isEmbeddingModel = modelId.includes("embedding");
+  
+  if (isEmbeddingModel) {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: modelId,
+        input: prompt
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const embedding = data.data[0].embedding;
+    const dimensions = embedding.length;
     
-    const isEmbeddingModel = modelId.includes("embedding");
-    
-    if (isEmbeddingModel) {
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
+    setTestResponse(`✅ Success! Generated ${dimensions}-dimensional embedding vector.`);
+  } else {
+    // Try the specified model first
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
@@ -329,138 +448,92 @@ export const testAiModel = async (
         },
         body: JSON.stringify({
           model: modelId,
-          input: prompt
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful assistant that provides brief, accurate responses."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 150
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
+        throw new Error(`Error with model ${modelId}: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      const embedding = data.data[0].embedding;
-      const dimensions = embedding.length;
+      const responseText = data.choices[0].message.content;
       
-      setTestResponse(`✅ Success! Generated ${dimensions}-dimensional embedding vector.`);
-      setTestModelStatus("success");
-    } else {
-      // Try the specified model first
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: modelId,
-            messages: [
-              {
-                role: "system",
-                content: "You are a helpful assistant that provides brief, accurate responses."
-              },
-              {
-                role: "user",
-                content: prompt
-              }
-            ],
-            temperature: 0.7,
-            max_tokens: 150
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error with model ${modelId}: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const responseText = data.choices[0].message.content;
-        
-        setTestResponse(responseText);
-        setTestModelStatus("success");
-      } catch (error) {
-        console.warn(`Error with model ${modelId}, trying GPT-4 fallback:`, error);
-        
-        // Try GPT-4 fallback if the first one fails
-        try {
-          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer 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`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: 'gpt-4',
-              messages: [
-                {
-                  role: "system",
-                  content: "You are a helpful assistant that provides brief, accurate responses."
-                },
-                {
-                  role: "user",
-                  content: prompt
-                }
-              ],
-              temperature: 0.7,
-              max_tokens: 150
-            })
-          });
-  
-          if (!fallbackResponse.ok) {
-            throw new Error(`Error with GPT-4 fallback: ${fallbackResponse.status} ${fallbackResponse.statusText}`);
-          }
-  
-          const fallbackData = await fallbackResponse.json();
-          const fallbackResponseText = fallbackData.choices[0].message.content;
-          
-          setTestResponse(`ℹ️ Used fallback model (gpt-4):\n${fallbackResponseText}`);
-          setTestModelStatus("success");
-        } catch (gpt4Error) {
-          console.warn(`Error with GPT-4 fallback, trying GPT-3.5-turbo as final fallback:`, gpt4Error);
-          
-          // Try GPT-3.5-turbo as final fallback if GPT-4 also fails
-          try {
-            const finalFallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer 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`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                  {
-                    role: "system",
-                    content: "You are a helpful assistant that provides brief, accurate responses."
-                  },
-                  {
-                    role: "user",
-                    content: prompt
-                  }
-                ],
-                temperature: 0.7,
-                max_tokens: 150
-              })
-            });
-    
-            if (!finalFallbackResponse.ok) {
-              throw new Error(`All models failed. Final error: ${finalFallbackResponse.status} ${finalFallbackResponse.statusText}`);
-            }
-    
-            const finalFallbackData = await finalFallbackResponse.json();
-            const finalFallbackResponseText = finalFallbackData.choices[0].message.content;
-            
-            setTestResponse(`ℹ️ Used second fallback model (gpt-3.5-turbo):\n${finalFallbackResponseText}`);
-            setTestModelStatus("success");
-          } catch (finalError) {
-            throw new Error(`Original error: ${error.message}, GPT-4 error: ${gpt4Error.message}, Final error: ${finalError.message}`);
-          }
-        }
-      }
+      setTestResponse(responseText);
+    } catch (error) {
+      console.warn(`Error with model ${modelId}, trying fallback:`, error);
+      throw error;
     }
+  }
+};
+
+const testGeminiModel = async (
+  modelId: string, 
+  prompt: string,
+  setTestResponse: (response: string) => void
+) => {
+  const geminiApiKey = getApiKey('gemini');
+  
+  if (!geminiApiKey) {
+    throw new Error("Gemini API key is not configured");
+  }
+  
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${geminiApiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 150,
+          topP: 0.95,
+          topK: 40
+        }
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
+      throw new Error("Invalid response format from Gemini");
+    }
+    
+    // Extract text from the parts array
+    const generatedText = data.candidates[0].content.parts
+      .map((part: any) => part.text || '')
+      .join('');
+    
+    setTestResponse(generatedText.trim());
   } catch (error) {
-    console.error("Error testing AI model:", error);
-    setTestResponse(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
-    setTestModelStatus("error");
+    console.error("Error with Gemini API:", error);
+    throw error;
   }
 };

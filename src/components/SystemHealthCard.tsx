@@ -10,7 +10,8 @@ import { ApiCardDetail } from "./system-health/ApiCardDetail";
 import { ModelTestDialog } from "./system-health/ModelTestDialog";
 import { 
   checkPineconeHealth, 
-  checkOpenAIHealth, 
+  checkOpenAIHealth,
+  checkGeminiHealth,
   checkDataForSeoHealth, 
   checkOtherApis,
   testAiModel 
@@ -28,6 +29,10 @@ const SystemHealthCard = () => {
       { id: "text-embedding-3-small", name: "Text Embedding v3 Small", provider: "openai", capabilities: ["embeddings"] },
       { id: "text-embedding-3-large", name: "Text Embedding v3 Large", provider: "openai", capabilities: ["embeddings"] },
     ] },
+    gemini: { status: "idle", models: [
+      { id: "gemini-pro", name: "Gemini Pro", provider: "gemini", capabilities: ["text"] },
+      { id: "gemini-pro-vision", name: "Gemini Pro Vision", provider: "gemini", capabilities: ["text", "vision"] }
+    ] },
     googleAds: { status: "idle" },
     dataForSeo: { status: "idle" },
     rapidApi: { status: "idle" }
@@ -35,6 +40,7 @@ const SystemHealthCard = () => {
   
   const [expanded, setExpanded] = useState(false);
   const [showModelDialog, setShowModelDialog] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<"openai" | "gemini">("openai");
   const [testModelStatus, setTestModelStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [testResponse, setTestResponse] = useState<string>("");
   
@@ -62,6 +68,9 @@ const SystemHealthCard = () => {
     
     // Check OpenAI
     await checkOpenAIHealth(setApiStates);
+    
+    // Check Gemini
+    await checkGeminiHealth(setApiStates);
     
     // Check DataForSeo
     await checkDataForSeoHealth(setApiStates);
@@ -92,6 +101,11 @@ const SystemHealthCard = () => {
     await testAiModel(modelId, prompt, setTestModelStatus, setTestResponse);
   };
   
+  const handleTestModels = (provider: "openai" | "gemini") => {
+    setActiveProvider(provider);
+    setShowModelDialog(true);
+  };
+  
   const allApiStatuses = Object.values(apiStates).map(api => api.status);
   const healthyApiCount = allApiStatuses.filter(status => status === "success").length;
   const totalApiCount = allApiStatuses.length;
@@ -118,6 +132,9 @@ const SystemHealthCard = () => {
     switch(api) {
       case "openai":
         docsUrl = "https://platform.openai.com/docs/introduction";
+        break;
+      case "gemini":
+        docsUrl = "https://ai.google.dev/docs";
         break;
       case "dataForSeo":
         docsUrl = "https://docs.dataforseo.com/";
@@ -171,7 +188,11 @@ const SystemHealthCard = () => {
                 state={apiState}
                 expanded={expanded}
                 onRetry={retryApiConnection}
-                onTestModels={api === "openai" ? () => setShowModelDialog(true) : undefined}
+                onTestModels={
+                  api === "openai" ? () => handleTestModels("openai") : 
+                  api === "gemini" ? () => handleTestModels("gemini") : 
+                  undefined
+                }
                 onOpenDocs={api !== "googleAds" && api !== "rapidApi" ? () => openDocsForApi(api) : undefined}
               />
             );
@@ -181,7 +202,7 @@ const SystemHealthCard = () => {
         <ModelTestDialog
           open={showModelDialog}
           onOpenChange={setShowModelDialog}
-          models={apiStates.openai.models}
+          models={apiStates[activeProvider].models}
           onTestModel={handleTestModel}
           testModelStatus={testModelStatus}
           testResponse={testResponse}

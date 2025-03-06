@@ -5,7 +5,8 @@ import {
   Zap, 
   Activity, 
   ExternalLink, 
-  BarChart 
+  BarChart,
+  Sparkles
 } from "lucide-react";
 import { ApiIconProps } from "@/types/systemHealth";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ export const getApiIcon = (api: string) => {
   switch (api) {
     case "pinecone": return <Database className="h-4 w-4" />;
     case "openai": return <MessageSquareText className="h-4 w-4" />;
+    case "gemini": return <Sparkles className="h-4 w-4" />;
     case "googleAds": return <Zap className="h-4 w-4" />;
     case "dataForSeo": return <Activity className="h-4 w-4" />;
     case "rapidApi": return <ExternalLink className="h-4 w-4" />;
@@ -34,6 +36,7 @@ export const getApiName = (api: string) => {
   switch (api) {
     case "pinecone": return "Pinecone";
     case "openai": return "OpenAI";
+    case "gemini": return "Gemini AI";
     case "googleAds": return "Google Ads";
     case "dataForSeo": return "DataForSEO";
     case "rapidApi": return "RapidAPI";
@@ -50,6 +53,8 @@ export const getFixSuggestion = (api: string, status: string) => {
       return "Configure Pinecone API key in Settings";
     case "openai":
       return "Update OpenAI API key or check quota";
+    case "gemini":
+      return "Update Gemini API key or check quota";
     case "googleAds":
       return "Verify Google Ads credentials and network";
     case "dataForSeo":
