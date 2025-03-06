@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GeneratedContent } from "@/services/keywords/types";
 import { AIProvider } from "@/types/aiModels";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 export type StepType = 1 | 2 | 3 | 4;
 
@@ -25,7 +26,9 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(allKeywords.slice(0, 3));
   const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  const [ragEnabled, setRagEnabled] = useState(false);
+  
+  // Check if Pinecone is configured and enable RAG by default if it is
+  const [ragEnabled, setRagEnabled] = useState(isPineconeConfigured());
   
   // AI provider settings
   const [aiProvider, setAIProvider] = useState<AIProvider>("openai");
@@ -59,6 +62,41 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
       setSelectedKeywords(initialKeywords);
     }
   }, [allKeywords]);
+
+  // Update RAG setting when Pinecone configuration changes
+  useEffect(() => {
+    const checkPineconeStatus = () => {
+      const pineconeReady = isPineconeConfigured();
+      setRagEnabled(prevRagEnabled => {
+        // Only set to true if it was previously false and Pinecone is now ready
+        if (!prevRagEnabled && pineconeReady) {
+          console.log("Pinecone detected, enabling RAG by default");
+          return true;
+        }
+        return prevRagEnabled;
+      });
+    };
+
+    // Check on mount
+    checkPineconeStatus();
+
+    // Listen for API change events that might indicate Pinecone was configured
+    const handleApiChange = (event: CustomEvent) => {
+      const { apiId } = event.detail;
+      if (apiId === "pinecone") {
+        console.log("Pinecone API configuration changed, checking status");
+        checkPineconeStatus();
+      }
+    };
+
+    // Add event listener for API changes
+    window.addEventListener('api-integration-change', handleApiChange as EventListener);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('api-integration-change', handleApiChange as EventListener);
+    };
+  }, []);
 
   return {
     // State

@@ -6,6 +6,7 @@ import { useContentGeneratorState, StepType } from "./content-generator/useConte
 import { useTopicActions } from "./content-generator/useTopicActions";
 import { useContentActions } from "./content-generator/useContentActions";
 import { useKeywordActions } from "./content-generator/useKeywordActions";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 // Export as default instead of a named export
 export default function useContentGenerator(domain: string = "", allKeywords: string[] = []) {
