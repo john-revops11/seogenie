@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -22,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import ContentHistory from "@/components/content-generator/ContentHistory";
 import DataForSEODashboard from "@/components/dataforseo/DataForSEODashboard";
+import { DataForSEOAnalysisResult } from "@/components/dataforseo/types";
 
 const Index = () => {
   const [mainDomain, setMainDomain] = useState("");
@@ -35,6 +35,9 @@ const Index = () => {
   const [showApiForm, setShowApiForm] = useState(false);
   const [newApiName, setNewApiName] = useState("");
   const [newApiKey, setNewApiKey] = useState("");
+  
+  const [dataForSEOAnalysisData, setDataForSEOAnalysisData] = useState<DataForSEOAnalysisResult | null>(null);
+  const [dataForSEODomain, setDataForSEODomain] = useState("example.com");
 
   useEffect(() => {
     setAnalysisError(null);
@@ -362,7 +365,10 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="dataforseo" className="space-y-6">
-            <DataForSEODashboard />
+            <DataForSEODashboard 
+              analysisData={dataForSEOAnalysisData} 
+              domain={dataForSEODomain} 
+            />
           </TabsContent>
           
           <TabsContent value="content" className="space-y-6">
