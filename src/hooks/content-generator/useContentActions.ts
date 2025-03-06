@@ -5,22 +5,46 @@ import { GeneratedContent } from "@/services/keywords/types";
 import { AIProvider } from "@/types/aiModels";
 
 export function useContentActions(
-  domain: string,
   setIsGenerating: (loading: boolean) => void,
   setGeneratedContent: (content: any) => void,
-  setGeneratedContentData: (data: GeneratedContent | null) => void
+  setGeneratedContentData: (data: GeneratedContent | null) => void,
+  setActiveStep: (step: number) => void
 ) {
+  // Handle selecting a title
+  const handleSelectTitle = (
+    setTitle: (title: string) => void,
+    selectedTitle: string
+  ) => {
+    setTitle(selectedTitle);
+  };
+
+  // Handle content preference toggle
+  const handleContentPreferenceToggle = (
+    setContentPreferences: (preferences: string[]) => void,
+    preference: string
+  ) => {
+    setContentPreferences(prevPreferences =>
+      prevPreferences.includes(preference)
+        ? prevPreferences.filter(p => p !== preference)
+        : [...prevPreferences, preference]
+    );
+  };
+
+  // Handle RAG toggle
+  const handleRagToggle = (setRagEnabled: (enabled: boolean) => void) => {
+    setRagEnabled(prevState => !prevState);
+  };
+
   // Generate content with specified parameters
   const handleGenerateContent = async (
+    title: string,
     selectedKeywords: string[],
     contentType: string,
-    title: string,
-    creativity: number,
     contentPreferences: string[],
-    selectedTemplateId: string,
-    aiProvider: AIProvider = "openai",
-    aiModel: string = "gpt-4o-mini",
-    ragEnabled: boolean = false
+    ragEnabled: boolean,
+    aiProvider: AIProvider,
+    aiModel: string,
+    creativity: number
   ) => {
     if (!title) {
       toast.error("Please enter a title");
@@ -35,14 +59,14 @@ export function useContentActions(
     setIsGenerating(true);
     
     try {
-      const { content, generatedContent } = await generateContent({
-        domain,
+      const { generatedContent, content } = await generateContent({
+        domain: "",
         keywords: selectedKeywords,
         contentType,
         title,
         creativity,
         contentPreferences,
-        templateId: selectedTemplateId,
+        templateId: "",
         aiProvider,
         aiModel,
         ragEnabled
@@ -58,6 +82,7 @@ export function useContentActions(
 
       setGeneratedContentData(generatedContent);
       toast.success("Content generated successfully!");
+      setActiveStep(4); // Move to the final step
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error(`Failed to generate content: ${(error as Error).message}`);
@@ -66,41 +91,28 @@ export function useContentActions(
     }
   };
 
-  // Reset content to empty state
-  const handleResetContent = () => {
-    setGeneratedContent(null);
-    setGeneratedContentData(null);
+  // Handle content type change
+  const handleContentTypeChange = (
+    setContentType: (type: string) => void,
+    type: string
+  ) => {
+    setContentType(type);
   };
 
-  // Handle regenerate content with the same parameters
-  const handleRegenerateContent = async (
-    selectedKeywords: string[],
-    contentType: string,
-    title: string,
-    creativity: number,
-    contentPreferences: string[],
-    selectedTemplateId: string,
-    aiProvider: AIProvider = "openai",
-    aiModel: string = "gpt-4o-mini",
-    ragEnabled: boolean = false
+  // Handle creativity change
+  const handleCreativityChange = (
+    setCreativity: (value: number) => void,
+    value: number
   ) => {
-    // Simply reuse the handleGenerateContent function
-    await handleGenerateContent(
-      selectedKeywords,
-      contentType,
-      title,
-      creativity,
-      contentPreferences,
-      selectedTemplateId,
-      aiProvider,
-      aiModel,
-      ragEnabled
-    );
+    setCreativity(value);
   };
 
   return {
     handleGenerateContent,
-    handleResetContent,
-    handleRegenerateContent
+    handleSelectTitle,
+    handleContentPreferenceToggle,
+    handleRagToggle,
+    handleContentTypeChange,
+    handleCreativityChange
   };
 }

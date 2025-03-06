@@ -29,11 +29,11 @@ export function useKeywordGapAnalysis(
   const { 
     currentPage, 
     itemsPerPage,
-
     displayedKeywords,
-
     filterCompetitor,
+    setCurrentPage,
     setItemsPerPage,
+    setFilterCompetitor,
     handlePageChange, 
     handleCompetitorFilterChange,
     getPaginationInfo

@@ -9,16 +9,32 @@ import { isAIProviderConfigured } from "./aiModels";
 /**
  * Generates content based on provided parameters
  */
-export const generateContent = async (
-  title: string,
-  selectedKeywords: string[],
-  contentType: string,
-  contentPreferences: string[],
-  ragEnabled: boolean,
-  aiProvider: AIProvider,
-  aiModel: string,
-  creativity: number
-): Promise<GeneratedContent> => {
+export const generateContent = async ({
+  domain,
+  keywords: selectedKeywords,
+  contentType,
+  title,
+  creativity,
+  contentPreferences,
+  templateId: selectedTemplateId,
+  aiProvider,
+  aiModel,
+  ragEnabled
+}: {
+  domain: string;
+  keywords: string[];
+  contentType: string;
+  title: string;
+  creativity: number;
+  contentPreferences: string[];
+  templateId: string;
+  aiProvider: AIProvider;
+  aiModel: string;
+  ragEnabled: boolean;
+}): Promise<{
+  content: string;
+  generatedContent: GeneratedContent;
+}> => {
   if (!title) {
     throw new Error("Please provide a title");
   }
@@ -82,7 +98,7 @@ export const generateContent = async (
   const metaDescription = await generateWithAI(aiProvider, aiModel, metaPrompt, 30);
 
   // Create a properly typed GeneratedContent object
-  return {
+  const generatedContent: GeneratedContent = {
     title,
     metaDescription,
     outline: outline.headings,
@@ -90,5 +106,13 @@ export const generateContent = async (
     keywords: selectedKeywords,
     contentType: contentType,
     generationMethod: ragEnabled ? 'rag' : 'standard'
+  };
+  
+  // Convert blocks to content string
+  const contentString = contentBlocks.map(block => block.content).join('\n');
+
+  return {
+    content: contentString,
+    generatedContent
   };
 };
