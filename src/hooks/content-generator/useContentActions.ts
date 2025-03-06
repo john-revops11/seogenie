@@ -23,16 +23,23 @@ export function useContentActions(
     setContentPreferences: (preferences: string[]) => void,
     preference: string
   ) => {
-    setContentPreferences(prevPreferences =>
+    // Create a function that takes the previous preferences and returns the new array
+    const updatePreferences = (prevPreferences: string[]) => 
       prevPreferences.includes(preference)
         ? prevPreferences.filter(p => p !== preference)
-        : [...prevPreferences, preference]
-    );
+        : [...prevPreferences, preference];
+    
+    // Pass this function to setContentPreferences
+    setContentPreferences(updatePreferences);
   };
 
   // Handle RAG toggle
   const handleRagToggle = (setRagEnabled: (enabled: boolean) => void) => {
-    setRagEnabled(prevState => !prevState);
+    // Create a function that takes the previous state and returns the new boolean
+    const updateRagEnabled = (prevState: boolean) => !prevState;
+    
+    // Pass this function to setRagEnabled
+    setRagEnabled(updateRagEnabled);
   };
 
   // Generate content with specified parameters
@@ -59,7 +66,7 @@ export function useContentActions(
     setIsGenerating(true);
     
     try {
-      const { generatedContent, content } = await generateContent({
+      const result = await generateContent({
         domain: "",
         keywords: selectedKeywords,
         contentType,
@@ -74,13 +81,13 @@ export function useContentActions(
 
       // Update state with generated content
       setGeneratedContent({
-        title: generatedContent.title,
-        metaDescription: generatedContent.metaDescription,
-        outline: generatedContent.outline,
-        content: Array.isArray(content) ? content.join("\n\n") : content
+        title: result.generatedContent.title,
+        metaDescription: result.generatedContent.metaDescription,
+        outline: result.generatedContent.outline,
+        content: Array.isArray(result.content) ? result.content.join("\n\n") : result.content
       });
 
-      setGeneratedContentData(generatedContent);
+      setGeneratedContentData(result.generatedContent);
       toast.success("Content generated successfully!");
       setActiveStep(4); // Move to the final step
     } catch (error) {

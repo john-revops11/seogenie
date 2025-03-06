@@ -64,7 +64,12 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     handleRagToggle,
     handleContentTypeChange,
     handleCreativityChange
-  } = useContentActions(setIsGenerating, setGeneratedContent, setGeneratedContentData, setActiveStep);
+  } = useContentActions(
+    setIsGenerating, 
+    setGeneratedContent, 
+    setGeneratedContentData, 
+    (step: number) => setActiveStep(step as StepType)
+  );
 
   const { handleGenerateFromKeyword } = useKeywordActions(setSelectedKeywords);
 
