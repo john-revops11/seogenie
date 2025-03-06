@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCcw, Plus, KeySquare } from "lucide-react";
+import { RefreshCcw, Plus, KeySquare, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { TopicsList } from "../TopicsList";
@@ -23,6 +23,7 @@ interface TopicsTabContentProps {
   onGenerateTopics: () => void;
   onRegenerateTopics: () => void;
   onCustomTopicAdd: (topic: string) => void;
+  onKeywordRemove?: (keyword: string) => void;
 }
 
 export const TopicsTabContent: React.FC<TopicsTabContentProps> = ({
@@ -38,6 +39,7 @@ export const TopicsTabContent: React.FC<TopicsTabContentProps> = ({
   onGenerateTopics,
   onRegenerateTopics,
   onCustomTopicAdd,
+  onKeywordRemove
 }) => {
   const [newTopic, setNewTopic] = useState("");
 
@@ -49,6 +51,12 @@ export const TopicsTabContent: React.FC<TopicsTabContentProps> = ({
     
     onCustomTopicAdd(newTopic);
     setNewTopic("");
+  };
+
+  const handleKeywordRemove = (keyword: string) => {
+    if (onKeywordRemove) {
+      onKeywordRemove(keyword);
+    }
   };
 
   return (
@@ -86,8 +94,20 @@ export const TopicsTabContent: React.FC<TopicsTabContentProps> = ({
             </div>
             <div className="flex flex-wrap gap-1">
               {selectedKeywords.map(keyword => (
-                <Badge key={keyword} variant="secondary" className="bg-revology/10 text-revology">
+                <Badge 
+                  key={keyword} 
+                  variant="secondary" 
+                  className="bg-revology/10 text-revology flex items-center gap-1 pr-1"
+                >
                   {keyword}
+                  {onKeywordRemove && (
+                    <button
+                      onClick={() => handleKeywordRemove(keyword)}
+                      className="hover:bg-revology/20 rounded-full p-0.5 ml-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </Badge>
               ))}
             </div>

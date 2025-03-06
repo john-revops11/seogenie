@@ -1,7 +1,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Plus, FileText } from "lucide-react";
+import { Check, Plus, FileText, X } from "lucide-react";
 import { KeywordGap } from "@/services/keywordService";
 import { categorizeKeywordIntent } from "./KeywordGapUtils";
 
@@ -44,15 +44,15 @@ export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordG
           {gap.difficulty} KD
         </Badge>
         <Button 
-          variant={isSelected ? "success" : "revology"}
+          variant={isSelected ? "outline" : "revology"}
           size="sm"
           className={`min-w-[80px] flex items-center justify-center gap-1 shadow-sm hover:translate-y-[-1px] transition-all`}
           onClick={() => onKeywordSelection(gap.keyword)}
         >
           {isSelected ? (
             <>
-              <Check className="h-3.5 w-3.5" />
-              <span>Added</span>
+              <X className="h-3.5 w-3.5" />
+              <span>Remove</span>
             </>
           ) : (
             <>

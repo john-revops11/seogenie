@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
 import GeneratedContent from "./content-generator/GeneratedContent";
@@ -90,6 +89,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     };
   }, [handleGenerateTopics, setSelectedKeywords]);
 
+  // Add function to handle keyword removal
+  const handleRemoveKeyword = (keyword: string) => {
+    setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
+  };
+
   // Handle content data update with proper type conversion
   const handleContentDataUpdate = (contentData: GeneratedContentType) => {
     // Safely update generatedContentData with the incoming data
@@ -135,6 +139,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             onCustomTopicAdd={handleAddCustomTopic}
             onRagToggle={handleRagToggle}
             onContinue={() => setActiveStep(2)}
+            onKeywordRemove={handleRemoveKeyword}
           />
         );
         

@@ -27,6 +27,7 @@ interface ContentGeneratorStepOneProps {
   onCustomTopicAdd: (topic: string) => void;
   onRagToggle: (enabled: boolean) => void;
   onContinue: () => void;
+  onKeywordRemove?: (keyword: string) => void;
 }
 
 const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
@@ -51,7 +52,8 @@ const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
   onRegenerateTopics,
   onCustomTopicAdd,
   onRagToggle,
-  onContinue
+  onContinue,
+  onKeywordRemove
 }) => {
   return (
     <div className="space-y-6">
@@ -85,6 +87,7 @@ const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
           onCustomTopicAdd={onCustomTopicAdd}
           ragEnabled={ragEnabled}
           onRagToggle={onRagToggle}
+          onKeywordRemove={onKeywordRemove}
         />
       </div>
     </div>
