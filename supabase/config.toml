@@ -1,5 +1,6 @@
 
-project_id = 'your-project-id'
+# A string used to distinguish different Supabase projects on the same host. Defaults to the project ID.
+project_id = "revology-analytics"
 
 [api]
 enabled = true
@@ -14,38 +15,58 @@ shadow_port = 54320
 major_version = 15
 
 [db.pooler]
+enabled = false
 port = 54329
-pool_mode = 'transaction'
-default_pool_size = 15
+pool_mode = "transaction"
+default_pool_size = 20
 max_client_conn = 100
 
 [realtime]
 enabled = true
+ip_address = ""
 port = 54323
+max_clients = 1000
 
 [studio]
 enabled = true
 port = 54324
-api_url = "http://127.0.0.1"
+api_url = "http://localhost"
 
 [inbucket]
 enabled = true
 port = 54325
-
-[auth]
-enabled = true
-site_url = "http://127.0.0.1:3000"
+smtp_port = 54326
+pop3_port = 54327
 
 [storage]
 enabled = true
+file_size_limit = "50MiB"
 
-[analytics]
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+[auth.external.apple]
 enabled = false
+client_id = ""
+secret = ""
+redirect_uri = ""
+url = ""
 
 [functions]
 enabled = true
-port = 54334
-
-[[functions.function]]
-name = "dataforseo"
-verify_jwt = false
+port = 54328
