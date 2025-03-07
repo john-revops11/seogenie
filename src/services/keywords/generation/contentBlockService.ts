@@ -23,11 +23,17 @@ export const fillContentBlocks = async (
     // Structure-related guidelines
     const structureGuidelines = `
       Structure Guidelines:
+      - Use proper HTML formatting:
+        * <h1> for main title
+        * <h2> for main section headings
+        * <h3> for subsection headings
+        * <p> for paragraphs
+        * <strong> or <b> for bold text
+        * <ul> with <li> items for bullet lists
+        * <ol> with <li> items for numbered lists
       - Keep paragraphs concise (3-4 sentences max)
-      - Use H2 for main sections and H3 for subsections
-      - Format lists appropriately:
-        * Use bulleted lists for features, benefits, key points
-        * Use numbered lists for sequential steps or processes
+      - Add proper spacing between elements
+      - Use bold text for emphasis on key terms and concepts
       - Each section should flow logically to the next
       - Naturally incorporate keywords without keyword stuffing
     `;
@@ -39,6 +45,7 @@ export const fillContentBlocks = async (
       - Include relevant semantic terms related to the main topic
       - Ensure content is factual and up-to-date
       - Maintain readability and user engagement
+      - Use proper heading hierarchy (H1 > H2 > H3)
     `;
     
     // Combined prompt header with all guidelines
@@ -75,16 +82,16 @@ export const fillContentBlocks = async (
         if (contextHeading) {
           // Customize prompt based on the heading context
           if (contextHeading.toLowerCase().includes('introduction')) {
-            prompt += `\nWrite a concise, informative introduction paragraph (50-100 words) that clearly sets the context, purpose, and key takeaways of the article about "${content.title}".\n`;
+            prompt += `\nWrite a concise, informative introduction paragraph (50-100 words) that clearly sets the context, purpose, and key takeaways of the article about "${content.title}". Use <p> tags and <strong> tags for important terms.\n`;
           } 
           else if (contextHeading.toLowerCase().includes('conclusion')) {
-            prompt += `\nWrite a concise conclusion paragraph that reinforces key insights from the article and recommends actionable next steps on the topic "${content.title}".\n`;
+            prompt += `\nWrite a concise conclusion paragraph that reinforces key insights from the article and recommends actionable next steps on the topic "${content.title}". Use <p> tags and <strong> tags for important points.\n`;
           }
           else if (contextHeading.toLowerCase().includes('case stud') || contextHeading.toLowerCase().includes('example')) {
-            prompt += `\nProvide a clearly formatted, relevant case study or practical example demonstrating how "${content.title}" has been applied effectively in a real-world scenario.\n`;
+            prompt += `\nProvide a clearly formatted, relevant case study or practical example demonstrating how "${content.title}" has been applied effectively in a real-world scenario. Format with proper HTML tags including <p>, <strong>, and use <h3> tags for any subheadings within this section.\n`;
           }
           else if (contextHeading.toLowerCase().includes('best practice')) {
-            prompt += `\nGenerate a comprehensive list of best practices for "${content.title}", formatted as a bulleted list with actionable recommendations.\n`;
+            prompt += `\nGenerate a comprehensive list of best practices for "${content.title}", formatted as a proper HTML bulleted list (<ul> with <li> items) with actionable recommendations. Add a brief introduction paragraph before the list with <p> tags.\n`;
           }
           else if (block.type === 'list') {
             // Determine if it should be a bulleted or numbered list
@@ -92,10 +99,10 @@ export const fillContentBlocks = async (
                                    contextHeading.toLowerCase().includes('process') || 
                                    contextHeading.toLowerCase().includes('method');
             
-            prompt += `\nCreate a ${shouldBeNumbered ? 'numbered' : 'bulleted'} list of key points related to "${contextHeading}". Each item should be meaningful and directly related to the topic.\n`;
+            prompt += `\nCreate a ${shouldBeNumbered ? '<ol>' : '<ul>'} list of key points related to "${contextHeading}". Each item should be in <li> tags and provide meaningful, detailed information directly related to the topic. Add brief explanatory text before the list using <p> tags.\n`;
           }
           else {
-            prompt += `\nGenerate a detailed section for "${contextHeading}".\n`;
+            prompt += `\nGenerate a detailed section for "${contextHeading}" with proper HTML formatting. Use <p> tags for paragraphs, <strong> tags for emphasis, and appropriate use of other HTML elements as needed.\n`;
             if (parentHeadingType === 'heading3') {
               prompt += `This is a subsection that provides deeper details about a specific aspect of the main topic.\n`;
             }
@@ -120,10 +127,13 @@ export const fillContentBlocks = async (
           
           // Update the block with the generated content
           if (generatedContent && generatedContent.trim() !== '') {
+            // Check if the content already includes HTML tags
+            const hasHtmlTags = /<[a-z][\s\S]*>/i.test(generatedContent);
+            
             if (block.type === 'paragraph') {
               updatedBlocks[i] = {
                 ...block,
-                content: `<p>${generatedContent}</p>`
+                content: hasHtmlTags ? generatedContent : `<p>${generatedContent}</p>`
               };
             } else if (block.type === 'list') {
               // Determine if we need an ordered or unordered list based on context
@@ -131,17 +141,25 @@ export const fillContentBlocks = async (
                               contextHeading.toLowerCase().includes('process') || 
                               contextHeading.toLowerCase().includes('method');
               
-              // Parse the content to properly format as a list
-              const listItems = generatedContent
-                .split(/\n|•|-|\d+\./)
-                .filter(item => item.trim() !== '')
-                .map(item => `<li>${item.trim()}</li>`)
-                .join('\n');
-              
-              updatedBlocks[i] = {
-                ...block,
-                content: isOrdered ? `<ol>${listItems}</ol>` : `<ul>${listItems}</ul>`
-              };
+              // If content already has HTML list, use it directly
+              if (hasHtmlTags && (generatedContent.includes('<ul>') || generatedContent.includes('<ol>'))) {
+                updatedBlocks[i] = {
+                  ...block,
+                  content: generatedContent
+                };
+              } else {
+                // Parse the content to properly format as a list
+                const listItems = generatedContent
+                  .split(/\n|•|-|\d+\./)
+                  .filter(item => item.trim() !== '')
+                  .map(item => `<li>${item.trim()}</li>`)
+                  .join('\n');
+                
+                updatedBlocks[i] = {
+                  ...block,
+                  content: isOrdered ? `<ol>${listItems}</ol>` : `<ul>${listItems}</ul>`
+                };
+              }
             }
             
             console.log(`Successfully generated content for ${contextHeading || 'section'}`);
@@ -173,4 +191,3 @@ export const fillContentBlocks = async (
     return content;
   }
 };
-

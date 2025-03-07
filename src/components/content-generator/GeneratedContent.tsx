@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -142,7 +143,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
         
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Content</h3>
-          <div className="space-y-4">
+          <div className="space-y-4 prose max-w-none">
             {contentBlocks.map(block => (
               <div key={block.id} className="relative group border rounded-md p-4 hover:bg-gray-50 transition-colors">
                 {block.isEditing ? (
@@ -175,7 +176,16 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                   </div>
                 ) : (
                   <>
-                    <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: block.content }} 
+                      className={
+                        block.type === 'h1' ? 'text-2xl font-bold mb-2' :
+                        block.type === 'h2' ? 'text-xl font-bold mt-4 mb-2' :
+                        block.type === 'h3' ? 'text-lg font-bold mt-3 mb-2' :
+                        block.type === 'ul' || block.type === 'ol' ? 'pl-5 my-2 space-y-1' :
+                        'my-2'
+                      }
+                    />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       <Button size="icon" variant="ghost" onClick={() => handleEditBlock(block.id)}>
                         <Edit2 className="w-4 h-4" />

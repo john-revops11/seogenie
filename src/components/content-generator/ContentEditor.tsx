@@ -2,10 +2,10 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, Trash2, Plus, FileUp, ArrowUpRight, ArrowDownRight, List, ListOrdered } from "lucide-react";
 import { toast } from "sonner";
 import { ContentBlock, GeneratedContent } from "@/services/keywords/types";
+import WysiwygEditor from "./WysiwygEditor";
 
 interface ContentEditorProps {
   generatedContent: GeneratedContent;
@@ -18,7 +18,6 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 }) => {
   const [blocks, setBlocks] = useState<ContentBlock[]>(generatedContent.blocks);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
-  const [editedContent, setEditedContent] = useState<string>("");
 
   // Helper function to identify block types from HTML content
   const getBlockTypeFromContent = (content: string): 'paragraph' | 'list' | 'orderedList' => {
@@ -29,10 +28,9 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 
   const handleEditBlock = (blockId: string, content: string) => {
     setEditingBlockId(blockId);
-    setEditedContent(content);
   };
 
-  const handleSaveBlock = (blockId: string) => {
+  const handleSaveBlock = (blockId: string, editedContent: string) => {
     const updatedBlocks = blocks.map(block => 
       block.id === blockId 
         ? { ...block, content: editedContent } 
@@ -142,21 +140,17 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     if (editingBlockId === block.id) {
       return (
         <div className="space-y-2">
-          <Textarea
-            className="min-h-[100px] font-mono text-sm"
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
+          <WysiwygEditor 
+            initialContent={block.content}
+            onUpdate={(html) => handleSaveBlock(block.id, html)}
           />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => handleSaveBlock(block.id)}>
-              <Save className="w-4 h-4 mr-1" /> Save
-            </Button>
+          <div className="flex justify-end">
             <Button
               size="sm"
               variant="outline"
               onClick={() => setEditingBlockId(null)}
             >
-              Cancel
+              Done
             </Button>
           </div>
         </div>
@@ -167,11 +161,11 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
       <div 
         dangerouslySetInnerHTML={{ __html: block.content }} 
         className={
-          block.type === 'heading1' ? 'text-2xl font-bold' :
-          block.type === 'heading2' ? 'text-xl font-bold mt-4' :
-          block.type === 'heading3' ? 'text-lg font-bold mt-3' :
-          block.type === 'list' ? 'mt-2 list-content' :
-          'mt-2'
+          block.type === 'heading1' ? 'text-2xl font-bold mt-4 mb-2' :
+          block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2' :
+          block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2' :
+          block.type === 'list' ? 'mt-2 mb-2 pl-5 space-y-1 list-content' :
+          'mt-2 mb-2'
         }
       />
     );
@@ -192,7 +186,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
           )}
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           {blocks.map((block, index) => (
             <div 
               key={block.id} 
@@ -201,53 +195,57 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
               {renderBlockContent(block)}
               
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => handleEditBlock(block.id, block.content)}
-                  title="Edit"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => handleMoveBlock(block.id, 'up')}
-                  disabled={index === 0}
-                  title="Move up"
-                >
-                  <ArrowUpRight className="w-4 h-4" />
-                </Button>
-                
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => handleMoveBlock(block.id, 'down')}
-                  disabled={index === blocks.length - 1}
-                  title="Move down"
-                >
-                  <ArrowDownRight className="w-4 h-4" />
-                </Button>
-                
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => handleAddBlockAfter(block.id, 'paragraph')}
-                  title="Add paragraph"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-                
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="text-destructive" 
-                  onClick={() => handleDeleteBlock(block.id)}
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {editingBlockId !== block.id && (
+                  <>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleEditBlock(block.id, block.content)}
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleMoveBlock(block.id, 'up')}
+                      disabled={index === 0}
+                      title="Move up"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleMoveBlock(block.id, 'down')}
+                      disabled={index === blocks.length - 1}
+                      title="Move down"
+                    >
+                      <ArrowDownRight className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleAddBlockAfter(block.id, 'paragraph')}
+                      title="Add paragraph"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="text-destructive" 
+                      onClick={() => handleDeleteBlock(block.id)}
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -310,4 +308,3 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 };
 
 export default ContentEditor;
-
