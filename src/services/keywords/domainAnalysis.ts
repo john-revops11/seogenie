@@ -12,7 +12,8 @@ export const analyzeDomains = async (
   locationCode: number = 2840
 ): Promise<{
   keywords: KeywordData[],
-  success: boolean
+  success: boolean,
+  error?: string
 }> => {
   try {
     // Make sure domains have proper URL format
@@ -70,7 +71,8 @@ export const analyzeDomains = async (
     toast.error(`Domain analysis failed: ${(error as Error).message}`);
     return {
       keywords: [],
-      success: false
+      success: false,
+      error: (error as Error).message
     };
   }
 };
