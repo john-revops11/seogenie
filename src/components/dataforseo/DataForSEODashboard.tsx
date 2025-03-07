@@ -1,3 +1,4 @@
+
 // Import necessary modules and components
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,9 +60,9 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
 
   // Render the component
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+    <div className="flex flex-col space-y-6 w-full">
       {/* SERP Results Card */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>SERP Results</CardTitle>
           <CardDescription>Analysis of search engine results page data</CardDescription>
@@ -84,6 +85,9 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
                   </CustomBadge>
                 </div>
               ))}
+              {serp.results.length === 0 && (
+                <p className="text-amber-500">No SERP results found for this domain.</p>
+              )}
             </div>
           ) : (
             <p className="text-red-500">Error: {serp.error || 'Failed to retrieve SERP results'}</p>
@@ -92,7 +96,7 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
       </Card>
 
       {/* Volume Results Card */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Volume Results</CardTitle>
           <CardDescription>Analysis of keyword search volume data</CardDescription>
@@ -108,6 +112,9 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
                   <p>Competition: {result.competition}</p>
                 </div>
               ))}
+              {volume.results.length === 0 && (
+                <p className="text-amber-500">No volume data found for the keywords.</p>
+              )}
             </div>
           ) : (
             <p className="text-red-500">Error: {volume.error || 'Failed to retrieve Volume results'}</p>
@@ -116,7 +123,7 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
       </Card>
 
       {/* Traffic Results Card */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Traffic Results</CardTitle>
           <CardDescription>Analysis of website traffic data</CardDescription>
@@ -135,7 +142,7 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
       </Card>
 
       {/* Competitors Results Card */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Competitors Results</CardTitle>
           <CardDescription>Analysis of competitor data</CardDescription>
@@ -150,22 +157,13 @@ const DataForSEODashboard: React.FC<DataForSEODashboardProps> = ({ analysisData,
                   <p>Common Keywords: {competitor.common_keywords}</p>
                 </div>
               ))}
-              <CustomBadge 
-                variant={
-                  competitors.results.length === 0 
-                    ? "destructive" 
-                    : competitors.results.length > 3 
-                      ? "success" 
-                      : "warning"
-                }
-                className="ml-2"
-              >
-                {competitors.results.length === 0
-                  ? "No Competitors Found"
-                  : competitors.results.length > 3
-                    ? "Many Competitors"
-                    : "Few Competitors"}
-              </CustomBadge>
+              {competitors.results.length === 0 && (
+                <div className="py-2">
+                  <CustomBadge variant="destructive" className="ml-2">
+                    No Competitors Found
+                  </CustomBadge>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-red-500">Error: {competitors.error || 'Failed to retrieve Competitors results'}</p>

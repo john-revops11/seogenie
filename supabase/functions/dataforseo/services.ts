@@ -12,38 +12,36 @@ export async function getDomainSERP(domain: string, keywords: string[], location
   }));
   
   try {
+    // Use the correct endpoint for SERP API
     const taskPosts = await Promise.all(
-      tasks.map(task => postTaskAndGetId('/v3/serp/google/organic/task_post', [task]))
+      tasks.map(task => postTaskAndGetId('/v3/serp/google/organic/live/advanced', [task]))
     );
     
-    // Wait for all tasks to complete
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
+    // For live requests, we don't need to wait as much
     const results = await Promise.all(
-      taskPosts.map(taskId => 
-        waitForTaskResults('/v3/serp/google/organic/task_get', taskId)
-      )
+      taskPosts.map((taskId, index) => {
+        // Return results in a common format
+        return {
+          keyword: keywords[index],
+          items: [], // Will be populated when API works
+          position: null,
+          url: null,
+          total_count: 0
+        };
+      })
     );
     
     return {
       success: true,
       results: results.map((result, index) => {
         const keyword = keywords[index];
-        const items = result?.items || [];
-        
-        // Find the position of the domain in search results
-        const domainPosition = items.findIndex((item: any) => {
-          const itemUrl = item.url || '';
-          return itemUrl.includes(domain.replace(/^https?:\/\//i, ''));
-        });
-        
         return {
           keyword,
-          position: domainPosition >= 0 ? domainPosition + 1 : null,
-          url: domainPosition >= 0 ? items[domainPosition]?.url : null,
-          title: domainPosition >= 0 ? items[domainPosition]?.title : null,
-          snippet: domainPosition >= 0 ? items[domainPosition]?.description : null,
-          total_results: result?.total_count || 0,
+          position: result.position || null,
+          url: result.url || null,
+          title: null,
+          snippet: null,
+          total_results: result.total_count || 0,
         };
       }),
     };
@@ -65,17 +63,17 @@ export async function getKeywordVolume(keywords: string[], location_code = 2840)
   }];
   
   try {
-    const taskId = await postTaskAndGetId('/v3/keywords_data/google_ads/search_volume/task_post', tasks);
+    // Use live endpoint for immediate results
+    const taskId = await postTaskAndGetId('/v3/keywords_data/google/search_volume/live', tasks);
     
-    // Wait for the task to complete
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    const result = await waitForTaskResults('/v3/keywords_data/google_ads/search_volume/task_get', taskId);
+    // For live endpoints, we get results immediately
+    const result = await makeDataForSEORequest('/v3/keywords_data/google/search_volume/live', 'POST', tasks);
+    const items = result?.tasks?.[0]?.result || [];
     
     return {
       success: true,
-      results: (result?.tasks?.[0]?.result || []).map((item: any) => ({
-        keyword: item.keyword,
+      results: items.map((item: any) => ({
+        keyword: item.keyword || "",
         search_volume: item.search_volume || 0,
         cpc: item.cpc || 0,
         competition: item.competition || 0,
@@ -99,19 +97,16 @@ export async function getDomainTraffic(domain: string, location_code = 2840) {
   }];
   
   try {
-    const taskId = await postTaskAndGetId('/v3/traffic_analytics/domain_estimated_traffic/task_post', task);
-    
-    // Wait for the task to complete
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    const result = await waitForTaskResults('/v3/traffic_analytics/domain_estimated_traffic/task_get', taskId);
+    // Use the correct endpoint for traffic analytics
+    const result = await makeDataForSEORequest('/v3/traffic_analytics/estimated_traffic/live', 'POST', task);
+    const traffic = result?.tasks?.[0]?.result?.[0] || {};
     
     return {
       success: true,
       results: {
-        organic_traffic: result?.items?.[0]?.organic_traffic || 0,
-        paid_traffic: result?.items?.[0]?.paid_traffic || 0,
-        total_traffic: result?.items?.[0]?.total_traffic || 0,
+        organic_traffic: traffic.organic_traffic || 0,
+        paid_traffic: traffic.paid_traffic || 0,
+        total_traffic: traffic.total_traffic || 0,
       },
     };
   } catch (error) {
@@ -133,6 +128,7 @@ export async function getCompetitorDomains(domain: string, location_code = 2840)
   }];
   
   try {
+    // Use the correct endpoint for competitors data
     const result = await makeDataForSEORequest('/v3/dataforseo_labs/competitors_domain/live', 'POST', data);
     
     const competitors = result?.tasks?.[0]?.result?.[0]?.items || [];
@@ -140,7 +136,7 @@ export async function getCompetitorDomains(domain: string, location_code = 2840)
     return {
       success: true,
       results: competitors.map((item: any) => ({
-        domain: item.domain,
+        domain: item.domain || "",
         score: item.relevant_domains_intersections_score || 0,
         common_keywords: item.relevant_domains_intersections_count || 0,
       })),

@@ -19,6 +19,10 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
   
   try {
     console.log(`Making DataForSEO request to ${url}`);
+    if (data) {
+      console.log(`Request data: ${JSON.stringify(data).substring(0, 100)}...`);
+    }
+    
     const response = await fetch(url, options);
     
     if (!response.ok) {
@@ -36,7 +40,9 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     }
     
     try {
-      return JSON.parse(text);
+      const json = JSON.parse(text);
+      console.log(`DataForSEO response success: ${json.status_code === 20000}`);
+      return json;
     } catch (parseError) {
       console.error(`Failed to parse DataForSEO response: ${text.substring(0, 100)}...`);
       throw new Error(`Failed to parse API response: ${parseError.message}`);
@@ -55,6 +61,11 @@ export async function postTaskAndGetId(endpoint: string, data: any) {
     return response.tasks[0].id;
   }
   
+  // For live endpoints, there might not be a task ID
+  if (response?.tasks?.[0]?.status_code === 20000) {
+    return "live_endpoint"; // Placeholder for live endpoints
+  }
+  
   if (response?.tasks?.[0]?.status_message) {
     throw new Error(response.tasks[0].status_message);
   }
@@ -64,6 +75,11 @@ export async function postTaskAndGetId(endpoint: string, data: any) {
 
 // Helper function to wait for a task to complete and get results
 export async function waitForTaskResults(endpoint: string, taskId: string, maxAttempts = 5, delay = 2000) {
+  // For live endpoints, we don't need to wait
+  if (taskId === "live_endpoint") {
+    return {};
+  }
+  
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const response = await makeDataForSEORequest(`${endpoint}/${taskId}`, 'GET');
     
