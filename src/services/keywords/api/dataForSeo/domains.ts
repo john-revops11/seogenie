@@ -14,83 +14,49 @@ export const fetchDataForSEOKeywords = async (
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl} in location: ${locationCode}`);
     
-    const { encodedCredentials } = getDataForSeoCredentials();
-    
-    // Prepare the request body for DataForSEO Labs domain_keywords endpoint
-    // This is the correct format for the DataForSEO Labs endpoint
-    const requestBody = JSON.stringify([
-      {
-        target: domainUrl,
-        location_code: locationCode, // Use the provided location code
-        language_code: "en",
-        limit: 100,
-      }
-    ]);
-    
-    console.log("DataForSEO domain keywords request body:", requestBody);
-    
-    const response = await fetch(DATAFORSEO_API_URL, {
-      method: "POST",
+    // Use the Supabase Edge Function instead of direct API call
+    const response = await fetch(`${window.location.origin}/.netlify/functions/dataforseo`, {
+      method: 'POST',
       headers: {
-        "Authorization": `Basic ${encodedCredentials}`,
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json'
       },
-      body: requestBody
+      body: JSON.stringify({
+        action: 'domain_keywords',
+        domain: domainUrl,
+        location_code: locationCode
+      })
     });
-
-    // Check for API errors
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`DataForSEO API error ${response.status}: ${errorText}`);
-      throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
-    }
-
-    // Parse response
-    const data = await parseApiResponse(response);
-    
-    // Debug the actual response structure
-    console.log("DataForSEO domain keywords response:", JSON.stringify(data).substring(0, 500) + "...");
-    
-    // Check if we have a valid response with tasks
-    if (!data.tasks || data.tasks.length === 0) {
-      console.warn(`DataForSEO API returned no tasks for ${domainUrl}`);
-      throw new Error("API returned no tasks");
+      console.error(`DataForSEO Edge Function error ${response.status}: ${errorText}`);
+      throw new Error(`Edge Function error ${response.status}: ${errorText.substring(0, 100)}`);
     }
     
-    const task = data.tasks[0];
+    const data = await response.json();
     
-    // Check if the task has result data
-    if (!task.result || task.result.length === 0) {
-      console.warn(`DataForSEO API task has no results for ${domainUrl}`);
-      throw new Error("API task has no results");
+    if (!data.success) {
+      console.error(`DataForSEO Edge Function returned error: ${data.error}`);
+      throw new Error(`API error: ${data.error}`);
     }
     
-    // Process the keywords from the response - the structure is different in the DataForSEO Labs API
-    const keywords: KeywordData[] = [];
-    
-    // Extract data from the items array in the result
-    if (task.result[0] && task.result[0].items) {
-      for (const item of task.result[0].items) {
-        if (item.keyword) {
-          keywords.push({
-            keyword: item.keyword,
-            volume: item.search_volume || 0,
-            difficulty: item.keyword_difficulty || 0,
-            cpc: item.cpc || 0,
-            competition: item.competition_index || 0,
-            rankingUrl: `https://${domainUrl}`, // Use domain as fallback
-            position: item.position || null,
-            traffic: item.traffic || 0,
-            trafficCost: item.traffic_cost || 0
-          });
-        }
-      }
+    if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
+      console.warn(`DataForSEO Edge Function returned no keyword results for ${domainUrl}`);
+      throw new Error("No keywords found for this domain");
     }
     
-    if (keywords.length === 0) {
-      console.warn(`DataForSEO API returned no valid keywords for ${domainUrl}`);
-      throw new Error("API returned no valid keywords");
-    }
+    // Process the results
+    const keywords: KeywordData[] = data.results.map((item: any) => ({
+      keyword: item.keyword || '',
+      volume: item.search_volume || 0,
+      difficulty: Math.round((item.competition || 0.5) * 100),
+      cpc: item.cpc || 0,
+      competition: item.competition || 'medium',
+      position: item.position,
+      rankingUrl: null,
+      traffic: item.traffic || 0,
+      trafficCost: 0
+    }));
     
     console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
     return keywords;

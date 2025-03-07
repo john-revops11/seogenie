@@ -20,7 +20,7 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
   try {
     console.log(`Making DataForSEO request to ${url}`);
     if (data) {
-      console.log(`Request data: ${JSON.stringify(data).substring(0, 100)}...`);
+      console.log(`Request data: ${JSON.stringify(data).substring(0, 200)}...`);
     }
     
     const response = await fetch(url, options);
@@ -28,7 +28,7 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`DataForSEO API request failed with status ${response.status}: ${errorText}`);
-      throw new Error(`API request failed with status ${response.status}: ${errorText.substring(0, 100)}`);
+      throw new Error(`API request failed with status ${response.status}: ${errorText.substring(0, 200)}`);
     }
     
     // Try to parse JSON response, handle empty or malformed responses
@@ -42,9 +42,15 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     try {
       const json = JSON.parse(text);
       console.log(`DataForSEO response success: ${json.status_code === 20000}`);
+      
+      // Check for API-level errors
+      if (json.status_code !== 20000) {
+        throw new Error(`DataForSEO API error: ${json.status_message}`);
+      }
+      
       return json;
     } catch (parseError) {
-      console.error(`Failed to parse DataForSEO response: ${text.substring(0, 100)}...`);
+      console.error(`Failed to parse DataForSEO response: ${text.substring(0, 200)}...`);
       throw new Error(`Failed to parse API response: ${parseError.message}`);
     }
   } catch (error) {

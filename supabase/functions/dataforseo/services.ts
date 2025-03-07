@@ -14,22 +14,32 @@ export async function getDomainSERP(domain: string, keywords: string[], location
   try {
     // Use the correct endpoint for SERP API
     const taskPosts = await Promise.all(
-      tasks.map(task => postTaskAndGetId('/v3/serp/google/organic/live/advanced', [task]))
+      tasks.map(task => makeDataForSEORequest('/v3/serp/google/organic/live/advanced', 'POST', [task]))
     );
     
-    // For live requests, we don't need to wait as much
-    const results = await Promise.all(
-      taskPosts.map((taskId, index) => {
-        // Return results in a common format
-        return {
-          keyword: keywords[index],
-          items: [], // Will be populated when API works
-          position: null,
-          url: null,
-          total_count: 0
-        };
-      })
-    );
+    const results = taskPosts.map((result, index) => {
+      const taskResult = result?.tasks?.[0]?.result?.[0] || {};
+      const items = taskResult.items || [];
+      
+      // Find our domain in the results
+      let position = null;
+      let url = null;
+      
+      for (const item of items) {
+        if (item.domain === domain || (domain.includes(item.domain) || item.domain.includes(domain.replace('https://', '').replace('http://', '')))) {
+          position = item.rank_absolute || item.rank_group;
+          url = item.url;
+          break;
+        }
+      }
+      
+      return {
+        keyword: keywords[index],
+        position,
+        url,
+        total_count: taskResult.total_count || 0
+      };
+    });
     
     return {
       success: true,
@@ -64,9 +74,6 @@ export async function getKeywordVolume(keywords: string[], location_code = 2840)
   
   try {
     // Use correct endpoint for keyword volume data
-    const taskId = await postTaskAndGetId('/v3/keywords_data/google/search_volume/live', tasks);
-    
-    // For live endpoints, we get results immediately
     const result = await makeDataForSEORequest('/v3/keywords_data/google/search_volume/live', 'POST', tasks);
     const items = result?.tasks?.[0]?.result || [];
     
