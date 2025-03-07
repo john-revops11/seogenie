@@ -9,6 +9,7 @@ import SettingsTabContent from "@/components/tabs/SettingsTabContent";
 import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
+import ApiHealthBar from "@/components/system-health/ApiHealthBar";
 
 const Index = () => {
   // Domain Analysis State from custom hook
@@ -59,6 +60,8 @@ const Index = () => {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <Header analysisComplete={analysisComplete} onReset={handleReset} />
+      
+      <ApiHealthBar />
       
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">
         <TabsList>
