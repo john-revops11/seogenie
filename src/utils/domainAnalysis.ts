@@ -96,6 +96,19 @@ function determineBusinessCategory(domainName: string, keywords: string[] = []):
     categories.push('marketing');
   }
   
+  // Check for e-commerce/retail focus
+  if (
+    domainLower.includes('shop') || 
+    domainLower.includes('store') || 
+    domainLower.includes('buy') ||
+    domainLower.includes('sell') ||
+    keywordsText.includes('product') || 
+    keywordsText.includes('shop') || 
+    keywordsText.includes('purchase')
+  ) {
+    categories.push('ecommerce');
+  }
+  
   // Add general business category if nothing specific was identified
   if (categories.length === 0) {
     categories.push('business');
@@ -140,6 +153,15 @@ function generateIndustryTerms(categories: string[]): string[] {
           'brand positioning'
         );
         break;
+      case 'ecommerce':
+        industryTerms.push(
+          'product listings',
+          'shopping cart',
+          'checkout process',
+          'inventory management',
+          'customer reviews'
+        );
+        break;
       default:
         industryTerms.push(
           'business strategy',
@@ -152,4 +174,36 @@ function generateIndustryTerms(categories: string[]): string[] {
   });
   
   return industryTerms;
+}
+
+/**
+ * Determines the source of keyword data based on metadata
+ */
+export function determineKeywordSource(keywords: any[]): {
+  source: 'api' | 'sample' | 'mixed' | 'unknown';
+  count: number;
+} {
+  if (!keywords || keywords.length === 0) {
+    return { source: 'unknown', count: 0 };
+  }
+  
+  const hasMockData = keywords.some(kw => 
+    (kw.rankingUrl && !kw.rankingUrl.includes('http')) || 
+    (kw.competitorUrls && Object.values(kw.competitorUrls).some(url => url && !url.toString().includes('http')))
+  );
+  
+  const hasApiData = keywords.some(kw => 
+    (kw.rankingUrl && kw.rankingUrl.includes('http')) || 
+    (kw.competitorUrls && Object.values(kw.competitorUrls).some(url => url && url.toString().includes('http')))
+  );
+  
+  if (hasMockData && hasApiData) {
+    return { source: 'mixed', count: keywords.length };
+  } else if (hasMockData) {
+    return { source: 'sample', count: keywords.length };
+  } else if (hasApiData) {
+    return { source: 'api', count: keywords.length };
+  }
+  
+  return { source: 'unknown', count: keywords.length };
 }

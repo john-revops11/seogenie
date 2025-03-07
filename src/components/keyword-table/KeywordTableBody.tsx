@@ -1,10 +1,21 @@
 
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, Database, Server, Info } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Badge } from "@/components/ui/badge";
 import RankingLink from "./RankingLink";
-import { extractDomainName, getDifficultyColor, getIntentBadgeColor, getIntentLabel } from "./utils";
+import { 
+  extractDomainName, 
+  getDifficultyColor, 
+  getIntentBadgeColor, 
+  getIntentLabel 
+} from "./utils";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface KeywordTableBodyProps {
   paginatedKeywords: KeywordData[];
@@ -21,6 +32,50 @@ const KeywordTableBody = ({
   keywords,
   domain
 }: KeywordTableBodyProps) => {
+  // Calculate keyword counts for main domain and each competitor
+  const getKeywordCount = (domainName: string | null) => {
+    if (!domainName) return 0;
+    
+    // For main domain, count keywords where position is not null
+    if (domainName === extractDomainName(domain)) {
+      return keywords.filter(kw => kw.position !== null).length;
+    }
+    
+    // For competitors, count keywords where their position is not null
+    return keywords.filter(kw => 
+      kw.competitorRankings && 
+      kw.competitorRankings[domainName] !== undefined
+    ).length;
+  };
+  
+  // Determine the data source based on keyword metadata
+  const getDataSource = (isForMainDomain: boolean) => {
+    // Check if we're using mock data
+    const hasMockData = keywords.some(kw => 
+      (isForMainDomain && !kw.rankingUrl?.includes('http')) || 
+      (!isForMainDomain && kw.competitorUrls && Object.values(kw.competitorUrls).some(url => !url?.includes('http')))
+    );
+    
+    if (hasMockData) {
+      return {
+        icon: <Database className="h-4 w-4 text-muted-foreground" />,
+        label: "Sample Data",
+        description: "This data is synthetically generated for demonstration"
+      };
+    }
+    
+    // Check if it's from an API source
+    return {
+      icon: <Server className="h-4 w-4 text-primary" />,
+      label: "API Data",
+      description: "This data is from a real API source"
+    };
+  };
+  
+  const mainDomainName = extractDomainName(domain);
+  const mainDomainCount = getKeywordCount(mainDomainName);
+  const mainDomainSource = getDataSource(true);
+  
   return (
     <TableBody>
       {isLoading ? (
@@ -47,16 +102,64 @@ const KeywordTableBody = ({
               </Badge>
             </TableCell>
             <TableCell>
-              <RankingLink url={item.rankingUrl} position={item.position} />
+              <div className="flex items-center space-x-2">
+                <RankingLink url={item.rankingUrl} position={item.position} />
+                
+                {index === 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground border px-1.5 py-0.5 rounded-sm">
+                          {mainDomainSource.icon}
+                          <span>{mainDomainCount}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <div className="space-y-1">
+                          <p className="font-medium">{mainDomainSource.label}</p>
+                          <p className="text-xs">{mainDomainSource.description}</p>
+                          <p className="text-xs font-medium">Found {mainDomainCount} keywords for {mainDomainName}</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
             </TableCell>
+            
             {competitorDomains.map((competitor, idx) => {
               const domainName = extractDomainName(competitor);
+              const competitorCount = getKeywordCount(domainName);
+              const competitorSource = getDataSource(false);
+              
               return (
                 <TableCell key={idx}>
-                  <RankingLink 
-                    url={item.competitorUrls?.[domainName]} 
-                    position={item.competitorRankings?.[domainName]} 
-                  />
+                  <div className="flex items-center space-x-2">
+                    <RankingLink 
+                      url={item.competitorUrls?.[domainName]} 
+                      position={item.competitorRankings?.[domainName]} 
+                    />
+                    
+                    {index === 0 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground border px-1.5 py-0.5 rounded-sm">
+                              {competitorSource.icon}
+                              <span>{competitorCount}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium">{competitorSource.label}</p>
+                              <p className="text-xs">{competitorSource.description}</p>
+                              <p className="text-xs font-medium">Found {competitorCount} keywords for {domainName}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </TableCell>
               );
             })}

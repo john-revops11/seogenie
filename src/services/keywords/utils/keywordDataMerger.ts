@@ -17,6 +17,7 @@ export const mergeKeywordData = (
     // Simulate a ranking position and URL for the main domain
     const position = kw.position || Math.floor(Math.random() * 100) + 1;
     const rankingUrl = kw.rankingUrl || generateSampleUrl(mainDomain, kw.keyword);
+    const isRealData = kw.rankingUrl && kw.rankingUrl.includes('http');
     
     keywordMap.set(kw.keyword, {
       keyword: kw.keyword,
@@ -27,7 +28,8 @@ export const mergeKeywordData = (
       position: position,
       rankingUrl: rankingUrl,
       competitorRankings: {},
-      competitorUrls: {}
+      competitorUrls: {},
+      dataSource: isRealData ? 'api' : 'sample' // Track data source
     });
   });
   
@@ -50,13 +52,20 @@ export const mergeKeywordData = (
         // Simulate a ranking position and URL for this competitor
         const position = kw.position || Math.floor(Math.random() * 100) + 1;
         const rankingUrl = kw.rankingUrl || generateSampleUrl(domain, kw.keyword);
+        const isRealData = kw.rankingUrl && kw.rankingUrl.includes('http');
         
         existing.competitorRankings[domainName] = position;
         existing.competitorUrls[domainName] = rankingUrl;
+        
+        // Update data source if this is real API data
+        if (isRealData && existing.dataSource === 'sample') {
+          existing.dataSource = 'mixed';
+        }
       } else {
         // Add new keyword that main domain doesn't have
         const position = kw.position || Math.floor(Math.random() * 100) + 1;
         const rankingUrl = kw.rankingUrl || generateSampleUrl(domain, kw.keyword);
+        const isRealData = kw.rankingUrl && kw.rankingUrl.includes('http');
         
         keywordMap.set(kw.keyword, {
           keyword: kw.keyword,
@@ -71,7 +80,8 @@ export const mergeKeywordData = (
           },
           competitorUrls: {
             [domainName]: rankingUrl
-          }
+          },
+          dataSource: isRealData ? 'api' : 'sample' // Track data source
         });
       }
     });
