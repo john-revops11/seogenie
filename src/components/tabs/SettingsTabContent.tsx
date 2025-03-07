@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,23 +31,13 @@ export const SettingsTabContent = ({
   const [webhookUrl, setWebhookUrl] = useState("");
   const [enableWebhook, setEnableWebhook] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
-  const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  
-  const toggleContentPreference = (preference: string) => {
-    setContentPreferences(prev => 
-      prev.includes(preference) 
-        ? prev.filter(p => p !== preference)
-        : [...prev, preference]
-    );
-  };
   
   const handleSaveSettings = () => {
     // Save settings to localStorage
     const settings = {
       webhookUrl,
       enableWebhook,
-      brandVoice,
-      contentPreferences
+      brandVoice
     };
     
     localStorage.setItem('revology-settings', JSON.stringify(settings));
@@ -112,34 +101,6 @@ export const SettingsTabContent = ({
             value={brandVoice}
             onChange={(e) => setBrandVoice(e.target.value)}
           />
-        </div>
-        
-        <div className="space-y-3">
-          <Label>Content Preferences</Label>
-          <div className="flex flex-wrap gap-2">
-            {[
-              "Include meta descriptions",
-              "Focus on H1/H2 tags",
-              "Use bullet points",
-              "Add internal links"
-            ].map(preference => {
-              const id = preference.toLowerCase().replace(/\s+/g, '-');
-              return (
-                <Badge 
-                  key={id}
-                  variant={contentPreferences.includes(id) ? "default" : "outline"} 
-                  className={`cursor-pointer ${
-                    contentPreferences.includes(id) 
-                      ? "bg-revology text-white" 
-                      : "hover:bg-revology-light hover:text-revology hover:border-revology/30"
-                  } transition-all`}
-                  onClick={() => toggleContentPreference(id)}
-                >
-                  {preference}
-                </Badge>
-              );
-            })}
-          </div>
         </div>
         
         <Button 
