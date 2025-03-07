@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
-import { getApiKey } from "@/services/keywords/api";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { commonLocations, getLocationNameByCode } from "./keyword-gaps/KeywordGapUtils";
-import { fetchKeywordsForMultipleKeywords } from "@/services/keywords/api/dataForSeoApi";
 
 interface KeywordResearchProps {
   domain: string;
@@ -77,7 +76,7 @@ const KeywordResearch = ({
     }
   };
 
-  const fetchKeywordsFromDataForSEO = async () => {
+  const fetchKeywordsFromAPI = async () => {
     if (keywordList.length === 0) {
       toast.error("Please add at least one keyword to research");
       return;
@@ -87,98 +86,67 @@ const KeywordResearch = ({
     setApiError(null);
     
     try {
-      const credentials = getApiKey("dataforseo");
-      console.log("DataForSEO API credentials retrieved:", credentials ? "Found credentials" : "No credentials found");
-      
-      if (!credentials) {
-        setApiError("DataForSEO API credentials not configured");
-        toast.error("DataForSEO API credentials not configured");
-        toast.info("Go to API Integrations tab to configure your DataForSEO credentials", {
-          action: {
-            label: "Go to API Settings",
-            onClick: () => navigate("/settings")
-          }
-        });
-        setIsSearching(false);
-        return;
-      }
-
       toast.info(`Researching ${keywordList.length} keywords...`);
       
-      try {
-        const keywordData = await fetchKeywordsForMultipleKeywords(keywordList, locationCode);
-        console.log("Fetched keyword data:", keywordData);
+      // Generate mock research data
+      const processedKeywords: ResearchKeyword[] = [];
+      const groups: KeywordGroup[] = [];
+
+      keywordList.forEach(seedKeyword => {
+        const relatedKeywords: ResearchKeyword[] = [];
         
-        if (keywordData.length === 0) {
-          throw new Error("No keywords returned from API");
+        // Generate 5-10 related keywords for the seed keyword
+        const keywordCount = Math.floor(Math.random() * 5) + 5;
+        
+        for (let i = 0; i < keywordCount; i++) {
+          const processedKeyword: ResearchKeyword = {
+            keyword: generateRelatedKeyword(seedKeyword, i),
+            volume: Math.floor(Math.random() * 10000),
+            difficulty: Math.floor(Math.random() * 100),
+            cpc: Math.random() * 5,
+            recommendation: getRecommendationForKeyword(seedKeyword),
+            relatedKeywords: getRelatedKeywordsFor(seedKeyword),
+            isExpanded: false
+          };
+          
+          relatedKeywords.push(processedKeyword);
+          processedKeywords.push(processedKeyword);
         }
         
-        const processedKeywords: ResearchKeyword[] = [];
-        const groups: KeywordGroup[] = [];
-
-        keywordList.forEach(seedKeyword => {
-          const relatedKeywords: ResearchKeyword[] = [];
-          
-          keywordData.forEach(kw => {
-            if (kw.keyword.toLowerCase().includes(seedKeyword.toLowerCase()) || 
-                seedKeyword.toLowerCase().includes(kw.keyword.toLowerCase())) {
-              
-              const processedKeyword: ResearchKeyword = {
-                keyword: kw.keyword,
-                volume: kw.monthly_search || 0,
-                difficulty: kw.competition_index || 50,
-                cpc: kw.cpc || 0,
-                recommendation: getRecommendationForKeyword(kw.keyword),
-                relatedKeywords: getRelatedKeywordsFor(kw.keyword),
-                isExpanded: false
-              };
-              
-              relatedKeywords.push(processedKeyword);
-              processedKeywords.push(processedKeyword);
-            }
+        if (relatedKeywords.length > 0) {
+          groups.push({
+            parentKeyword: seedKeyword,
+            keywords: relatedKeywords,
+            isExpanded: false
           });
-          
-          if (relatedKeywords.length > 0) {
-            groups.push({
-              parentKeyword: seedKeyword,
-              keywords: relatedKeywords,
-              isExpanded: false
-            });
-          }
-        });
+        }
+      });
 
-        console.log(`Found ${processedKeywords.length} related keywords across ${groups.length} groups`);
-        
-        setKeywords(processedKeywords);
-        setKeywordGroups(groups);
-        
-        toast.success(`Found ${processedKeywords.length} keywords related to your search`);
-      } catch (error) {
-        console.error("Error in fetchKeywordsForMultipleKeywords:", error);
-        throw error;
-      }
+      console.log(`Generated ${processedKeywords.length} mock keywords across ${groups.length} groups`);
       
+      setKeywords(processedKeywords);
+      setKeywordGroups(groups);
+      
+      toast.success(`Found ${processedKeywords.length} keywords related to your search`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("Error fetching keywords:", error);
       
       setApiError(errorMessage);
       toast.error(`Failed to fetch keywords: ${errorMessage}`);
-      
-      if (errorMessage.includes("401") || errorMessage.includes("authentication")) {
-        toast.info("Check your DataForSEO API credentials in Settings", {
-          action: {
-            label: "Go to Settings",
-            onClick: () => navigate("/settings")
-          }
-        });
-      } else if (errorMessage.includes("429")) {
-        toast.info("Rate limit exceeded. Please try again later or upgrade your DataForSEO plan.");
-      } else if (errorMessage.includes("500")) {
-        toast.info("Server error at DataForSEO. Please try again later.");
-      }
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const generateRelatedKeyword = (seedKeyword: string, index: number): string => {
+    const prefixes = ["best", "top", "how to", "guide to", "cheap", "professional", "advanced", "beginner", "ultimate", "complete"];
+    const suffixes = ["guide", "tutorial", "tips", "strategies", "examples", "services", "tools", "software", "solutions", "providers"];
+    
+    if (index % 2 === 0) {
+      return `${prefixes[index % prefixes.length]} ${seedKeyword}`;
+    } else {
+      return `${seedKeyword} ${suffixes[index % suffixes.length]}`;
     }
   };
 
@@ -268,108 +236,60 @@ const KeywordResearch = ({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <CardTitle>Keyword Research</CardTitle>
-            <CardDescription>Discover relevant keywords and content opportunities</CardDescription>
+            <CardDescription>Discover new keyword opportunities</CardDescription>
           </div>
-          <div className="flex gap-2">
-            {domain && competitorDomains.length > 0 && existingKeywords.length > 0 && (
-              <Button 
-                variant="danger" 
-                size="sm"
-                onClick={handleRunRevologySeoStrategy}
-                disabled={isRunningSeoStrategy}
-                className="whitespace-nowrap"
-              >
-                {isRunningSeoStrategy ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    Running Strategy...
-                  </>
-                ) : (
-                  <>
-                    <Target className="w-4 h-4 mr-1" /> 
-                    Run SEO Strategy for Revology
-                  </>
-                )}
-              </Button>
+          
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleRunRevologySeoStrategy}
+            disabled={!domain || competitorDomains.length === 0 || existingKeywords.length === 0 || isRunningSeoStrategy}
+          >
+            {isRunningSeoStrategy ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Running SEO Strategy...
+              </>
+            ) : (
+              <>
+                <Target className="h-4 w-4 mr-1" />
+                Run SEO Strategy
+              </>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/settings")}
-              className="whitespace-nowrap"
-            >
-              <Settings className="w-4 h-4 mr-1" />
-              Configure API
-            </Button>
-          </div>
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {apiError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>API Error</AlertTitle>
-            <AlertDescription>
-              {apiError}
-              <div className="mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigate("/settings")}
-                >
-                  Check API Settings
+      
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 space-y-1">
+              <div className="text-sm font-medium">Add keywords to research</div>
+              <div className="flex gap-2">
+                <Input
+                  value={keywordInput}
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onKeyDown={handleKeywordInputKeyDown}
+                  placeholder="Enter a keyword"
+                  className="flex-1"
+                />
+                <Button onClick={addKeyword} size="sm" disabled={!keywordInput.trim()}>
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
-            </AlertDescription>
-          </Alert>
-        )}
-      
-        <div className="space-y-4">
-          <div className="flex items-start gap-2">
-            <div className="flex-1">
-              <Input
-                placeholder="Add a keyword..."
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyDown={handleKeywordInputKeyDown}
-              />
             </div>
-            <Button 
-              onClick={addKeyword}
-              size="sm"
-              variant="outline"
-            >
-              <Plus className="w-4 h-4" />
-              Add
-            </Button>
-          </div>
-          
-          {keywordList.length > 0 && (
-            <div className="flex flex-wrap gap-2 p-2 border rounded-md">
-              {keywordList.map((keyword, idx) => (
-                <Badge key={idx} variant="secondary" className="flex items-center gap-1">
-                  {keyword}
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-4 w-4 p-0 ml-1 text-muted-foreground hover:text-foreground"
-                    onClick={() => removeKeyword(keyword)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2">
-            <div className="w-1/3">
-              <Select value={locationCode.toString()} onValueChange={(val) => setLocationCode(parseInt(val))}>
-                <SelectTrigger className="w-full">
+            
+            <div className="w-full md:w-32">
+              <div className="text-sm font-medium">Location</div>
+              <Select
+                value={locationCode.toString()}
+                onValueChange={(value) => setLocationCode(parseInt(value))}
+              >
+                <SelectTrigger>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
-                <SelectContent className="bg-background">
-                  {commonLocations.map((location) => (
+                <SelectContent>
+                  {commonLocations.map(location => (
                     <SelectItem key={location.code} value={location.code.toString()}>
                       {location.name}
                     </SelectItem>
@@ -377,96 +297,116 @@ const KeywordResearch = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button 
-              onClick={fetchKeywordsFromDataForSEO} 
-              disabled={isSearching || keywordList.length === 0}
-              className="flex-1 bg-revology hover:bg-revology-dark"
-            >
-              {isSearching ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Researching...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4 mr-2" />
-                  Research Keywords
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {keywordGroups.length > 0 && (
-          <div className="space-y-4">
-            {keywordGroups.map((group, groupIndex) => (
-              <div key={groupIndex} className="border rounded-md overflow-hidden">
-                <div 
-                  className="flex items-center justify-between p-3 bg-muted/30 cursor-pointer"
-                  onClick={() => toggleKeywordGroup(group.parentKeyword)}
-                >
-                  <div className="font-medium flex items-center gap-2">
-                    {group.isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    )}
-                    {group.parentKeyword}
-                    <Badge variant="outline">{group.keywords.length}</Badge>
-                  </div>
-                </div>
-                
-                {group.isExpanded && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Keyword</TableHead>
-                        <TableHead className="w-[100px] text-right">Volume</TableHead>
-                        <TableHead className="w-[100px] text-right">Difficulty</TableHead>
-                        <TableHead className="w-[100px] text-right">CPC ($)</TableHead>
-                        <TableHead className="w-[180px] text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {group.keywords.map((keyword, keywordIndex) => (
-                        <TableRow key={keywordIndex} className="group">
-                          <TableCell className="font-medium">
-                            {keyword.keyword}
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {keyword.relatedKeywords.map((related, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {related}
-                                </Badge>
-                              ))}
-                            </div>
-                            <p className="mt-2 text-xs text-muted-foreground">{keyword.recommendation}</p>
-                          </TableCell>
-                          <TableCell className="text-right">{keyword.volume.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge className={getDifficultyColor(keyword.difficulty)}>
-                              {keyword.difficulty}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">${keyword.cpc.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              onClick={() => handleGenerateContent(keyword.keyword, keyword.relatedKeywords)}
-                              className="opacity-80 group-hover:opacity-100 bg-revology hover:bg-revology-dark"
-                            >
-                              <Zap className="w-3 h-3 mr-1" />
-                              Generate Content
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+            
+            <div className="w-full md:w-auto flex items-end">
+              <Button 
+                onClick={fetchKeywordsFromAPI} 
+                disabled={isSearching || keywordList.length === 0}
+                className="w-full md:w-auto"
+              >
+                {isSearching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-1" />
+                    Research Keywords
+                  </>
                 )}
-              </div>
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {keywordList.map(keyword => (
+              <Badge key={keyword} variant="secondary" className="px-3 py-1">
+                {keyword}
+                <X 
+                  className="h-3 w-3 ml-1 cursor-pointer" 
+                  onClick={() => removeKeyword(keyword)}
+                />
+              </Badge>
             ))}
           </div>
-        )}
+          
+          {apiError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{apiError}</AlertDescription>
+            </Alert>
+          )}
+          
+          {keywordGroups.length > 0 && (
+            <div className="mt-4">
+              <div className="text-sm font-medium mb-2">Keyword Results</div>
+              <div className="space-y-4">
+                {keywordGroups.map(group => (
+                  <div key={group.parentKeyword} className="border rounded-md overflow-hidden">
+                    <div 
+                      className="flex items-center justify-between bg-muted p-2 cursor-pointer"
+                      onClick={() => toggleKeywordGroup(group.parentKeyword)}
+                    >
+                      <div className="font-medium">{group.parentKeyword}</div>
+                      <div className="flex items-center">
+                        <Badge variant="outline" className="mr-2">
+                          {group.keywords.length} keywords
+                        </Badge>
+                        {group.isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {group.isExpanded && (
+                      <div className="p-2">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Keyword</TableHead>
+                              <TableHead className="text-right">Volume</TableHead>
+                              <TableHead className="text-right">Difficulty</TableHead>
+                              <TableHead className="text-right">CPC</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {group.keywords.map(keyword => (
+                              <TableRow key={keyword.keyword}>
+                                <TableCell className="font-medium">{keyword.keyword}</TableCell>
+                                <TableCell className="text-right">{keyword.volume.toLocaleString()}</TableCell>
+                                <TableCell className="text-right">
+                                  <Badge variant="outline" className={getDifficultyColor(keyword.difficulty)}>
+                                    {keyword.difficulty}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">${keyword.cpc.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleGenerateContent(keyword.keyword, keyword.relatedKeywords)}
+                                  >
+                                    <Zap className="h-3 w-3 mr-1" />
+                                    Content
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

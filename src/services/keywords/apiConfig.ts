@@ -1,11 +1,4 @@
-
 // API configuration and keys
-
-// DataForSEO API configuration
-export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";
-export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf"; // Updated password
-export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_site/live";
-export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live";
 
 // SemRush API configuration
 export const SEMRUSH_API_KEY = ""; // Will be populated from ApiIntegrationManager
@@ -30,7 +23,6 @@ export const GEMINI_PROJECT_ID = "623108624631"; // Default project ID
 // Dynamic API key accessor - allows getting API keys that are set at runtime
 let dynamicApiKeys: Record<string, string> = {
   // Initialize with default keys that can be overridden
-  dataforseo: `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`,
   openai: "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",
   gemini: GEMINI_API_KEY
 };

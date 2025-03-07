@@ -4,11 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { DashboardTabContent } from "@/components/tabs/DashboardTabContent";
 import { ContentTabContent } from "@/components/tabs/ContentTabContent";
-import { DataForSEOTabContent } from "@/components/tabs/DataForSEOTabContent";
 import { HistoryTabContent } from "@/components/tabs/HistoryTabContent";
 import SettingsTabContent from "@/components/tabs/SettingsTabContent";
 import useDomainAnalysis from "@/hooks/useDomainAnalysis";
-import { useDataForSEO } from "@/hooks/useDataForSEO";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
 
@@ -31,14 +29,6 @@ const Index = () => {
     handleAddCompetitorFromTable,
     removeCompetitorFromAnalysis
   } = useDomainAnalysis();
-
-  // DataForSEO state from custom hook
-  const {
-    dataForSEOAnalysisData,
-    dataForSEODomain,
-    isDataForSEOLoading,
-    analyzeWithDataForSEO
-  } = useDataForSEO();
 
   // API Management state from custom hook
   const {
@@ -74,7 +64,6 @@ const Index = () => {
         <TabsList>
           <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="dataforseo">DataForSEO</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -107,15 +96,6 @@ const Index = () => {
             domain={mainDomain}
             allKeywords={keywordData.map(k => k.keyword)}
             onGoToAnalysis={goToAnalysisTab}
-          />
-        </TabsContent>
-        
-        <TabsContent value="dataforseo" className="space-y-6">
-          <DataForSEOTabContent 
-            analysisData={dataForSEOAnalysisData} 
-            domain={dataForSEODomain} 
-            isLoading={isDataForSEOLoading}
-            onAnalyze={analyzeWithDataForSEO}
           />
         </TabsContent>
         

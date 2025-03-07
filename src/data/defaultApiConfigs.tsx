@@ -41,16 +41,6 @@ export const getDefaultApiConfigs = (): ApiDetails[] => [
     isActive: true
   },
   {
-    id: "dataforseo",
-    name: "DataForSEO",
-    description: "Keyword research API (username:password format)",
-    icon: <Search className="h-5 w-5 text-amber-600" />,
-    iconName: "search",
-    apiKey: "armin@revologyanalytics.com:ab4016dc9302b8cf",
-    isConfigured: true,
-    isActive: true
-  },
-  {
     id: "googleads",
     name: "Google Ads",
     description: "Keyword and ad performance data",

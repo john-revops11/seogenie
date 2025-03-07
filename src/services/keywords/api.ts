@@ -6,13 +6,6 @@ import { ensureValidUrl } from './api/apiUtils';
 // Re-export all API functions and utilities
 export { ensureValidUrl } from './api/apiUtils';
 export { getApiKey } from './api/apiBase';
-export { 
-  fetchRelatedKeywords, 
-  fetchDataForSEOKeywords, 
-  createDataForSEOKeywordTask, 
-  getDataForSEOTaskResults,
-  fetchKeywordsForMultipleKeywords 
-} from './api/dataForSeoApi';
 export { fetchGoogleKeywordInsights } from './api/googleKeywordApi';
 export { fetchFallbackDomainKeywords } from './api/fallbackApi';
 
@@ -22,22 +15,10 @@ export { fetchFallbackDomainKeywords } from './api/fallbackApi';
  */
 export const fetchDomainKeywords = async (domainUrl: string): Promise<KeywordData[]> => {
   // Import functions from their respective modules
-  const { fetchDataForSEOKeywords } = await import('./api/dataForSeoApi');
   const { fetchGoogleKeywordInsights } = await import('./api/googleKeywordApi');
   const { fetchFallbackDomainKeywords } = await import('./api/fallbackApi');
   
-  // Try the DataForSEO API first
-  try {
-    const dataForSEOKeywords = await fetchDataForSEOKeywords(domainUrl);
-    if (dataForSEOKeywords.length > 0) {
-      console.log(`Successfully fetched ${dataForSEOKeywords.length} keywords from DataForSEO API`);
-      return dataForSEOKeywords;
-    }
-  } catch (error) {
-    console.error("Error with DataForSEO API, falling back to alternatives:", error);
-  }
-  
-  // Try the Google Keyword Insight API next
+  // Try the Google Keyword Insight API first
   try {
     const googleKeywords = await fetchGoogleKeywordInsights(domainUrl);
     if (googleKeywords.length > 0) {
