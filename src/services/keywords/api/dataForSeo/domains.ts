@@ -14,49 +14,70 @@ export const fetchDataForSEOKeywords = async (
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl} in location: ${locationCode}`);
     
-    // Call the Supabase Edge Function with the correct URL
-    const response = await fetch(`/functions/dataforseo`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        action: 'domain_keywords',
-        domain: domainUrl,
-        location_code: locationCode
-      })
-    });
+    const { encodedCredentials } = getDataForSeoCredentials();
     
+    // Prepare the request body
+    const requestBody = JSON.stringify([
+      {
+        location_code: locationCode, // Use the provided location code
+        language_code: "en",
+        target: domainUrl,
+        sort_by: "relevance"
+      }
+    ]);
+    
+    console.log("DataForSEO domain keywords request body:", requestBody);
+    
+    const response = await fetch(DATAFORSEO_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json"
+      },
+      body: requestBody
+    });
+
+    // Check for API errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`DataForSEO Edge Function error ${response.status}: ${errorText}`);
-      throw new Error(`Edge Function error ${response.status}: ${errorText.substring(0, 100)}`);
+      console.warn(`DataForSEO API error ${response.status}: ${errorText}`);
+      throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
+    }
+
+    // Parse response
+    const data = await parseApiResponse(response);
+    
+    // Debug the actual response structure
+    console.log("DataForSEO domain keywords response:", JSON.stringify(data).substring(0, 500) + "...");
+    
+    // Check if we have a valid response with tasks
+    if (!data.tasks || data.tasks.length === 0) {
+      console.warn(`DataForSEO API returned no tasks for ${domainUrl}`);
+      throw new Error("API returned no tasks");
     }
     
-    const data = await response.json();
+    const task = data.tasks[0];
     
-    if (!data.success) {
-      console.error(`DataForSEO Edge Function returned error: ${data.error}`);
-      throw new Error(`API error: ${data.error}`);
+    // Check if the task has result data
+    if (!task.result || task.result.length === 0) {
+      console.warn(`DataForSEO API task has no results for ${domainUrl}`);
+      throw new Error("API task has no results");
     }
     
-    if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-      console.warn(`DataForSEO Edge Function returned no keyword results for ${domainUrl}`);
-      throw new Error("No keywords found for this domain");
+    // Parse the keywords from the response
+    const keywords: KeywordData[] = [];
+    
+    // Process all keywords in the results
+    for (const item of task.result) {
+      if (item.keyword) {
+        keywords.push(convertToKeywordData(item));
+      }
     }
     
-    // Process the results
-    const keywords: KeywordData[] = data.results.map((item: any) => ({
-      keyword: item.keyword || '',
-      volume: item.search_volume || 0,
-      difficulty: Math.round((item.competition || 0.5) * 100),
-      cpc: item.cpc || 0,
-      competition: item.competition || 'medium',
-      position: item.position,
-      rankingUrl: null,
-      traffic: item.traffic || 0,
-      trafficCost: 0
-    }));
+    if (keywords.length === 0) {
+      console.warn(`DataForSEO API returned no valid keywords for ${domainUrl}`);
+      throw new Error("API returned no valid keywords");
+    }
     
     console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
     return keywords;

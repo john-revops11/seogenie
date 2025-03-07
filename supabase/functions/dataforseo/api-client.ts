@@ -1,91 +1,103 @@
 
 import { AUTH_HEADER } from "./config.ts";
 
-/**
- * Make a request to the DataForSEO API
- */
-export async function makeDataForSEORequest(
-  endpoint: string, 
-  method: string = 'POST', 
-  data: any = []
-) {
-  const baseUrl = "https://api.dataforseo.com";
-  const url = `${baseUrl}${endpoint}`;
+// Helper function to make DataForSEO API requests using fetch
+export async function makeDataForSEORequest(endpoint: string, method: string, data: any = null) {
+  const url = `https://api.dataforseo.com${endpoint}`;
   
-  console.log(`Making ${method} request to ${url}`);
-  console.log("Request data:", JSON.stringify(data).substring(0, 500) + "...");
-
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Authorization': `Basic ${AUTH_HEADER}`,
+      'Content-Type': 'application/json',
+    },
+  };
+  
+  if (data && method !== 'GET') {
+    options.body = JSON.stringify(data);
+  }
+  
   try {
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': `Basic ${AUTH_HEADER}`,
-        'Content-Type': 'application/json'
-      },
-      body: method !== 'GET' ? JSON.stringify(data) : undefined
-    });
-
+    console.log(`Making DataForSEO request to ${url}`);
+    if (data) {
+      console.log(`Request data: ${JSON.stringify(data).substring(0, 100)}...`);
+    }
+    
+    const response = await fetch(url, options);
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`DataForSEO API error ${response.status}: ${errorText}`);
-      throw new Error(`DataForSEO API error ${response.status}: ${errorText.substring(0, 100)}`);
-    }
-
-    const result = await response.json();
-    console.log(`DataForSEO response status code: ${result.status_code}`);
-    
-    if (result.status_code !== 20000) {
-      console.error(`DataForSEO API returned error: ${result.status_message}`);
-      throw new Error(`DataForSEO API error: ${result.status_message}`);
+      console.error(`DataForSEO API request failed with status ${response.status}: ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}: ${errorText.substring(0, 100)}`);
     }
     
-    return result;
-  } catch (error) {
-    console.error(`Error in DataForSEO API request:`, error);
-    throw error;
-  }
-}
-
-/**
- * Post a task to DataForSEO and get the task ID
- */
-export async function postTaskAndGetId(endpoint: string, data: any = []) {
-  try {
-    const result = await makeDataForSEORequest(endpoint, 'POST', data);
+    // Try to parse JSON response, handle empty or malformed responses
+    const text = await response.text();
     
-    if (!result.tasks || !result.tasks.length || !result.tasks[0].id) {
-      throw new Error('No task ID returned from DataForSEO API');
+    if (!text || text.trim() === '') {
+      console.error('DataForSEO returned empty response');
+      throw new Error('API returned empty response');
     }
     
-    return result.tasks[0].id;
-  } catch (error) {
-    console.error(`Error posting task to DataForSEO:`, error);
-    throw error;
-  }
-}
-
-/**
- * Wait for task results from DataForSEO
- */
-export async function waitForTaskResults(endpoint: string, taskId: string, maxAttempts = 5) {
-  let attempts = 0;
-  
-  while (attempts < maxAttempts) {
     try {
-      const result = await makeDataForSEORequest(`${endpoint}/${taskId}`, 'GET');
-      
-      if (result.tasks && result.tasks.length && result.tasks[0].result) {
-        return result.tasks[0].result;
-      }
-      
-      // Task is still running, wait before trying again
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      attempts++;
-    } catch (error) {
-      console.error(`Error checking task status:`, error);
-      throw error;
+      const json = JSON.parse(text);
+      console.log(`DataForSEO response success: ${json.status_code === 20000}`);
+      return json;
+    } catch (parseError) {
+      console.error(`Failed to parse DataForSEO response: ${text.substring(0, 100)}...`);
+      throw new Error(`Failed to parse API response: ${parseError.message}`);
     }
+  } catch (error) {
+    console.error(`Error making DataForSEO request to ${endpoint}:`, error);
+    throw error;
+  }
+}
+
+// Helper function to post a task and get the task ID
+export async function postTaskAndGetId(endpoint: string, data: any) {
+  const response = await makeDataForSEORequest(endpoint, 'POST', data);
+  
+  if (response?.tasks?.[0]?.id) {
+    return response.tasks[0].id;
   }
   
-  throw new Error(`Task results not available after ${maxAttempts} attempts`);
+  // For live endpoints, there might not be a task ID
+  if (response?.tasks?.[0]?.status_code === 20000) {
+    return "live_endpoint"; // Placeholder for live endpoints
+  }
+  
+  if (response?.tasks?.[0]?.status_message) {
+    throw new Error(response.tasks[0].status_message);
+  }
+  
+  throw new Error('Failed to create task');
+}
+
+// Helper function to wait for a task to complete and get results
+export async function waitForTaskResults(endpoint: string, taskId: string, maxAttempts = 5, delay = 2000) {
+  // For live endpoints, we don't need to wait
+  if (taskId === "live_endpoint") {
+    return {};
+  }
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const response = await makeDataForSEORequest(`${endpoint}/${taskId}`, 'GET');
+    
+    if (response?.tasks?.[0]?.result) {
+      return response.tasks[0].result;
+    }
+    
+    if (response?.tasks?.[0]?.status_message?.includes('in progress')) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+    
+    if (response?.tasks?.[0]?.status_message) {
+      throw new Error(response.tasks[0].status_message);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  
+  throw new Error('Task did not complete in allowed time');
 }

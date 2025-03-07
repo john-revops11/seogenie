@@ -17,13 +17,6 @@ export interface KeywordData {
   rankingUrl?: string | null;
   competitorRankings?: Record<string, number>;
   competitorUrls?: Record<string, string>;
-  
-  // Add missing properties from the error - traffic and trafficCost
-  traffic?: number;
-  trafficCost?: number;
-  
-  // Track the source of the keyword data
-  dataSource?: 'api' | 'sample' | 'mixed' | 'unknown';
 }
 
 export interface CompetitorData {

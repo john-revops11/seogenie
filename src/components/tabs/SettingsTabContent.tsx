@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import ApiIntegrationManager from "@/components/ApiIntegrationManager";
 
 interface SettingsTabContentProps {
@@ -28,37 +27,6 @@ export const SettingsTabContent = ({
   setNewApiKey,
   handleAddNewApi
 }: SettingsTabContentProps) => {
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [enableWebhook, setEnableWebhook] = useState(false);
-  const [brandVoice, setBrandVoice] = useState("");
-  
-  // Load saved settings on component mount
-  useEffect(() => {
-    const savedSettings = localStorage.getItem('revology-settings');
-    if (savedSettings) {
-      try {
-        const settings = JSON.parse(savedSettings);
-        setWebhookUrl(settings.webhookUrl || "");
-        setEnableWebhook(settings.enableWebhook || false);
-        setBrandVoice(settings.brandVoice || "");
-      } catch (error) {
-        console.error("Error loading saved settings:", error);
-      }
-    }
-  }, []);
-  
-  const handleSaveSettings = () => {
-    // Save settings to localStorage
-    const settings = {
-      webhookUrl,
-      enableWebhook,
-      brandVoice
-    };
-    
-    localStorage.setItem('revology-settings', JSON.stringify(settings));
-    toast.success("Settings saved successfully");
-  };
-  
   return (
     <Card>
       <CardHeader className="border-b border-border">
@@ -85,23 +53,12 @@ export const SettingsTabContent = ({
         
         <div className="space-y-3">
           <Label htmlFor="webhook-url">Webhook URL</Label>
-          <Input 
-            id="webhook-url" 
-            placeholder="https://your-webhook-endpoint.com/seo-updates" 
-            className="transition-all"
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-          />
+          <Input id="webhook-url" placeholder="https://your-webhook-endpoint.com/seo-updates" className="transition-all" />
           <p className="text-sm text-muted-foreground">Receive notifications when analysis is complete</p>
           
           <div className="pt-2">
             <Label className="text-sm font-normal flex items-center gap-2">
-              <input 
-                type="checkbox" 
-                className="rounded text-revology"
-                checked={enableWebhook}
-                onChange={(e) => setEnableWebhook(e.target.checked)}
-              />
+              <input type="checkbox" className="rounded text-revology" />
               Enable webhook notifications
             </Label>
           </div>
@@ -109,21 +66,28 @@ export const SettingsTabContent = ({
         
         <div className="space-y-3">
           <Label htmlFor="brand-voice">Brand Voice</Label>
-          <Textarea 
-            id="brand-voice" 
-            placeholder="Describe your brand's tone and voice for AI-generated content" 
-            className="transition-all"
-            value={brandVoice}
-            onChange={(e) => setBrandVoice(e.target.value)}
-          />
+          <Textarea id="brand-voice" placeholder="Describe your brand's tone and voice for AI-generated content" className="transition-all" />
         </div>
         
-        <Button 
-          className="transition-all bg-revology hover:bg-revology-dark"
-          onClick={handleSaveSettings}
-        >
-          Save Settings
-        </Button>
+        <div className="space-y-3">
+          <Label>Content Preferences</Label>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
+              Include meta descriptions
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
+              Focus on H1/H2 tags
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
+              Use bullet points
+            </Badge>
+            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
+              Add internal links
+            </Badge>
+          </div>
+        </div>
+        
+        <Button className="transition-all bg-revology hover:bg-revology-dark">Save Settings</Button>
       </CardContent>
     </Card>
   );

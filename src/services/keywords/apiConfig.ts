@@ -7,10 +7,8 @@ export const SEMRUSH_API_URL = "https://api.semrush.com/analytics/v1/";
 // DataForSEO API configuration
 export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";
 export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf";
-
-// Updated DataForSEO API URLs to correct endpoints
-export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/dataforseo_labs/domain_keywords/live";
-export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live";
+export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/organic_search_volume";
+export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords";
 
 // Keep old API configurations for backward compatibility and fallback
 export const API_HOST = "keyword-tool.p.rapidapi.com";
