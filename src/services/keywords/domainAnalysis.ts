@@ -1,7 +1,7 @@
 
 import { toast } from "sonner";
 import { KeywordData } from './types';
-import { fetchDomainKeywords, ensureValidUrl } from './api';
+import { ensureValidUrl } from './api';
 import { processCompetitorData } from './utils/competitorDataProcessor';
 import { mergeKeywordData } from './utils/keywordDataMerger';
 
@@ -58,7 +58,7 @@ export const analyzeDomains = async (
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
-      const result = await processCompetitorData(domain, true, locationCode);
+      const result = await processCompetitorData(domain, locationCode);
       competitorResults.push(result);
     }
     

@@ -69,26 +69,6 @@ serve(async (req) => {
         result = await getCompetitorDomains(domain, location_code);
         break;
         
-      case 'full_analysis':
-        console.log(`Starting full analysis for domain ${domain} with keywords:`, keywords);
-        // Get all data in parallel for efficiency
-        const [serpData, volumeData, trafficData, competitorsData] = await Promise.all([
-          getDomainSERP(domain, keywords, location_code),
-          getKeywordVolume(keywords, location_code),
-          getDomainTraffic(domain, location_code),
-          getCompetitorDomains(domain, location_code),
-        ]);
-        
-        result = {
-          serp: serpData,
-          volume: volumeData,
-          traffic: trafficData,
-          competitors: competitorsData,
-        };
-        
-        console.log("Full analysis completed successfully");
-        break;
-        
       default:
         throw new Error(`Unknown action: ${action}`);
     }

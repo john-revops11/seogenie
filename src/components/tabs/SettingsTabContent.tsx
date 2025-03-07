@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import ApiIntegrationManager from "@/components/ApiIntegrationManager";
 
@@ -31,6 +31,21 @@ export const SettingsTabContent = ({
   const [webhookUrl, setWebhookUrl] = useState("");
   const [enableWebhook, setEnableWebhook] = useState(false);
   const [brandVoice, setBrandVoice] = useState("");
+  
+  // Load saved settings on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('revology-settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        setWebhookUrl(settings.webhookUrl || "");
+        setEnableWebhook(settings.enableWebhook || false);
+        setBrandVoice(settings.brandVoice || "");
+      } catch (error) {
+        console.error("Error loading saved settings:", error);
+      }
+    }
+  }, []);
   
   const handleSaveSettings = () => {
     // Save settings to localStorage
