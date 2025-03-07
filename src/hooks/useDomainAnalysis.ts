@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { analyzeDomains } from "@/services/keywordService";
@@ -196,7 +195,8 @@ export function useDomainAnalysis() {
           toast.success("Analysis complete! View your results in the dashboard.");
         }, 500);
       } else {
-        throw new Error(result.error || "Analysis failed");
+        const errorMessage = result.error || "Analysis failed with unknown error";
+        throw new Error(errorMessage);
       }
     } catch (error) {
       clearInterval(interval);
