@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { KeywordData } from "@/services/keywordService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,6 @@ import CompetitorManagement from "@/components/keyword-table/CompetitorManagemen
 import SeoStrategyRunner from "@/components/keyword-table/SeoStrategyRunner";
 import { Table } from "@/components/ui/table";
 import { categorizeKeywordIntent } from "@/components/keyword-gaps/KeywordGapUtils";
-import { extractDomainName } from "@/components/keyword-table/utils";
 
 interface KeywordTableProps {
   domain: string;
