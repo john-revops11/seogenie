@@ -63,7 +63,7 @@ export async function getKeywordVolume(keywords: string[], location_code = 2840)
   }];
   
   try {
-    // Use live endpoint for immediate results
+    // Use correct endpoint for keyword volume data
     const taskId = await postTaskAndGetId('/v3/keywords_data/google/search_volume/live', tasks);
     
     // For live endpoints, we get results immediately
@@ -81,6 +81,40 @@ export async function getKeywordVolume(keywords: string[], location_code = 2840)
     };
   } catch (error) {
     console.error('Error getting keyword volume:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+// Function to get domain keywords using DataForSEO Labs API
+export async function getDomainKeywords(domain: string, location_code = 2840) {
+  const task = [{
+    target: domain.startsWith('http') ? domain : `https://${domain}`,
+    location_code,
+    language_code: "en",
+    limit: 100,
+  }];
+  
+  try {
+    // Use the correct endpoint for domain keywords
+    const result = await makeDataForSEORequest('/v3/dataforseo_labs/domain_keywords/live', 'POST', task);
+    const keywords = result?.tasks?.[0]?.result?.[0]?.items || [];
+    
+    return {
+      success: true,
+      results: keywords.map((item: any) => ({
+        keyword: item.keyword || "",
+        search_volume: item.search_volume || 0,
+        position: item.position || null,
+        cpc: item.cpc || 0,
+        traffic: item.traffic || 0,
+        competition: item.competition_index || 0,
+      })),
+    };
+  } catch (error) {
+    console.error('Error getting domain keywords:', error);
     return {
       success: false,
       error: error.message,

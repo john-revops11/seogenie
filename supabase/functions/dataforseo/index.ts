@@ -5,7 +5,8 @@ import {
   getDomainSERP,
   getKeywordVolume,
   getDomainTraffic,
-  getCompetitorDomains
+  getCompetitorDomains,
+  getDomainKeywords
 } from "./services.ts";
 
 serve(async (req) => {
@@ -67,6 +68,10 @@ serve(async (req) => {
         
       case 'competitor_domains':
         result = await getCompetitorDomains(domain, location_code);
+        break;
+        
+      case 'domain_keywords':
+        result = await getDomainKeywords(domain, location_code);
         break;
         
       default:

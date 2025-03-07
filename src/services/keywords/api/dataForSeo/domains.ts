@@ -16,13 +16,14 @@ export const fetchDataForSEOKeywords = async (
     
     const { encodedCredentials } = getDataForSeoCredentials();
     
-    // Prepare the request body
+    // Prepare the request body for DataForSEO Labs domain_keywords endpoint
+    // This is the correct format for the DataForSEO Labs endpoint
     const requestBody = JSON.stringify([
       {
+        target: domainUrl,
         location_code: locationCode, // Use the provided location code
         language_code: "en",
-        target: domainUrl,
-        sort_by: "relevance"
+        limit: 100,
       }
     ]);
     
@@ -64,13 +65,25 @@ export const fetchDataForSEOKeywords = async (
       throw new Error("API task has no results");
     }
     
-    // Parse the keywords from the response
+    // Process the keywords from the response - the structure is different in the DataForSEO Labs API
     const keywords: KeywordData[] = [];
     
-    // Process all keywords in the results
-    for (const item of task.result) {
-      if (item.keyword) {
-        keywords.push(convertToKeywordData(item));
+    // Extract data from the items array in the result
+    if (task.result[0] && task.result[0].items) {
+      for (const item of task.result[0].items) {
+        if (item.keyword) {
+          keywords.push({
+            keyword: item.keyword,
+            volume: item.search_volume || 0,
+            difficulty: item.keyword_difficulty || 0,
+            cpc: item.cpc || 0,
+            competition: item.competition_index || 0,
+            rankingUrl: `https://${domainUrl}`, // Use domain as fallback
+            position: item.position || null,
+            traffic: item.traffic || 0,
+            trafficCost: item.traffic_cost || 0
+          });
+        }
       }
     }
     
