@@ -47,12 +47,17 @@ export function useDomainAnalysis() {
     }
   }, [mainDomain, competitorDomains, keywordData, analysisComplete]);
 
-  const addCompetitorDomain = () => {
+  const onMainDomainChange = (value: string) => {
+    if (isAnalyzing) return;
+    setMainDomain(value);
+  };
+
+  const onAddCompetitorDomain = () => {
     if (isAnalyzing) return;
     setCompetitorDomains([...competitorDomains, ""]);
   };
 
-  const removeCompetitorDomain = (index: number) => {
+  const onRemoveCompetitorDomain = (index: number) => {
     if (isAnalyzing) return;
     const newDomains = [...competitorDomains];
     newDomains.splice(index, 1);
@@ -90,7 +95,7 @@ export function useDomainAnalysis() {
     toast.success(`Removed ${competitorToRemove} from competitors`);
   };
 
-  const updateCompetitorDomain = (index: number, value: string) => {
+  const onUpdateCompetitorDomain = (index: number, value: string) => {
     if (isAnalyzing) return;
     const newDomains = [...competitorDomains];
     newDomains[index] = value;
@@ -232,15 +237,16 @@ export function useDomainAnalysis() {
     analysisError,
     
     setMainDomain,
-    setCompetitorDomains,
+    setAnalysisError,
     
-    addCompetitorDomain,
-    removeCompetitorDomain,
-    removeCompetitorFromAnalysis,
-    updateCompetitorDomain,
+    onMainDomainChange,
+    onAddCompetitorDomain,
+    onRemoveCompetitorDomain,
+    onUpdateCompetitorDomain,
     
     handleReset,
     handleAnalyze,
-    handleAddCompetitorFromTable
+    handleAddCompetitorFromTable,
+    removeCompetitorFromAnalysis
   };
 }

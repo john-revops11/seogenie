@@ -69,4 +69,7 @@ url = ""
 # Fixed the functions section format
 [functions]
 enabled = true
+
+[functions.serve]
 port = 54328
+
