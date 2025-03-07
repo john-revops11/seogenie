@@ -38,11 +38,17 @@ const ContentBlockComponent: React.FC<ContentBlockProps> = ({
             initialContent={block.content}
             onUpdate={(html) => onSave(block.id, html)}
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <Button
               size="sm"
               variant="outline"
               onClick={() => onCancelEdit(block.id)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => onSave(block.id, block.content)}
             >
               Done
             </Button>
@@ -51,15 +57,17 @@ const ContentBlockComponent: React.FC<ContentBlockProps> = ({
       );
     }
     
+    // Add proper CSS classes based on block type
     return (
       <div 
         dangerouslySetInnerHTML={{ __html: block.content }} 
         className={
-          block.type === 'heading1' ? 'text-2xl font-bold mt-4 mb-2' :
-          block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2' :
-          block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2' :
-          block.type === 'list' ? 'mt-2 mb-2 pl-5 space-y-1 list-content' :
-          'mt-2 mb-2'
+          block.type === 'heading1' ? 'text-2xl font-bold mt-6 mb-3' :
+          block.type === 'heading2' ? 'text-xl font-bold mt-5 mb-2' :
+          block.type === 'heading3' ? 'text-lg font-bold mt-4 mb-2' :
+          block.type === 'list' ? 'mt-3 mb-3 pl-5 list-disc' :
+          block.type === 'orderedList' ? 'mt-3 mb-3 pl-5 list-decimal' :
+          'mt-3 mb-3 leading-relaxed'
         }
       />
     );

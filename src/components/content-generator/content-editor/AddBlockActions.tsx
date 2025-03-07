@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, List, ListOrdered, FileUp } from "lucide-react";
+import { Plus, List, ListOrdered, FileUp, Heading2, Heading3, Type } from "lucide-react";
 import { ContentBlock } from "@/services/keywords/types";
 import { toast } from "sonner";
 
@@ -24,21 +24,21 @@ const AddBlockActions: React.FC<AddBlockActionsProps> = ({
           size="sm"
           onClick={() => onAddBlock(lastBlockId, 'heading2')}
         >
-          <Plus className="w-4 h-4 mr-1" /> H2 Heading
+          <Heading2 className="w-4 h-4 mr-1" /> H2 Heading
         </Button>
         <Button 
           variant="outline" 
           size="sm"
           onClick={() => onAddBlock(lastBlockId, 'heading3')}
         >
-          <Plus className="w-4 h-4 mr-1" /> H3 Heading
+          <Heading3 className="w-4 h-4 mr-1" /> H3 Heading
         </Button>
         <Button 
           variant="outline" 
           size="sm"
           onClick={() => onAddBlock(lastBlockId, 'paragraph')}
         >
-          <Plus className="w-4 h-4 mr-1" /> Paragraph
+          <Type className="w-4 h-4 mr-1" /> Paragraph
         </Button>
         <Button 
           variant="outline" 

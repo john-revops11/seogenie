@@ -78,6 +78,24 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <Button 
         size="icon" 
         variant="ghost" 
+        onClick={() => onAddBlockAfter(block.id, 'list')}
+        title="Add bullet list"
+      >
+        <List className="w-4 h-4" />
+      </Button>
+      
+      <Button 
+        size="icon" 
+        variant="ghost" 
+        onClick={() => onAddBlockAfter(block.id, 'orderedList')}
+        title="Add numbered list"
+      >
+        <ListOrdered className="w-4 h-4" />
+      </Button>
+      
+      <Button 
+        size="icon" 
+        variant="ghost" 
         className="text-destructive" 
         onClick={() => onDelete(block.id)}
         title="Delete"
