@@ -18,9 +18,10 @@ export function useDataForSEO() {
       setIsDataForSEOLoading(true);
       setDataForSEODomain(domain);
       
-      // Use the Supabase edge function endpoint instead of /api/
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const endpoint = `${supabaseUrl}/functions/v1/dataforseo`;
+      // Construct the proper Supabase Edge Function URL
+      // Format should be: https://<project-id>.supabase.co/functions/v1/dataforseo
+      const supabaseProjectId = 'rgtptfhlkplnahzehpci';
+      const endpoint = `https://${supabaseProjectId}.supabase.co/functions/v1/dataforseo`;
       
       console.log(`Calling DataForSEO API endpoint: ${endpoint}`);
       

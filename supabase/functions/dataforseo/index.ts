@@ -2,9 +2,9 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
-// DataForSEO credentials
-const DFS_USERNAME = "armin@revologyanalytics.com";
-const DFS_PASSWORD = "ab4016dc9302b8cf";
+// DataForSEO credentials - these should be moved to environment variables in production
+const DFS_USERNAME = Deno.env.get("DATAFORSEO_USERNAME") || "armin@revologyanalytics.com";
+const DFS_PASSWORD = Deno.env.get("DATAFORSEO_PASSWORD") || "ab4016dc9302b8cf";
 const AUTH_HEADER = encode(`${DFS_USERNAME}:${DFS_PASSWORD}`);
 
 // CORS headers for cross-origin requests
@@ -13,7 +13,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to make DataForSEO API requests using fetch (Deno's native HTTP client)
+// Helper function to make DataForSEO API requests using fetch
 async function makeDataForSEORequest(endpoint: string, method: string, data: any = null) {
   const url = `https://api.dataforseo.com${endpoint}`;
   
@@ -30,6 +30,7 @@ async function makeDataForSEORequest(endpoint: string, method: string, data: any
   }
   
   try {
+    console.log(`Making DataForSEO request to ${url}`);
     const response = await fetch(url, options);
     
     if (!response.ok) {
@@ -265,10 +266,13 @@ serve(async (req) => {
   }
   
   try {
+    console.log("DataForSEO Edge Function received a request");
+    
     // Parse request body, with error handling
     let body;
     try {
       body = await req.json();
+      console.log("Request body:", JSON.stringify(body));
     } catch (error) {
       console.error('Error parsing request body:', error);
       return new Response(
@@ -309,6 +313,7 @@ serve(async (req) => {
         break;
         
       case 'full_analysis':
+        console.log(`Starting full analysis for domain ${domain} with keywords:`, keywords);
         // Get all data in parallel for efficiency
         const [serpData, volumeData, trafficData, competitorsData] = await Promise.all([
           getDomainSERP(domain, keywords, location_code),
@@ -323,6 +328,8 @@ serve(async (req) => {
           traffic: trafficData,
           competitors: competitorsData,
         };
+        
+        console.log("Full analysis completed successfully");
         break;
         
       default:
