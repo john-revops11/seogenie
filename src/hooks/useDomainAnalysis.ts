@@ -196,13 +196,14 @@ export function useDomainAnalysis() {
           toast.success("Analysis complete! View your results in the dashboard.");
         }, 500);
       } else {
-        throw new Error("Analysis failed");
+        throw new Error(result.error || "Analysis failed");
       }
     } catch (error) {
       clearInterval(interval);
       setIsAnalyzing(false);
       
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Analysis error:", errorMessage);
       setAnalysisError(errorMessage);
       toast.error(`Analysis failed: ${errorMessage}`);
       setProgress(0);

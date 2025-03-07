@@ -74,7 +74,18 @@ export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<Keyw
       throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
-    const data = await response.json();
+    // Parse response with better error handling
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error("Empty response from API");
+      }
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Failed to parse DataForSEO API response:", error);
+      throw new Error(`Failed to parse API response: ${error instanceof Error ? error.message : 'Unknown parsing error'}`);
+    }
     
     // Debug the actual response structure
     console.log("DataForSEO keywords response:", JSON.stringify(data).substring(0, 500) + "...");
@@ -212,7 +223,18 @@ export const fetchDataForSEOKeywords = async (
       throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
-    const data = await response.json();
+    // Parse response with better error handling
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error("Empty response from API");
+      }
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Failed to parse DataForSEO API response:", error);
+      throw new Error(`Failed to parse API response: ${error instanceof Error ? error.message : 'Unknown parsing error'}`);
+    }
     
     // Debug the actual response structure
     console.log("DataForSEO domain keywords response:", JSON.stringify(data).substring(0, 500) + "...");
@@ -324,7 +346,18 @@ export const createDataForSEOKeywordTask = async (
       throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
-    const data = await response.json();
+    // Parse response with better error handling
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error("Empty response from API");
+      }
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Failed to parse DataForSEO Task API response:", error);
+      throw new Error(`Failed to parse API response: ${error instanceof Error ? error.message : 'Unknown parsing error'}`);
+    }
     
     // Debug the actual response structure
     console.log("DataForSEO task response:", JSON.stringify(data).substring(0, 500) + "...");
@@ -394,7 +427,18 @@ export const getDataForSEOTaskResults = async (taskId: string): Promise<KeywordD
       throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
-    const data = await response.json();
+    // Parse response with better error handling
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error("Empty response from API");
+      }
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Failed to parse DataForSEO Task Get API response:", error);
+      throw new Error(`Failed to parse API response: ${error instanceof Error ? error.message : 'Unknown parsing error'}`);
+    }
     
     // Debug the actual response structure
     console.log("DataForSEO task results:", JSON.stringify(data).substring(0, 500) + "...");
@@ -523,7 +567,18 @@ export const fetchKeywordsForMultipleKeywords = async (
       throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
-    const data = await response.json();
+    // Parse response with better error handling
+    let data;
+    try {
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error("Empty response from API");
+      }
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Failed to parse DataForSEO API response:", error);
+      throw new Error(`Failed to parse API response: ${error instanceof Error ? error.message : 'Unknown parsing error'}`);
+    }
     
     // Debug the actual response structure
     console.log("DataForSEO keywords response status_code:", data.status_code);

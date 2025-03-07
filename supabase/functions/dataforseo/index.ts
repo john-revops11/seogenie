@@ -33,10 +33,25 @@ async function makeDataForSEORequest(endpoint: string, method: string, data: any
     const response = await fetch(url, options);
     
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
+      const errorText = await response.text();
+      console.error(`DataForSEO API request failed with status ${response.status}: ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}: ${errorText.substring(0, 100)}`);
     }
     
-    return await response.json();
+    // Try to parse JSON response, handle empty or malformed responses
+    const text = await response.text();
+    
+    if (!text || text.trim() === '') {
+      console.error('DataForSEO returned empty response');
+      throw new Error('API returned empty response');
+    }
+    
+    try {
+      return JSON.parse(text);
+    } catch (parseError) {
+      console.error(`Failed to parse DataForSEO response: ${text.substring(0, 100)}...`);
+      throw new Error(`Failed to parse API response: ${parseError.message}`);
+    }
   } catch (error) {
     console.error(`Error making DataForSEO request to ${endpoint}:`, error);
     throw error;
@@ -250,7 +265,18 @@ serve(async (req) => {
   }
   
   try {
-    const body = await req.json();
+    // Parse request body, with error handling
+    let body;
+    try {
+      body = await req.json();
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const { action, domain, keywords, location_code = 2840 } = body;
     
     if (!domain) {
@@ -311,7 +337,7 @@ serve(async (req) => {
     console.error('Error processing request:', error);
     
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error.message || 'Unknown error' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
