@@ -14,8 +14,8 @@ export const fetchDataForSEOKeywords = async (
   try {
     console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl} in location: ${locationCode}`);
     
-    // Call the Supabase Edge Function
-    const response = await fetch(`${window.location.origin}/functions/dataforseo`, {
+    // Call the Supabase Edge Function with the correct URL
+    const response = await fetch(`/functions/dataforseo`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

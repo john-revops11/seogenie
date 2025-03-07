@@ -22,7 +22,7 @@ serve(async (req) => {
   if (req.method !== 'POST') {
     console.error("Method not allowed:", req.method);
     return new Response(
-      JSON.stringify({ error: 'Only POST requests are supported' }),
+      JSON.stringify({ success: false, error: 'Only POST requests are supported' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
