@@ -4,6 +4,12 @@
 export const SEMRUSH_API_KEY = ""; // Will be populated from ApiIntegrationManager
 export const SEMRUSH_API_URL = "https://api.semrush.com/analytics/v1/";
 
+// DataForSEO API configuration
+export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";
+export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf";
+export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/organic_search_volume";
+export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords";
+
 // Keep old API configurations for backward compatibility and fallback
 export const API_HOST = "keyword-tool.p.rapidapi.com";
 export const API_KEY = "795e7799e2116908b7e00f6992fb812d1da70905"; // Updated API key

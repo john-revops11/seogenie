@@ -1,5 +1,5 @@
 
-import { DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD } from '../apiConfig';
+import { setApiKey, getApiKey as getDynamicApiKey } from '../apiConfig';
 
 // Helper function to get API credentials from dynamic API keys
 export function getApiKey(apiName: string): string | null {
@@ -7,17 +7,11 @@ export function getApiKey(apiName: string): string | null {
   const dynamicKey = getApiKeyFromDynamic(apiName);
   if (dynamicKey) return dynamicKey;
   
-  // Fall back to the hardcoded credentials in apiConfig
-  if (apiName.toLowerCase() === 'dataforseo') {
-    return `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`;
-  }
-  
+  // If no specific key was found, return null
   return null;
 }
 
-// Helper to retrieve from dynamic API keys (implemented elsewhere)
+// Helper to retrieve from dynamic API keys
 function getApiKeyFromDynamic(apiName: string): string | null {
-  // This would typically integrate with apiConfig.getApiKey
-  // For now, let's just return null to use the fallback
-  return null;
+  return getDynamicApiKey(apiName) || null;
 }

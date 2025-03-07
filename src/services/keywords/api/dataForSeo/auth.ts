@@ -9,17 +9,13 @@ export const getDataForSeoCredentials = (): { encodedCredentials: string, login:
   // Get API credentials from dynamic API keys
   const dataForSeoCredentials = getApiKey("dataforseo");
   
-  if (!dataForSeoCredentials) {
-    throw new Error("DataForSEO API credentials not configured");
-  }
-  
   let login, password;
   
-  // Check if credentials are in username:password format
-  if (dataForSeoCredentials.includes(':')) {
+  if (dataForSeoCredentials && dataForSeoCredentials.includes(':')) {
+    // If credentials are in username:password format
     [login, password] = dataForSeoCredentials.split(':');
   } else {
-    // Fall back to default credentials if format is incorrect
+    // Fall back to default credentials
     login = DATAFORSEO_LOGIN;
     password = DATAFORSEO_PASSWORD;
   }
