@@ -90,17 +90,15 @@ export const generateContentOutline = async (
   keywords: string[],
   contentType: string
 ): Promise<ContentOutline> => {
-  // Logic to generate an outline based on the title and keywords
-  // This could use RAG to find related topics for better outlines
-  
+  // Base structure for SEO-optimized article
   const headings = [
     "Introduction",
     `What is ${title.split(' ').slice(0, 3).join(' ')}?`,
-    `Benefits of ${title.split(' ').slice(0, 3).join(' ')}`,
-    "Key Strategies",
-    "Implementation Steps",
-    "Case Studies",
-    "Best Practices",
+    `Key Benefits of ${title.split(' ').slice(0, 3).join(' ')}`,
+    "Strategic Implementation Approaches",
+    "Common Challenges and Solutions",
+    "Case Studies and Real-World Examples",
+    "Best Practices and Recommendations",
     "Conclusion"
   ];
   
@@ -110,7 +108,7 @@ export const generateContentOutline = async (
       answer: "This will be generated with AI"
     },
     {
-      question: `How can I implement ${title.split(' ').slice(0, 3).join(' ')} in my business?`,
+      question: `How can I implement ${title.split(' ').slice(0, 3).join(' ')} effectively?`,
       answer: "This will be generated with AI"
     },
     {
@@ -135,16 +133,14 @@ export const enhanceWithRAG = async (
   title: string, 
   keywords: string[]
 ): Promise<string> => {
-  // For now, just returning a placeholder implementation
-  // In a real implementation, this would use RAG to enhance the content
   const combinedQuery = `${title} ${heading} ${keywords.join(' ')}`;
   
   try {
     // Check if Pinecone is configured
     if (!isPineconeConfigured()) {
       console.log("Pinecone not configured for RAG enhancement");
-      // Return null to allow fallback to standard generation
-      return `Content for ${heading} (RAG not available)`;
+      // Return original prompt to allow fallback to standard generation
+      return prompt;
     }
     
     // Retrieve documents from Pinecone (or any vector database)
@@ -160,12 +156,20 @@ export const enhanceWithRAG = async (
       .map(doc => doc.metadata.text || "")
       .join("\n\n");
     
-    // Enhanced prompt with the retrieved context
+    // Enhanced prompt with the retrieved context and specific SEO structure guidelines
     const enhancedPrompt = `
       ${prompt}
       
-      Use the following context to enhance your response:
+      Use the following retrieved information to enhance your response with factual, up-to-date content:
       ${context}
+      
+      IMPORTANT GUIDELINES:
+      1. Create concise, well-structured content organized in short paragraphs (3-4 sentences max)
+      2. Naturally incorporate these keywords: ${keywords.join(', ')}
+      3. Ensure content flows logically and maintains readability
+      4. Support claims with factual information from the retrieved context
+      5. Format content appropriately for the web (short paragraphs, proper lists, etc.)
+      6. Do not mention that you're using retrieved information
     `;
     
     return enhancedPrompt;
@@ -174,3 +178,4 @@ export const enhanceWithRAG = async (
     return prompt; // Return the original prompt if RAG enhancement fails
   }
 };
+

@@ -21,23 +21,27 @@ export const generateStandardContent = async (
   ) => Promise<GeneratedContent>
 ): Promise<GeneratedContent> => {
   console.log("generateStandardContent: Starting generation for", title);
+  
+  // Generate meta description that includes primary keywords
   const metaDescription = `${title} - Comprehensive guide covering ${keywords.slice(0, 3).join(', ')}`;
   
-  // Initialize empty content blocks
+  // Initialize content blocks with a structured approach
   const initialBlocks: ContentBlock[] = [
+    // H1 Title
     {
-      id: `block-title-${Date.now()}`,
+      id: `block-h1-${Date.now()}`,
       type: 'heading1',
       content: `<h1>${title}</h1>`
     },
+    // Introduction paragraph
     {
       id: `block-intro-${Date.now()}`,
       type: 'paragraph',
-      content: `<p>This is an introduction paragraph that will be generated with AI.</p>`
+      content: `<p>This introduction will provide context, purpose, and key takeaways of the article in 50-100 words.</p>`
     }
   ];
   
-  // Add heading blocks based on the outline
+  // Add H2 sections based on the outline
   outline.headings.forEach((heading, index) => {
     initialBlocks.push({
       id: `block-h2-${index}-${Date.now()}`,
@@ -49,30 +53,83 @@ export const generateStandardContent = async (
     initialBlocks.push({
       id: `block-p-${index}-${Date.now()}`,
       type: 'paragraph',
-      content: `<p>Content for the "${heading}" section will be generated with AI.</p>`
-    });
-  });
-  
-  // Add FAQ section if requested in preferences
-  if (preferences.includes('Add FAQ section')) {
-    initialBlocks.push({
-      id: `block-faq-heading-${Date.now()}`,
-      type: 'heading2',
-      content: `<h2>Frequently Asked Questions</h2>`
+      content: `<p>Content for the "${heading}" section will be generated with AI, using structured paragraphs (3-4 sentences max).</p>`
     });
     
-    outline.faqs.forEach((faq, index) => {
+    // For some sections, add subheadings
+    if (index % 2 === 0 && index < outline.headings.length - 1) {
       initialBlocks.push({
-        id: `block-faq-q-${index}-${Date.now()}`,
+        id: `block-h3-${index}-${Date.now()}`,
         type: 'heading3',
-        content: `<h3>${faq.question}</h3>`
+        content: `<h3>Key aspects of ${heading}</h3>`
       });
       
       initialBlocks.push({
-        id: `block-faq-a-${index}-${Date.now()}`,
+        id: `block-p-sub-${index}-${Date.now()}`,
         type: 'paragraph',
-        content: `<p>${faq.answer}</p>`
+        content: `<p>This subsection will explore key aspects in detail.</p>`
       });
+      
+      // Add a list placeholder for appropriate sections
+      initialBlocks.push({
+        id: `block-list-${index}-${Date.now()}`,
+        type: 'list',
+        content: `<ul>
+          <li>Key point 1 related to this subsection</li>
+          <li>Key point 2 related to this subsection</li>
+          <li>Key point 3 related to this subsection</li>
+        </ul>`
+      });
+    }
+  });
+  
+  // Ensure we have a case study section
+  const hasCaseStudySection = outline.headings.some(heading => 
+    heading.toLowerCase().includes('case') || 
+    heading.toLowerCase().includes('example'));
+  
+  if (!hasCaseStudySection) {
+    initialBlocks.push({
+      id: `block-case-study-heading-${Date.now()}`,
+      type: 'heading2',
+      content: `<h2>Case Studies and Real-World Examples</h2>`
+    });
+    
+    initialBlocks.push({
+      id: `block-case-study-${Date.now()}`,
+      type: 'paragraph',
+      content: `<p>This section will include at least one clearly formatted, relevant case study demonstrating the topic's real-world application and effectiveness.</p>`
+    });
+  }
+  
+  // Ensure we have a best practices section
+  const hasBestPracticesSection = outline.headings.some(heading => 
+    heading.toLowerCase().includes('best practice') || 
+    heading.toLowerCase().includes('tips') ||
+    heading.toLowerCase().includes('recommendation'));
+  
+  if (!hasBestPracticesSection) {
+    initialBlocks.push({
+      id: `block-best-practices-heading-${Date.now()}`,
+      type: 'heading2',
+      content: `<h2>Best Practices</h2>`
+    });
+    
+    initialBlocks.push({
+      id: `block-best-practices-${Date.now()}`,
+      type: 'paragraph',
+      content: `<p>Follow these best practices to maximize results:</p>`
+    });
+    
+    initialBlocks.push({
+      id: `block-best-practices-list-${Date.now()}`,
+      type: 'list',
+      content: `<ul>
+        <li>Best practice 1</li>
+        <li>Best practice 2</li>
+        <li>Best practice 3</li>
+        <li>Best practice 4</li>
+      </ul>`
     });
   }
   
@@ -86,7 +143,7 @@ export const generateStandardContent = async (
   initialBlocks.push({
     id: `block-conclusion-${Date.now()}`,
     type: 'paragraph',
-    content: `<p>Conclusion will be generated with AI.</p>`
+    content: `<p>The conclusion will provide a concise summary reinforcing key insights and recommending actionable next steps.</p>`
   });
   
   const content: GeneratedContent = {
@@ -109,3 +166,4 @@ export const generateStandardContent = async (
     preferences
   );
 };
+

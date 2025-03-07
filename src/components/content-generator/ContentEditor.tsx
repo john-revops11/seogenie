@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Save, Trash2, Plus, FileUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Edit2, Save, Trash2, Plus, FileUp, ArrowUpRight, ArrowDownRight, List, ListOrdered } from "lucide-react";
 import { toast } from "sonner";
 import { ContentBlock, GeneratedContent } from "@/services/keywords/types";
 
@@ -19,6 +19,13 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
   const [blocks, setBlocks] = useState<ContentBlock[]>(generatedContent.blocks);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>("");
+
+  // Helper function to identify block types from HTML content
+  const getBlockTypeFromContent = (content: string): 'paragraph' | 'list' | 'orderedList' => {
+    if (content.startsWith('<ul') || content.includes('<ul>')) return 'list';
+    if (content.startsWith('<ol') || content.includes('<ol>')) return 'orderedList';
+    return 'paragraph';
+  };
 
   const handleEditBlock = (blockId: string, content: string) => {
     setEditingBlockId(blockId);
@@ -84,14 +91,31 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     toast.success(`Moved block ${direction}`);
   };
 
-  const handleAddBlockAfter = (blockId: string, type: ContentBlock['type']) => {
+  const handleAddBlockAfter = (blockId: string, type: ContentBlock['type'] | 'list' | 'orderedList') => {
     const blockIndex = blocks.findIndex(block => block.id === blockId);
+    
+    let newBlockContent = '';
+    let blockType: ContentBlock['type'] = 'paragraph';
+    
+    // Create appropriate content based on block type
+    if (type === 'list') {
+      newBlockContent = '<ul><li>New bullet point item</li><li>Add more items here</li></ul>';
+      blockType = 'list';
+    } else if (type === 'orderedList') {
+      newBlockContent = '<ol><li>First step</li><li>Second step</li><li>Third step</li></ol>';
+      blockType = 'list';
+    } else if (type.startsWith('heading')) {
+      newBlockContent = `<${type.replace('heading', 'h')}>New Heading</${type.replace('heading', 'h')}>`;
+      blockType = type as ContentBlock['type'];
+    } else {
+      newBlockContent = '<p>New paragraph content</p>';
+      blockType = 'paragraph';
+    }
+    
     const newBlock: ContentBlock = {
-      id: `block-${type}-${Date.now()}`,
-      type: type,
-      content: type.startsWith('heading') 
-        ? `<${type.replace('heading', 'h')}>New Heading</${type.replace('heading', 'h')}>`
-        : '<p>New paragraph content</p>'
+      id: `block-${blockType}-${Date.now()}`,
+      type: blockType,
+      content: newBlockContent
     };
     
     const updatedBlocks = [
@@ -111,7 +135,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     // Set the new block to editing mode
     handleEditBlock(newBlock.id, newBlock.content);
     
-    toast.success("Added new content block");
+    toast.success(`Added new ${type} block`);
   };
 
   const renderBlockContent = (block: ContentBlock) => {
@@ -146,6 +170,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
           block.type === 'heading1' ? 'text-2xl font-bold' :
           block.type === 'heading2' ? 'text-xl font-bold mt-4' :
           block.type === 'heading3' ? 'text-lg font-bold mt-3' :
+          block.type === 'list' ? 'mt-2 list-content' :
           'mt-2'
         }
       />
@@ -228,21 +253,42 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
           ))}
         </div>
         
-        <div className="flex justify-between items-center mt-6 pt-4 border-t">
-          <div className="flex gap-2">
+        <div className="flex flex-wrap justify-between items-center mt-6 pt-4 border-t">
+          <div className="flex flex-wrap gap-2 mb-2 md:mb-0">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => handleAddBlockAfter(blocks[blocks.length - 1].id, 'heading2')}
             >
-              <Plus className="w-4 h-4 mr-1" /> Add Heading
+              <Plus className="w-4 h-4 mr-1" /> H2 Heading
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleAddBlockAfter(blocks[blocks.length - 1].id, 'heading3')}
+            >
+              <Plus className="w-4 h-4 mr-1" /> H3 Heading
             </Button>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => handleAddBlockAfter(blocks[blocks.length - 1].id, 'paragraph')}
             >
-              <Plus className="w-4 h-4 mr-1" /> Add Paragraph
+              <Plus className="w-4 h-4 mr-1" /> Paragraph
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleAddBlockAfter(blocks[blocks.length - 1].id, 'list')}
+            >
+              <List className="w-4 h-4 mr-1" /> Bullet List
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleAddBlockAfter(blocks[blocks.length - 1].id, 'orderedList')}
+            >
+              <ListOrdered className="w-4 h-4 mr-1" /> Numbered List
             </Button>
           </div>
           
@@ -264,3 +310,4 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 };
 
 export default ContentEditor;
+

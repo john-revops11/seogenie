@@ -1,9 +1,10 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Settings, Database } from "lucide-react";
+import { Settings, Database, FileText } from "lucide-react";
 import { RagSettings } from "../RagSettings";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface AdvancedTabContentProps {
   ragEnabled: boolean;
@@ -22,6 +23,16 @@ export const AdvancedTabContent: React.FC<AdvancedTabContentProps> = ({
         <Label className="text-base">Advanced Settings</Label>
         <Settings className="w-4 h-4 text-muted-foreground" />
       </div>
+      
+      <Alert className="bg-blue-50 border-blue-200">
+        <FileText className="h-4 w-4" />
+        <AlertTitle>SEO-Optimized Structured Content</AlertTitle>
+        <AlertDescription className="text-xs">
+          Content will be generated following SEO best practices with a clear structure: 
+          H1 title, concise introduction, logical H2/H3 sections, properly formatted lists, real-world examples, 
+          best practices, and a conclusion with next steps.
+        </AlertDescription>
+      </Alert>
       
       <RagSettings 
         enabled={ragEnabled} 
@@ -56,3 +67,4 @@ export const AdvancedTabContent: React.FC<AdvancedTabContentProps> = ({
 };
 
 export default AdvancedTabContent;
+
