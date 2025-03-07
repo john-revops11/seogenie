@@ -1,24 +1,23 @@
-
 import { useState, useEffect, useMemo } from "react";
-import { Table } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KeywordData } from "@/services/keywordService";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import KeywordTableHeader from "@/components/keyword-table/KeywordTableHeader";
+import KeywordTableBody from "@/components/keyword-table/KeywordTableBody";
+import KeywordPagination from "@/components/keyword-table/KeywordPagination";
+import KeywordFilter from "@/components/keyword-table/KeywordFilter";
+import CompetitorManagement from "@/components/keyword-table/CompetitorManagement";
+import SeoStrategyRunner from "@/components/keyword-table/SeoStrategyRunner";
+import { Table } from "@/components/ui/table";
 import { categorizeKeywordIntent } from "@/components/keyword-gaps/KeywordGapUtils";
-import { KeywordTableProps } from "./types";
-import KeywordTableHeader from "./KeywordTableHeader";
-import KeywordTableBody from "./KeywordTableBody";
-import KeywordPagination from "./KeywordPagination";
-import KeywordFilter from "./KeywordFilter";
-import CompetitorManagement from "./CompetitorManagement";
-import SeoStrategyRunner from "./SeoStrategyRunner";
-import { 
-  extractDomainName, 
-  exportToCsv,
-  getDifficultyColor,
-  getIntentBadgeColor,
-  getIntentLabel,
-  getRankingBadgeColor
-} from "./utils";
+
+interface KeywordTableProps {
+  domain: string;
+  competitorDomains: string[];
+  keywords: KeywordData[];
+  isLoading: boolean;
+  onAddCompetitor?: (newCompetitor: string) => void;
+  onRemoveCompetitor?: (competitorToRemove: string) => void;
+}
 
 const KeywordTable = ({ 
   domain, 
@@ -38,7 +37,6 @@ const KeywordTable = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [paginatedKeywords, setPaginatedKeywords] = useState<KeywordData[]>([]);
-  
   const [intentFilter, setIntentFilter] = useState<string>("all");
 
   useEffect(() => {
@@ -114,10 +112,6 @@ const KeywordTable = ({
     setCurrentPage(1);
   };
   
-  const handleExportCsv = () => {
-    exportToCsv(keywords, domain, competitorDomains);
-  };
-  
   const uniqueIntents = useMemo(() => {
     const intents = keywords.map(item => 
       categorizeKeywordIntent(item.keyword, item.competition_index, item.monthly_search)
@@ -153,7 +147,6 @@ const KeywordTable = ({
               uniqueIntents={uniqueIntents}
               isLoading={isLoading}
               keywords={keywords}
-              onExportCsv={handleExportCsv}
             />
             
             {onAddCompetitor && (
@@ -177,18 +170,13 @@ const KeywordTable = ({
                 handleSort={handleSort}
                 domain={domain}
                 competitorDomains={competitorDomains}
-                extractDomainName={extractDomainName}
               />
               <KeywordTableBody
                 paginatedKeywords={paginatedKeywords}
                 isLoading={isLoading}
                 competitorDomains={competitorDomains}
-                extractDomainName={extractDomainName}
                 keywords={keywords}
-                getRankingBadgeColor={getRankingBadgeColor}
-                getDifficultyColor={getDifficultyColor}
-                getIntentBadgeColor={getIntentBadgeColor}
-                getIntentLabel={getIntentLabel}
+                domain={domain}
               />
             </Table>
           </div>
