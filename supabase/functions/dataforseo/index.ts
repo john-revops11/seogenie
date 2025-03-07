@@ -10,13 +10,17 @@ import {
 } from "./services.ts";
 
 serve(async (req) => {
+  console.log("DataForSEO Edge Function received a request");
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log("Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
   
   // Only accept POST requests
   if (req.method !== 'POST') {
+    console.error("Method not allowed:", req.method);
     return new Response(
       JSON.stringify({ error: 'Only POST requests are supported' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -24,7 +28,7 @@ serve(async (req) => {
   }
   
   try {
-    console.log("DataForSEO Edge Function received a request");
+    console.log("DataForSEO Edge Function processing request");
     
     // Parse request body, with error handling
     let body;
@@ -42,10 +46,12 @@ serve(async (req) => {
     const { action, domain, keywords, location_code = 2840 } = body;
     
     if (!action) {
+      console.error("Missing action parameter");
       throw new Error('Action is required');
     }
     
     let result;
+    console.log(`Processing action: ${action}`);
     
     switch (action) {
       case 'domain_serp':
@@ -83,13 +89,16 @@ serve(async (req) => {
         if (!domain) {
           throw new Error('Domain is required');
         }
+        console.log(`Fetching domain keywords for: ${domain} with location: ${location_code}`);
         result = await getDomainKeywords(domain, location_code);
         break;
         
       default:
+        console.error(`Unknown action: ${action}`);
         throw new Error(`Unknown action: ${action}`);
     }
     
+    console.log(`Action ${action} completed successfully`);
     return new Response(
       JSON.stringify(result),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

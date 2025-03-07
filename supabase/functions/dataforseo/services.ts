@@ -11,8 +11,11 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
   }];
   
   try {
+    console.log(`Getting domain keywords for ${domain} with location ${location_code}`);
     // Use the correct endpoint for domain keywords from the DataForSEO API
     const result = await makeDataForSEORequest('/v3/dataforseo_labs/domain_keywords/live', 'POST', task);
+    console.log('DataForSEO API response:', JSON.stringify(result).substring(0, 500) + '...');
+    
     const keywords = result?.tasks?.[0]?.result?.[0]?.items || [];
     
     return {

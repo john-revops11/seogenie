@@ -32,6 +32,7 @@ export async function makeDataForSEORequest(
     }
 
     const result = await response.json();
+    console.log(`DataForSEO response status code: ${result.status_code}`);
     
     if (result.status_code !== 20000) {
       console.error(`DataForSEO API returned error: ${result.status_message}`);
