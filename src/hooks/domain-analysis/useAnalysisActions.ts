@@ -64,14 +64,17 @@ export function useAnalysisActions(
     
     let progressInterval: number | NodeJS.Timeout | null = null;
     progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        const newProgress = prev + Math.random() * 15;
-        if (newProgress >= 95) {
-          if (progressInterval) clearInterval(progressInterval);
-          return 95;
-        }
-        return newProgress;
-      });
+      // Get the current progress value first
+      let currentProgress = 0;
+      
+      // Update progress with a direct value instead of using a function
+      // This avoids the TypeScript error
+      setProgress(Math.min(95, currentProgress + Math.random() * 15));
+      
+      // Check if we need to clear the interval
+      if (currentProgress >= 95 && progressInterval) {
+        clearInterval(progressInterval);
+      }
     }, 800);
     
     try {
