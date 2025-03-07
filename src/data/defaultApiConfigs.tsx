@@ -76,6 +76,6 @@ export const getDefaultApiConfigs = (): ApiDetails[] => [
     iconName: "search",
     apiKey: "armin@revologyanalytics.com:ab4016dc9302b8cf",
     isConfigured: true,
-    isActive: false
+    isActive: true
   }
 ];
