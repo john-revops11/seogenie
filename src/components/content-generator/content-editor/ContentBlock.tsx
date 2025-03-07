@@ -57,18 +57,36 @@ const ContentBlockComponent: React.FC<ContentBlockProps> = ({
       );
     }
     
-    // Add proper CSS classes based on block type
+    // Determine CSS classes based on block type
+    let blockClassName = "mt-3 mb-3 leading-relaxed";
+    
+    if (block.type === 'heading1') {
+      blockClassName = 'text-2xl font-bold mt-6 mb-3';
+    } else if (block.type === 'heading2') {
+      blockClassName = 'text-xl font-bold mt-5 mb-2';
+    } else if (block.type === 'heading3') {
+      blockClassName = 'text-lg font-bold mt-4 mb-2';
+    } else if (block.type === 'list') {
+      blockClassName = 'mt-3 mb-3 pl-5 list-disc';
+    } else if (block.type === 'paragraph') {
+      blockClassName = 'mt-3 mb-3 leading-relaxed';
+    }
+    
+    // Special handling for nested content with list types
+    const content = block.content;
+    const hasOrderedList = content.includes('<ol>') || content.includes('<ol ');
+    const hasBulletList = content.includes('<ul>') || content.includes('<ul ');
+    
+    if (hasOrderedList) {
+      blockClassName += ' list-decimal';
+    } else if (hasBulletList) {
+      blockClassName += ' list-disc';
+    }
+    
     return (
       <div 
-        dangerouslySetInnerHTML={{ __html: block.content }} 
-        className={
-          block.type === 'heading1' ? 'text-2xl font-bold mt-6 mb-3' :
-          block.type === 'heading2' ? 'text-xl font-bold mt-5 mb-2' :
-          block.type === 'heading3' ? 'text-lg font-bold mt-4 mb-2' :
-          block.type === 'list' ? 'mt-3 mb-3 pl-5 list-disc' :
-          block.type === 'orderedList' ? 'mt-3 mb-3 pl-5 list-decimal' :
-          'mt-3 mb-3 leading-relaxed'
-        }
+        dangerouslySetInnerHTML={{ __html: content }} 
+        className={blockClassName}
       />
     );
   };
