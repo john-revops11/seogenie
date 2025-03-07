@@ -1,10 +1,11 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Settings, Database, FileText } from "lucide-react";
+import { Settings, Database, FileText, ListChecks } from "lucide-react";
 import { RagSettings } from "../RagSettings";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface AdvancedTabContentProps {
   ragEnabled: boolean;
@@ -33,6 +34,57 @@ export const AdvancedTabContent: React.FC<AdvancedTabContentProps> = ({
           best practices, and a conclusion with next steps.
         </AlertDescription>
       </Alert>
+      
+      <Accordion type="single" collapsible className="w-full border rounded-md">
+        <AccordionItem value="structure">
+          <AccordionTrigger className="px-4 py-2 text-sm font-medium">
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              Article Structure Guidelines
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 text-xs space-y-3">
+            <div>
+              <p className="font-semibold">H1 (Main Title):</p>
+              <p>Clearly incorporates the primary keyword/topic to optimize SEO and clarity.</p>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Introduction:</p>
+              <p>Concise, informative paragraph (50-100 words) that sets the context, purpose, and key takeaways.</p>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Main Sections:</p>
+              <p>Content is organized with H2 headings for main topics and H3 subheadings for deeper details.</p>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Formatted Content:</p>
+              <ul className="list-disc pl-5">
+                <li>Structured paragraphs (3-4 sentences max)</li>
+                <li>Bulleted lists for features, benefits, key points</li>
+                <li>Numbered lists for sequential steps or processes</li>
+              </ul>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Case Studies & Examples:</p>
+              <p>At least one clearly formatted, relevant real-world example demonstrating practical application.</p>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Best Practices:</p>
+              <p>A neatly formatted list of actionable recommendations and key insights.</p>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Conclusion:</p>
+              <p>Concise summary reinforcing key insights and recommending actionable next steps.</p>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
       
       <RagSettings 
         enabled={ragEnabled} 
@@ -67,4 +119,3 @@ export const AdvancedTabContent: React.FC<AdvancedTabContentProps> = ({
 };
 
 export default AdvancedTabContent;
-
