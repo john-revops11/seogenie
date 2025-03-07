@@ -1,11 +1,19 @@
 
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PaginationProps } from "./types";
 
-const KeywordPagination: React.FC<PaginationProps> = ({
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  rowsPerPage: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onRowsPerPageChange: (rows: number) => void;
+  isLoading: boolean;
+}
+
+const KeywordPagination = ({
   currentPage,
   totalPages,
   rowsPerPage,
@@ -13,7 +21,7 @@ const KeywordPagination: React.FC<PaginationProps> = ({
   onPageChange,
   onRowsPerPageChange,
   isLoading
-}) => {
+}: PaginationProps) => {
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       onPageChange(currentPage + 1);

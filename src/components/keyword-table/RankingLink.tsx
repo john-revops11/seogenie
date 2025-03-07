@@ -1,11 +1,15 @@
 
-import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RankingLinkProps } from "./types";
+import { ExternalLink } from "lucide-react";
+import { getRankingBadgeColor } from "./utils";
 
-const RankingLink: React.FC<RankingLinkProps> = ({ url, position, getRankingBadgeColor }) => {
+interface RankingLinkProps {
+  url: string | null | undefined;
+  position: number | null | undefined;
+}
+
+const RankingLink = ({ url, position }: RankingLinkProps) => {
   if (!url || !position) return <Badge variant="outline">-</Badge>;
   
   return (

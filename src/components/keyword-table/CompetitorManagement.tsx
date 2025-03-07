@@ -1,42 +1,31 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { fetchDomainKeywords } from "@/services/keywordService";
-import { CompetitorManagementProps } from "./types";
+import { extractDomainName } from "./utils";
 
-const CompetitorManagement: React.FC<CompetitorManagementProps> = ({
+interface CompetitorManagementProps {
+  domain: string;
+  competitorDomains: string[];
+  onAddCompetitor: (newCompetitor: string) => void;
+  onRemoveCompetitor: (competitorToRemove: string) => void;
+  isLoading: boolean;
+}
+
+const CompetitorManagement = ({
   domain,
   competitorDomains,
   onAddCompetitor,
   onRemoveCompetitor,
   isLoading
-}) => {
+}: CompetitorManagementProps) => {
   const [newCompetitor, setNewCompetitor] = useState("");
   const [showCompetitorInput, setShowCompetitorInput] = useState(false);
   const [loadingCompetitor, setLoadingCompetitor] = useState(false);
-
-  const extractDomainName = (url: string): string => {
-    try {
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        const urlObj = new URL(url);
-        return urlObj.hostname.replace(/^www\./, '');
-      }
-      
-      try {
-        const urlObj = new URL(`https://${url}`);
-        return urlObj.hostname.replace(/^www\./, '');
-      } catch (e) {
-        return url.replace(/^www\./, '');
-      }
-    } catch (error) {
-      console.warn(`Failed to extract domain from: ${url}`, error);
-      return url;
-    }
-  };
 
   const handleAddCompetitor = () => {
     setShowCompetitorInput(true);

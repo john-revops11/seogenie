@@ -1,10 +1,10 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
-import { KeywordData } from "@/services/keywordService";
 import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
+import { KeywordData } from "@/services/keywordService";
 
 interface SeoStrategyRunnerProps {
   domain: string;
@@ -13,12 +13,12 @@ interface SeoStrategyRunnerProps {
   isLoading: boolean;
 }
 
-const SeoStrategyRunner: React.FC<SeoStrategyRunnerProps> = ({
+const SeoStrategyRunner = ({
   domain,
   competitorDomains,
   keywords,
   isLoading
-}) => {
+}: SeoStrategyRunnerProps) => {
   const [isRunningSeoStrategy, setIsRunningSeoStrategy] = useState(false);
 
   const handleRunRevologySeoStrategy = async () => {

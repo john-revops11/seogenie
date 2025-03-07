@@ -1,35 +1,26 @@
 
-import React from "react";
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
-import { categorizeKeywordIntent } from "@/components/keyword-gaps/KeywordGapUtils";
+import { Badge } from "@/components/ui/badge";
 import RankingLink from "./RankingLink";
+import { extractDomainName, getDifficultyColor, getIntentBadgeColor, getIntentLabel } from "./utils";
 
 interface KeywordTableBodyProps {
   paginatedKeywords: KeywordData[];
   isLoading: boolean;
   competitorDomains: string[];
-  extractDomainName: (url: string) => string;
   keywords: KeywordData[];
-  getRankingBadgeColor: (ranking: number | null) => string;
-  getDifficultyColor: (difficulty: number) => string;
-  getIntentBadgeColor: (keyword: string, difficulty: number, volume: number) => string;
-  getIntentLabel: (keyword: string, difficulty: number, volume: number) => string;
+  domain: string;
 }
 
-const KeywordTableBody: React.FC<KeywordTableBodyProps> = ({
-  paginatedKeywords,
-  isLoading,
-  competitorDomains,
-  extractDomainName,
+const KeywordTableBody = ({ 
+  paginatedKeywords, 
+  isLoading, 
+  competitorDomains, 
   keywords,
-  getRankingBadgeColor,
-  getDifficultyColor,
-  getIntentBadgeColor,
-  getIntentLabel
-}) => {
+  domain
+}: KeywordTableBodyProps) => {
   return (
     <TableBody>
       {isLoading ? (
@@ -56,11 +47,7 @@ const KeywordTableBody: React.FC<KeywordTableBodyProps> = ({
               </Badge>
             </TableCell>
             <TableCell>
-              <RankingLink 
-                url={item.rankingUrl} 
-                position={item.position} 
-                getRankingBadgeColor={getRankingBadgeColor} 
-              />
+              <RankingLink url={item.rankingUrl} position={item.position} />
             </TableCell>
             {competitorDomains.map((competitor, idx) => {
               const domainName = extractDomainName(competitor);
@@ -69,7 +56,6 @@ const KeywordTableBody: React.FC<KeywordTableBodyProps> = ({
                   <RankingLink 
                     url={item.competitorUrls?.[domainName]} 
                     position={item.competitorRankings?.[domainName]} 
-                    getRankingBadgeColor={getRankingBadgeColor}
                   />
                 </TableCell>
               );

@@ -1,16 +1,24 @@
 
-import React from "react";
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
-import { TableHeaderProps } from "./types";
+import { ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react";
+import { extractDomainName } from "./utils";
 
-const KeywordTableHeader: React.FC<TableHeaderProps> = ({ 
-  sortConfig, 
-  handleSort, 
-  domain, 
-  competitorDomains,
-  extractDomainName
-}) => {
+interface TableHeaderProps {
+  sortConfig: {
+    column: string;
+    direction: 'asc' | 'desc';
+  };
+  handleSort: (column: string) => void;
+  domain: string;
+  competitorDomains: string[];
+}
+
+const KeywordTableHeader = ({
+  sortConfig,
+  handleSort,
+  domain,
+  competitorDomains
+}: TableHeaderProps) => {
   return (
     <TableHeader>
       <TableRow>

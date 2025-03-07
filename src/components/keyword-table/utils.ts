@@ -2,6 +2,7 @@
 import { KeywordData } from "@/services/keywordService";
 import { categorizeKeywordIntent } from "@/components/keyword-gaps/KeywordGapUtils";
 
+// Function to extract domain name from URL
 export const extractDomainName = (url: string): string => {
   try {
     if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -21,6 +22,7 @@ export const extractDomainName = (url: string): string => {
   }
 };
 
+// Function to determine ranking badge color based on position
 export const getRankingBadgeColor = (ranking: number | null) => {
   if (ranking === null) return "bg-gray-200 text-gray-700";
   if (ranking <= 3) return "bg-green-100 text-green-800";
@@ -29,12 +31,14 @@ export const getRankingBadgeColor = (ranking: number | null) => {
   return "bg-red-100 text-red-800";
 };
 
+// Function to determine difficulty color based on score
 export const getDifficultyColor = (difficulty: number) => {
   if (difficulty < 30) return "text-green-600";
   if (difficulty < 60) return "text-amber-600";
   return "text-red-600";
 };
 
+// Function to get intent label for a keyword
 export const getIntentLabel = (keyword: string, difficulty: number, volume: number): string => {
   const intent = categorizeKeywordIntent(keyword, difficulty, volume);
   switch (intent) {
@@ -46,6 +50,7 @@ export const getIntentLabel = (keyword: string, difficulty: number, volume: numb
   }
 };
 
+// Function to get intent badge color based on intent type
 export const getIntentBadgeColor = (keyword: string, difficulty: number, volume: number): string => {
   const intent = categorizeKeywordIntent(keyword, difficulty, volume);
   switch (intent) {
@@ -62,16 +67,16 @@ export const getIntentBadgeColor = (keyword: string, difficulty: number, volume:
   }
 };
 
-export const prepareExportData = (
-  keywords: KeywordData[], 
-  domain: string, 
-  competitorDomains: string[]
-): string => {
-  if (keywords.length === 0) return "";
+// Function to export keywords to CSV
+export const exportToCsv = (keywords: KeywordData[], domain?: string, competitorDomains?: string[]) => {
+  if (keywords.length === 0) return;
+  
+  const mainDomain = domain || '';
+  const competitors = competitorDomains || [];
   
   let csvContent = "Keyword,Volume,Difficulty,CPC,$,Intent,";
-  csvContent += `${domain},${domain} URL,`;
-  competitorDomains.forEach(comp => {
+  csvContent += `${mainDomain},${mainDomain} URL,`;
+  competitors.forEach(comp => {
     csvContent += `${comp},${comp} URL,`;
   });
   csvContent += "\n";
@@ -80,30 +85,18 @@ export const prepareExportData = (
     const intent = getIntentLabel(item.keyword, item.competition_index, item.monthly_search);
     csvContent += `"${item.keyword}",${item.monthly_search},${item.competition_index},${item.cpc.toFixed(2)},$,${intent},`;
     csvContent += `${item.position || "-"},${item.rankingUrl || "-"},`;
-    competitorDomains.forEach(comp => {
+    competitorDomains?.forEach(comp => {
       const domainName = extractDomainName(comp);
       csvContent += `${item.competitorRankings?.[domainName] || "-"},${item.competitorUrls?.[domainName] || "-"},`;
     });
     csvContent += "\n";
   });
   
-  return csvContent;
-};
-
-export const exportToCsv = (
-  keywords: KeywordData[], 
-  domain: string, 
-  competitorDomains: string[]
-): void => {
-  if (keywords.length === 0) return;
-  
-  const csvContent = prepareExportData(keywords, domain, competitorDomains);
-  
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `seo_keywords_${domain}_analysis.csv`);
+  link.setAttribute('download', `seo_keywords_${mainDomain || 'analysis'}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
