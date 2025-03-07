@@ -14,9 +14,7 @@ export const mergeKeywordData = (
   
   // Add main domain keywords first
   mainKeywords.forEach(kw => {
-    // Simulate a ranking position and URL for the main domain
-    const position = kw.position || Math.floor(Math.random() * 100) + 1;
-    const rankingUrl = kw.rankingUrl || generateSampleUrl(mainDomain, kw.keyword);
+    // Track if this is real API data or mock data
     const isRealData = kw.rankingUrl && kw.rankingUrl.includes('http');
     
     keywordMap.set(kw.keyword, {
@@ -25,8 +23,8 @@ export const mergeKeywordData = (
       competition: kw.competition,
       competition_index: kw.competition_index,
       cpc: kw.cpc,
-      position: position,
-      rankingUrl: rankingUrl,
+      position: kw.position || null,
+      rankingUrl: kw.rankingUrl || null,
       competitorRankings: {},
       competitorUrls: {},
       dataSource: isRealData ? 'api' : 'sample' // Track data source
@@ -49,13 +47,11 @@ export const mergeKeywordData = (
           existing.competitorUrls = {};
         }
         
-        // Simulate a ranking position and URL for this competitor
-        const position = kw.position || Math.floor(Math.random() * 100) + 1;
-        const rankingUrl = kw.rankingUrl || generateSampleUrl(domain, kw.keyword);
+        // Track if this is real API data
         const isRealData = kw.rankingUrl && kw.rankingUrl.includes('http');
         
-        existing.competitorRankings[domainName] = position;
-        existing.competitorUrls[domainName] = rankingUrl;
+        existing.competitorRankings[domainName] = kw.position || null;
+        existing.competitorUrls[domainName] = kw.rankingUrl || null;
         
         // Update data source if this is real API data
         if (isRealData && existing.dataSource === 'sample') {
@@ -63,8 +59,7 @@ export const mergeKeywordData = (
         }
       } else {
         // Add new keyword that main domain doesn't have
-        const position = kw.position || Math.floor(Math.random() * 100) + 1;
-        const rankingUrl = kw.rankingUrl || generateSampleUrl(domain, kw.keyword);
+        // Track if this is real API data
         const isRealData = kw.rankingUrl && kw.rankingUrl.includes('http');
         
         keywordMap.set(kw.keyword, {
@@ -76,10 +71,10 @@ export const mergeKeywordData = (
           position: null, // Main domain doesn't rank for this
           rankingUrl: null,
           competitorRankings: {
-            [domainName]: position
+            [domainName]: kw.position || null
           },
           competitorUrls: {
-            [domainName]: rankingUrl
+            [domainName]: kw.rankingUrl || null
           },
           dataSource: isRealData ? 'api' : 'sample' // Track data source
         });

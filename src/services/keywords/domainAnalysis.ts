@@ -2,7 +2,6 @@
 import { toast } from "sonner";
 import { KeywordData } from './types';
 import { fetchDomainKeywords, ensureValidUrl } from './api';
-import { generateMockKeywords } from './utils/mockDataGenerator';
 import { processCompetitorData } from './utils/competitorDataProcessor';
 import { mergeKeywordData } from './utils/keywordDataMerger';
 
@@ -25,33 +24,41 @@ export const analyzeDomains = async (
     console.log("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     console.log("Using location code:", locationCode);
     
-    // Try to fetch real data from API
+    // Only use real API data
     let mainKeywords: KeywordData[] = [];
-    let useRealData = true;
     
     try {
-      console.log(`Attempting to fetch keywords for main domain: ${formattedMainDomain}`);
-      mainKeywords = await fetchDomainKeywords(formattedMainDomain);
+      console.log(`Fetching keywords for main domain: ${formattedMainDomain}`);
+      // Directly use the DataForSEO API
+      const { fetchDataForSEOKeywords } = await import('./api/dataForSeo/domains');
+      mainKeywords = await fetchDataForSEOKeywords(formattedMainDomain, locationCode);
+      
       console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
       
       if (!mainKeywords.length) {
-        console.warn(`No real keywords found for ${formattedMainDomain}, using mock data`);
-        useRealData = false;
-        mainKeywords = generateMockKeywords(formattedMainDomain, 30);
-        toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`);
+        console.warn(`No keywords found for ${formattedMainDomain}`);
+        toast.error(`API returned no keywords for ${formattedMainDomain}`);
+        return {
+          keywords: [],
+          success: false,
+          error: `API returned no keywords for ${formattedMainDomain}`
+        };
       }
     } catch (error) {
-      console.warn(`Error fetching real keywords for ${formattedMainDomain}, using mock data:`, error);
-      useRealData = false;
-      mainKeywords = generateMockKeywords(formattedMainDomain, 30);
-      toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`);
+      console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
+      toast.error(`API not working for ${formattedMainDomain}: ${(error as Error).message}`);
+      return {
+        keywords: [],
+        success: false,
+        error: `API not working: ${(error as Error).message}`
+      };
     }
     
-    // Process competitor domains - use mock data if real data isn't available
+    // Process competitor domains - only use real API data
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
-      const result = await processCompetitorData(domain, useRealData, locationCode);
+      const result = await processCompetitorData(domain, true, locationCode);
       competitorResults.push(result);
     }
     
@@ -68,11 +75,11 @@ export const analyzeDomains = async (
     };
   } catch (error) {
     console.error("Error analyzing domains:", error);
-    toast.error(`Domain analysis failed: ${(error as Error).message}`);
+    toast.error(`API not working: ${(error as Error).message}`);
     return {
       keywords: [],
       success: false,
-      error: (error as Error).message
+      error: `API not working: ${(error as Error).message}`
     };
   }
 };

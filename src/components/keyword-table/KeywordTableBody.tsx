@@ -1,6 +1,6 @@
 
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Loader2, Database, Server, Info } from "lucide-react";
+import { Loader2, AlertTriangle, Server, Info } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Badge } from "@/components/ui/badge";
 import RankingLink from "./RankingLink";
@@ -49,26 +49,37 @@ const KeywordTableBody = ({
   };
   
   // Determine the data source based on keyword metadata
-  const getDataSource = (isForMainDomain: boolean) => {
-    // Check if we're using mock data
-    const hasMockData = keywords.some(kw => 
-      (isForMainDomain && !kw.rankingUrl?.includes('http')) || 
-      (!isForMainDomain && kw.competitorUrls && Object.values(kw.competitorUrls).some(url => !url?.includes('http')))
-    );
-    
-    if (hasMockData) {
+  const getDataSource = (isForMainDomain: boolean, domainName?: string) => {
+    // Check if we have an empty result set
+    if (keywords.length === 0) {
       return {
-        icon: <Database className="h-4 w-4 text-muted-foreground" />,
-        label: "Sample Data",
-        description: "This data is synthetically generated for demonstration"
+        icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
+        label: "API Not Working",
+        description: "The API request failed or returned no results"
       };
     }
     
-    // Check if it's from an API source
+    // For competitors check specific domain
+    if (!isForMainDomain && domainName) {
+      const hasCompetitorData = keywords.some(kw => 
+        kw.competitorRankings && 
+        kw.competitorRankings[domainName] !== undefined
+      );
+      
+      if (!hasCompetitorData) {
+        return {
+          icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
+          label: "API Not Working",
+          description: "The API request failed or returned no results for this competitor"
+        };
+      }
+    }
+    
+    // Check if we're using API data
     return {
       icon: <Server className="h-4 w-4 text-primary" />,
       label: "API Data",
-      description: "This data is from a real API source"
+      description: "This data is from the DataForSEO API"
     };
   };
   
@@ -91,11 +102,11 @@ const KeywordTableBody = ({
         paginatedKeywords.map((item, index) => (
           <TableRow key={index} className="transition-all hover:bg-muted/50">
             <TableCell className="font-medium">{item.keyword}</TableCell>
-            <TableCell>{item.monthly_search.toLocaleString()}</TableCell>
+            <TableCell>{item.monthly_search?.toLocaleString() || 0}</TableCell>
             <TableCell>
               <span className={getDifficultyColor(item.competition_index)}>{item.competition_index}/100</span>
             </TableCell>
-            <TableCell>${item.cpc.toFixed(2)}</TableCell>
+            <TableCell>${item.cpc?.toFixed(2) || '0.00'}</TableCell>
             <TableCell>
               <Badge className={getIntentBadgeColor(item.keyword, item.competition_index, item.monthly_search)}>
                 {getIntentLabel(item.keyword, item.competition_index, item.monthly_search)}
@@ -130,7 +141,7 @@ const KeywordTableBody = ({
             {competitorDomains.map((competitor, idx) => {
               const domainName = extractDomainName(competitor);
               const competitorCount = getKeywordCount(domainName);
-              const competitorSource = getDataSource(false);
+              const competitorSource = getDataSource(false, domainName);
               
               return (
                 <TableCell key={idx}>
@@ -153,7 +164,11 @@ const KeywordTableBody = ({
                             <div className="space-y-1">
                               <p className="font-medium">{competitorSource.label}</p>
                               <p className="text-xs">{competitorSource.description}</p>
-                              <p className="text-xs font-medium">Found {competitorCount} keywords for {domainName}</p>
+                              <p className="text-xs font-medium">
+                                {competitorCount > 0 
+                                  ? `Found ${competitorCount} keywords for ${domainName}` 
+                                  : `No keywords found for ${domainName}`}
+                              </p>
                             </div>
                           </TooltipContent>
                         </Tooltip>
@@ -168,7 +183,11 @@ const KeywordTableBody = ({
       ) : (
         <TableRow>
           <TableCell colSpan={6 + competitorDomains.length} className="h-24 text-center">
-            {keywords.length === 0 ? "No keywords found. Start an analysis first." : "No matching keywords found."}
+            <div className="flex flex-col items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-destructive mb-2" />
+              <p className="text-sm text-foreground font-semibold">API Not Working</p>
+              <p className="text-sm text-muted-foreground">No keywords found. The API request failed or returned no results.</p>
+            </div>
           </TableCell>
         </TableRow>
       )}
