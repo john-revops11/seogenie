@@ -6,6 +6,7 @@ export const corsHeaders = {
 };
 
 // Create base64 encoded credentials for DataForSEO API
+// Replace with your actual DataForSEO credentials
 const login = "armin@revologyanalytics.com";
 const password = "ab4016dc9302b8cf";
 export const AUTH_HEADER = btoa(`${login}:${password}`);
