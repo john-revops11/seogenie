@@ -81,7 +81,9 @@ export function useDomainActions(
       return;
     }
     
-    setCompetitorDomains(prev => [...prev.filter(domain => domain.trim() !== ""), newCompetitor]);
+    // Fix the type error by creating a new array directly instead of using prev
+    const filteredDomains = competitorDomains.filter(domain => domain.trim() !== "");
+    setCompetitorDomains([...filteredDomains, newCompetitor]);
     toast.success(`Added ${normalizedNewCompetitor} to competitors list`);
   };
 

@@ -62,11 +62,12 @@ export function useAnalysisActions(
     
     console.info("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     
-    const interval = setInterval(() => {
-      setProgress(prev => {
+    let progressInterval: number | NodeJS.Timeout | null = null;
+    progressInterval = setInterval(() => {
+      setProgress((prev) => {
         const newProgress = prev + Math.random() * 15;
         if (newProgress >= 95) {
-          clearInterval(interval);
+          if (progressInterval) clearInterval(progressInterval);
           return 95;
         }
         return newProgress;
@@ -92,7 +93,7 @@ export function useAnalysisActions(
         throw new Error(errorMessage);
       }
     } catch (error) {
-      clearInterval(interval);
+      if (progressInterval) clearInterval(progressInterval);
       setIsAnalyzing(false);
       
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";

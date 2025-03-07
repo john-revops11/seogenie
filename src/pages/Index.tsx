@@ -7,7 +7,7 @@ import { ContentTabContent } from "@/components/tabs/ContentTabContent";
 import { DataForSEOTabContent } from "@/components/tabs/DataForSEOTabContent";
 import { HistoryTabContent } from "@/components/tabs/HistoryTabContent";
 import SettingsTabContent from "@/components/tabs/SettingsTabContent";
-import { useDomainAnalysis } from "@/hooks/useDomainAnalysis";
+import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useDataForSEO } from "@/hooks/useDataForSEO";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";

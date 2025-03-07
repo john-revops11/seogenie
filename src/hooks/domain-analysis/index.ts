@@ -75,5 +75,5 @@ export function useDomainAnalysis() {
   };
 }
 
-// Update import path for backward compatibility
-export { useDomainAnalysis as default } from "./";
+// Export as default for import compatibility
+export default useDomainAnalysis;
