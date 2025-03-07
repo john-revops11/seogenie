@@ -18,8 +18,13 @@ export function useDataForSEO() {
       setIsDataForSEOLoading(true);
       setDataForSEODomain(domain);
       
-      // Use the Supabase edge function to fetch DataForSEO data
-      const response = await fetch('/api/dataforseo', {
+      // Use the Supabase edge function endpoint instead of /api/
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const endpoint = `${supabaseUrl}/functions/v1/dataforseo`;
+      
+      console.log(`Calling DataForSEO API endpoint: ${endpoint}`);
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,12 +42,21 @@ export function useDataForSEO() {
         })
       });
 
+      // Check if response.ok before trying to parse JSON
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze domain with DataForSEO');
+        const errorText = await response.text();
+        console.error(`DataForSEO API error (${response.status}):`, errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText || 'No response from server'}`);
       }
 
-      const data = await response.json();
+      // Check for empty response before parsing
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response received from server');
+      }
+
+      // Parse the JSON from text after validation
+      const data = JSON.parse(responseText);
       setDataForSEOAnalysisData(data);
       toast.success(`Successfully analyzed ${domain} with DataForSEO`);
     } catch (error) {

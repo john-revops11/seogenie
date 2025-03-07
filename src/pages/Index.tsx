@@ -73,8 +73,8 @@ const Index = () => {
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">
         <TabsList>
           <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="dataforseo">DataForSEO</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="dataforseo">DataForSEO</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -101,21 +101,21 @@ const Index = () => {
           />
         </TabsContent>
         
-        <TabsContent value="dataforseo" className="space-y-6">
-          <DataForSEOTabContent 
-            analysisData={dataForSEOAnalysisData} 
-            domain={dataForSEODomain} 
-            isLoading={isDataForSEOLoading}
-            onAnalyze={analyzeWithDataForSEO}
-          />
-        </TabsContent>
-        
         <TabsContent value="content" className="space-y-6">
           <ContentTabContent 
             analysisComplete={analysisComplete} 
             domain={mainDomain}
             allKeywords={keywordData.map(k => k.keyword)}
             onGoToAnalysis={goToAnalysisTab}
+          />
+        </TabsContent>
+        
+        <TabsContent value="dataforseo" className="space-y-6">
+          <DataForSEOTabContent 
+            analysisData={dataForSEOAnalysisData} 
+            domain={dataForSEODomain} 
+            isLoading={isDataForSEOLoading}
+            onAnalyze={analyzeWithDataForSEO}
           />
         </TabsContent>
         
