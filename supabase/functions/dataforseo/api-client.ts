@@ -20,7 +20,7 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
   try {
     console.log(`Making DataForSEO request to ${url}`);
     if (data) {
-      console.log(`Request data: ${JSON.stringify(data).substring(0, 100)}...`);
+      console.log(`Request data: ${JSON.stringify(data).substring(0, 500)}...`);
     }
     
     const response = await fetch(url, options);
@@ -42,6 +42,11 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     try {
       const json = JSON.parse(text);
       console.log(`DataForSEO response success: ${json.status_code === 20000}`);
+      
+      if (json.status_code !== 20000) {
+        throw new Error(`API returned error code ${json.status_code}: ${json.status_message || 'Unknown error'}`);
+      }
+      
       return json;
     } catch (parseError) {
       console.error(`Failed to parse DataForSEO response: ${text.substring(0, 100)}...`);

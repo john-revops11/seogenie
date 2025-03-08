@@ -1,8 +1,8 @@
 
 import { toast } from "sonner";
 import { KeywordData } from '../types';
-import { fetchDomainKeywords } from '../api';
 import { generateMockKeywords, generateSampleUrl } from './mockDataGenerator';
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Process keyword data for a competitor domain
@@ -20,11 +20,26 @@ export const processCompetitorData = async (
       try {
         console.log(`Attempting to fetch keywords for competitor: ${domain} with location code: ${locationCode}`);
         
-        // Updated to pass locationCode to the imported fetchDomainKeywords function
-        const { fetchDataForSEOKeywords } = await import('../api/dataForSeoApi');
-        keywords = await fetchDataForSEOKeywords(domain, locationCode);
+        // Call our DataForSEO edge function
+        const { data, error } = await supabase.functions.invoke('dataforseo', {
+          body: {
+            action: 'domain_keywords',
+            domain: domain,
+            location_code: locationCode
+          }
+        });
         
-        console.log(`Successfully fetched ${keywords.length} keywords for competitor ${domain}`);
+        if (error) {
+          console.error(`Error calling DataForSEO edge function for ${domain}:`, error);
+          throw new Error(`Edge function error: ${error.message}`);
+        }
+        
+        if (data && data.success && data.results && data.results.length > 0) {
+          keywords = data.results;
+          console.log(`Successfully fetched ${keywords.length} keywords for competitor ${domain}`);
+        } else {
+          throw new Error('No keywords returned from DataForSEO API');
+        }
       } catch (error) {
         console.warn(`Error fetching real competitor keywords for ${domain}, using mock data:`, error);
         keywords = generateMockKeywords(domain, 25);
