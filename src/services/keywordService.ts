@@ -34,18 +34,15 @@ export {
 // Export new specialized functions for Revology Analytics
 export * from './keywords/revologySeoStrategy';
 
-// Export vector database services - updated to use refactored modules
-export * from './vector/pineconeConfig';
-export * from './vector/pineconeConnection';
-export * from './vector/embeddingService';
-export * from './vector/vectorOperations';
+// Export vector database services
+export * from './vector/pineconeService';
 
-// Export specific functions for the system health card
+// Export additional utilities for the system health card
 export {
   testPineconeConnection,
   getPineconeConfig,
   getPineconeHostUrl
-} from './vector/pineconeService'; // These are now re-exported from the refactored modules
+} from './vector/pineconeService';
 
 // Add a new function to handle competitor removal
 export const removeCompetitorDomain = (
