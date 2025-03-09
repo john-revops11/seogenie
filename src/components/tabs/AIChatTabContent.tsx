@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, User, Bot, SendHorizontal, PanelRightOpen } from "lucide-react";
+import { Sparkles, User, Bot, SendHorizontal, PanelRightOpen, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -48,21 +47,18 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
   const [availableModels, setAvailableModels] = useState<AIModel[]>(getModelsForProvider("openai"));
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Update available models when provider changes
   useEffect(() => {
     const models = getModelsForProvider(provider);
     setAvailableModels(models);
     setSelectedModel(models.length > 0 ? models[0].id : "");
   }, [provider]);
   
-  // Auto-scroll to the bottom when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
   
-  // Add initial assistant message
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([
@@ -102,7 +98,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
     
-    // Add user message
     const userMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const userMessage: Message = {
       id: userMessageId,
@@ -111,7 +106,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
       timestamp: new Date()
     };
     
-    // Add assistant loading message
     const assistantMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const assistantMessage: Message = {
       id: assistantMessageId,
@@ -126,7 +120,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
     setIsLoading(true);
     
     try {
-      // Construct context from previous messages
       const context = messages
         .filter(msg => !msg.isLoading)
         .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
@@ -146,7 +139,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
         relevanceScore: 0
       };
       
-      // Enhance with RAG if enabled
       if (ragEnabled) {
         try {
           const enhancedPrompt = await enhanceWithRAG(
@@ -159,8 +151,8 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
           if (enhancedPrompt !== prompt) {
             prompt = enhancedPrompt;
             ragInfo.used = true;
-            ragInfo.chunksRetrieved = 10; // Default RAG retrieves 10 chunks
-            ragInfo.relevanceScore = 0.85; // Placeholder for actual relevance score
+            ragInfo.chunksRetrieved = 10;
+            ragInfo.relevanceScore = 0.85;
           }
         } catch (error) {
           console.error("RAG enhancement failed:", error);
@@ -168,15 +160,13 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
         }
       }
       
-      // Generate AI response
       const response = await generateWithAI(
         provider,
         selectedModel,
         prompt,
-        70 // Use moderate creativity for chat
+        70
       );
       
-      // Update assistant message with the response
       setMessages(prev => 
         prev.map(msg => 
           msg.id === assistantMessageId 
@@ -187,7 +177,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
     } catch (error) {
       console.error("Error generating response:", error);
       
-      // Update assistant message with error
       setMessages(prev => 
         prev.map(msg => 
           msg.id === assistantMessageId 
@@ -212,20 +201,55 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full">
-      {/* Main Chat Area */}
       <div className="col-span-1 md:col-span-3 flex flex-col h-[75vh]">
         {!analysisComplete ? (
-          <div className="flex flex-col items-center justify-center h-full space-y-4 bg-muted/20 rounded-lg p-8">
-            <Sparkles className="h-12 w-12 text-muted-foreground" />
-            <h3 className="text-xl font-medium">Run Domain Analysis First</h3>
-            <p className="text-center text-muted-foreground max-w-md">
-              To get the most accurate and relevant responses, please complete a domain analysis first. This helps the AI understand your specific industry context.
-            </p>
-            <Button onClick={onGoToAnalysis}>Go to Analysis</Button>
+          <div className="flex flex-col h-full">
+            <Card className="flex-1 p-4 mb-4 flex flex-col">
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-4 mb-4">
+                  <div className="flex justify-start">
+                    <div className="flex items-start gap-2 max-w-[80%]">
+                      <div className="rounded-full p-2 bg-primary text-primary-foreground">
+                        <Bot className="h-5 w-5" />
+                      </div>
+                      <Card className="p-3 bg-muted">
+                        <div className="whitespace-pre-wrap">
+                          Hello! I'm your Revology Analytics assistant. For the best experience with detailed insights, 
+                          I recommend running a domain analysis first. This will help me provide more accurate and 
+                          relevant information about your specific industry context.
+                        </div>
+                        <div className="mt-4">
+                          <Button onClick={onGoToAnalysis} variant="default" size="sm">
+                            Run Domain Analysis
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </Card>
+            
+            <div className="relative">
+              <Textarea 
+                placeholder="Type your message (analysis not required, but recommended)..." 
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                className="pr-12 resize-none min-h-[80px]"
+              />
+              <Button 
+                size="icon" 
+                className="absolute bottom-3 right-3" 
+                onClick={sendMessage}
+                disabled={!input.trim() || isLoading}
+              >
+                <SendHorizontal className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         ) : (
           <>
-            {/* Chat Messages */}
             <ScrollArea className="flex-1 p-4 border rounded-lg mb-4">
               <div className="space-y-4">
                 {messages.map((message) => (
@@ -265,7 +289,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
               </div>
             </ScrollArea>
             
-            {/* Message Input */}
             <div className="relative">
               <Textarea 
                 placeholder="Type your message..." 
@@ -288,7 +311,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
         )}
       </div>
       
-      {/* Settings Panel */}
       <div className="col-span-1 space-y-6">
         <Card className="p-4 space-y-4">
           <h3 className="text-lg font-medium">Chat Settings</h3>
