@@ -30,7 +30,7 @@ export const generateContentWithRAG = async (
     const queryText = `${title} ${outline.headings.join(' ')} ${keywords.join(' ')}`;
     
     // Retrieve relevant documents from Pinecone
-    const retrievedDocs = await retrieveSimilarDocuments(queryText, 5, {
+    const retrievedDocs = await retrieveSimilarDocuments(queryText, 10, {
       contentType: contentType
     });
     
@@ -90,29 +90,37 @@ export const generateContentOutline = async (
   keywords: string[],
   contentType: string
 ): Promise<ContentOutline> => {
-  // Base structure for SEO-optimized article
+  // Create a structure based on the Revology Analytics framework
   const headings = [
     "Introduction",
-    `What is ${title.split(' ').slice(0, 3).join(' ')}?`,
-    `Key Benefits of ${title.split(' ').slice(0, 3).join(' ')}`,
-    "Strategic Implementation Approaches",
-    "Common Challenges and Solutions",
-    "Case Studies and Real-World Examples",
-    "Best Practices and Recommendations",
+    // Problem section
+    "The Problem",
+    `Challenges in ${title.split(' ').slice(0, 3).join(' ')}`,
+    "Industry Pain Points",
+    // Process section
+    "The Process",
+    `Revology Analytics' Approach to ${title.split(' ').slice(0, 3).join(' ')}`,
+    "Methodology and Implementation",
+    // Payoff section
+    "The Payoff",
+    "Results and Benefits",
+    "Success Stories and Case Studies",
+    // Proposition section
+    "Next Steps",
     "Conclusion"
   ];
   
   const faqs = [
     {
-      question: `What are the most important aspects of ${title}?`,
+      question: `What are the biggest challenges in ${title}?`,
       answer: "This will be generated with AI"
     },
     {
-      question: `How can I implement ${title.split(' ').slice(0, 3).join(' ')} effectively?`,
+      question: `How does Revology Analytics approach ${title.split(' ').slice(0, 3).join(' ')}?`,
       answer: "This will be generated with AI"
     },
     {
-      question: `What are common mistakes to avoid with ${title.split(' ').slice(0, 4).join(' ')}?`,
+      question: `What ROI can businesses expect from implementing solutions for ${title.split(' ').slice(0, 4).join(' ')}?`,
       answer: "This will be generated with AI"
     }
   ];
@@ -144,7 +152,7 @@ export const enhanceWithRAG = async (
     }
     
     // Retrieve documents from Pinecone (or any vector database)
-    const relevantDocs = await retrieveSimilarDocuments(combinedQuery, 3);
+    const relevantDocs = await retrieveSimilarDocuments(combinedQuery, 10);
     
     if (relevantDocs.length === 0) {
       console.log("No relevant documents found for RAG enhancement");
@@ -156,7 +164,7 @@ export const enhanceWithRAG = async (
       .map(doc => doc.metadata.text || "")
       .join("\n\n");
     
-    // Enhanced prompt with the retrieved context and specialized SEO + revenue growth management instructions
+    // Enhanced prompt with the retrieved context and specialized Revology Analytics framework instructions
     const enhancedPrompt = `
       ${prompt}
       
@@ -164,22 +172,36 @@ export const enhanceWithRAG = async (
       ${context}
       
       SPECIALIZED INSTRUCTIONS:
-      1. You are an advanced AI assistant with expertise in both SEO content creation and revenue growth management consulting.
-      2. Create content that:
-         - Incorporates the reference material provided above into your output
-         - Is optimized for SEO using the keywords: ${keywords.join(', ')}
-         - Includes revenue growth management insights where appropriate
-         - Presents information in a clear, organized format
-         - Uses a professional, approachable tone
-      3. Focus on accuracy and relevance:
-         - Use the reference material as your primary factual basis
-         - Do not invent details not found in the reference material
-         - If there is conflicting information, highlight or reconcile it
-      4. Structure content with:
-         - Well-formatted headings, paragraphs, and lists
-         - Clear organization that flows logically
-         - Appropriate HTML formatting
-      5. Ensure all content directly addresses the topic "${heading}" within the broader context of "${title}"
+      
+      You are an advanced AI content generator for Revology Analytics, focusing on distribution, manufacturing, and retail industries.
+      
+      Please follow the "Comprehensive Article Framework Tailored for Revology Analytics":
+      
+      1. PROBLEM SECTION:
+         - Identify the core challenge or pain point that "${heading}" addresses
+         - Make it relevant to distribution, manufacturing, or retail audiences
+         - Use the reference material to ground your description in real facts
+      
+      2. PROCESS SECTION:
+         - Present Revology Analytics' approach or methodology for addressing this challenge
+         - Include concrete steps, frameworks, or strategic considerations
+         - Reference specific methodologies or techniques mentioned in the reference material
+      
+      3. PAYOFF SECTION:
+         - Illustrate the transformations and benefits clients can expect
+         - Include specific metrics, ROI improvements, or success stories from the reference material
+         - Focus on business outcomes and value creation
+      
+      4. PROPOSITION SECTION:
+         - End with a clear call to action that motivates the reader
+         - Suggest next steps for engaging with Revology Analytics on this topic
+      
+      Ensure all content:
+      - Is optimized for SEO using the keywords: ${keywords.join(', ')}
+      - Has a professional yet approachable tone
+      - Uses active voice and concise paragraphs
+      - Is factually accurate and based on the reference material
+      - Addresses "${heading}" within the broader context of "${title}"
     `;
     
     return enhancedPrompt;
