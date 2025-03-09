@@ -12,7 +12,7 @@ import { runRevologySeoActions } from "@/services/keywords/revologySeoStrategy";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { commonLocations, getLocationNameByCode } from "./keyword-gaps/KeywordGapUtils";
+import { commonLocations, getLocationNameByCode } from "@/components/keyword-gaps/KeywordGapUtils";
 
 interface KeywordResearchProps {
   domain: string;

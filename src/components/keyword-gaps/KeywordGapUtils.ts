@@ -1,5 +1,20 @@
 
 import { KeywordGap } from "@/services/keywordService";
+import { ApiSource } from "@/services/keywords/keywordGaps";
+
+// Common locations for keyword research
+export const commonLocations = [
+  { code: 2840, name: "United States" },
+  { code: 2826, name: "United Kingdom" },
+  { code: 2124, name: "Canada" },
+  { code: 2036, name: "Australia" },
+  { code: 2276, name: "Germany" },
+  { code: 2250, name: "France" },
+  { code: 2724, name: "Spain" },
+  { code: 2380, name: "Italy" },
+  { code: 2528, name: "Netherlands" },
+  { code: 2484, name: "Mexico" }
+];
 
 // Global cache for keyword gaps to avoid redundant API calls
 export const keywordGapsCache: {
@@ -11,6 +26,7 @@ export const keywordGapsCache: {
   itemsPerPage: number;
   selectedKeywords: string[];
   locationCode: number;
+  apiSource?: ApiSource; // Add the apiSource property
 } = {
   data: null,
   domain: "",
@@ -19,7 +35,8 @@ export const keywordGapsCache: {
   page: 1,
   itemsPerPage: 15,
   selectedKeywords: [],
-  locationCode: 2840 // Default to US
+  locationCode: 2840, // Default to US
+  apiSource: 'sample' // Default to sample data
 };
 
 // Extract unique competitor names from keyword gaps
