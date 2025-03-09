@@ -92,6 +92,8 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       - Subscription and recurring revenue models
       - Dynamic pricing implementation
       
+      Respond conversationally and directly to the user's questions without following any particular structure or framework. Be helpful, informative, and concise.
+      
       CONVERSATION HISTORY:
       ${context}
       

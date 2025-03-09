@@ -1,4 +1,3 @@
-
 import { createEmbedding, isPineconeConfigured, retrieveSimilarDocuments, testPineconeConnection } from './pineconeService';
 import { toast } from 'sonner';
 import { ContentOutline, GeneratedContent } from '../keywords/types';
@@ -134,6 +133,7 @@ export const generateContentOutline = async (
 
 /**
  * Simple function to enhance content with RAG
+ * Provides information from the knowledge base without enforcing a specific response structure
  */
 export const enhanceWithRAG = async (
   prompt: string,
@@ -164,44 +164,19 @@ export const enhanceWithRAG = async (
       .map(doc => doc.metadata.text || "")
       .join("\n\n");
     
-    // Enhanced prompt with the retrieved context and specialized Revology Analytics framework instructions
+    // Enhanced prompt with the retrieved context, but without the structured framework
     const enhancedPrompt = `
       ${prompt}
       
       REFERENCE MATERIAL:
       ${context}
       
-      SPECIALIZED INSTRUCTIONS:
-      
-      You are an advanced AI content generator for Revology Analytics, focusing on distribution, manufacturing, and retail industries.
-      
-      Please follow the "Comprehensive Article Framework Tailored for Revology Analytics":
-      
-      1. PROBLEM SECTION:
-         - Identify the core challenge or pain point that "${heading}" addresses
-         - Make it relevant to distribution, manufacturing, or retail audiences
-         - Use the reference material to ground your description in real facts
-      
-      2. PROCESS SECTION:
-         - Present Revology Analytics' approach or methodology for addressing this challenge
-         - Include concrete steps, frameworks, or strategic considerations
-         - Reference specific methodologies or techniques mentioned in the reference material
-      
-      3. PAYOFF SECTION:
-         - Illustrate the transformations and benefits clients can expect
-         - Include specific metrics, ROI improvements, or success stories from the reference material
-         - Focus on business outcomes and value creation
-      
-      4. PROPOSITION SECTION:
-         - End with a clear call to action that motivates the reader
-         - Suggest next steps for engaging with Revology Analytics on this topic
-      
-      Ensure all content:
-      - Is optimized for SEO using the keywords: ${keywords.join(', ')}
-      - Has a professional yet approachable tone
-      - Uses active voice and concise paragraphs
-      - Is factually accurate and based on the reference material
-      - Addresses "${heading}" within the broader context of "${title}"
+      IMPORTANT:
+      - Use the reference material to help provide accurate information when responding
+      - Respond naturally and conversationally as a pricing and revenue consultant
+      - You don't need to follow any specific structure in your responses
+      - Focus on providing helpful insights and answering the user's questions directly
+      - Use your knowledge about pricing strategies and revenue optimization, supplemented by the reference material
     `;
     
     return enhancedPrompt;
