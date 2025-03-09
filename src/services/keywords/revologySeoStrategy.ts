@@ -1,7 +1,7 @@
 
 import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
-import { OPENAI_API_KEY } from './apiConfig';
+import { getApiKey } from '@/services/apiIntegrationService';
 
 interface RevologySeoReport {
   competitorInsights: {
@@ -50,7 +50,7 @@ export const generateRevologySeoStrategy = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${getApiKey('openai')}`
       },
       body: JSON.stringify({
         model: 'gpt-4o',

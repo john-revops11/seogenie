@@ -1,209 +1,82 @@
+import { KeywordData, KeywordVolumeResponse } from '../../types';
+import { getApiKey } from '@/services/apiIntegrationService';
 
-import { toast } from "sonner";
-import { KeywordData } from '../../types';
-import { DATAFORSEO_KEYWORDS_API_URL } from '../../apiConfig';
-import { getDataForSeoCredentials } from './auth';
-import { parseApiResponse, convertToKeywordData, checkApiResponseStatus } from './utils';
+const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/search_volume/live";
 
 /**
- * Function to fetch related keywords using DataForSEO API
+ * Fetches keyword search volume data from DataForSEO
  */
-export const fetchRelatedKeywords = async (seedKeywords: string[]): Promise<KeywordData[]> => {
+export const fetchKeywordVolumeData = async (keywords: string[]): Promise<KeywordData[]> => {
   try {
-    console.log(`Fetching related keywords from DataForSEO API for keywords:`, seedKeywords);
+    console.log(`Fetching DataForSEO volume data for ${keywords.length} keywords`);
     
-    const { encodedCredentials } = getDataForSeoCredentials();
-    
-    // Prepare the request body - remove any empty keywords
-    const filteredKeywords = seedKeywords.filter(kw => kw.trim() !== "");
-    
-    if (filteredKeywords.length === 0) {
-      throw new Error("No valid keywords provided");
+    if (keywords.length === 0) {
+      return [];
     }
     
-    // Modify the request structure to match the API format
-    const requestBody = JSON.stringify([
-      {
-        location_code: 2840, // US location code
-        language_code: "en",
-        keywords: filteredKeywords,
-        sort_by: "relevance",
-        limit: 50 // Add limit for better results
-      }
-    ]);
+    const apiCredentials = getApiKey('dataforseo');
+    if (!apiCredentials) {
+      throw new Error('DataForSEO API credentials not configured');
+    }
     
-    console.log("DataForSEO request body:", requestBody);
-    
+    const login = apiCredentials.split(':')[0];
+    const password = apiCredentials.split(':')[1];
+
+    const postData = {
+      tasks: keywords.map(keyword => ({
+        keyword: keyword,
+        language_name: "English",
+        location_name: "United States"
+      }))
+    };
+
     const response = await fetch(DATAFORSEO_KEYWORDS_API_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Authorization": `Basic ${encodedCredentials}`,
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(`${login}:${password}`)
       },
-      body: requestBody
+      body: JSON.stringify(postData)
     });
 
-    // Check for API errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`DataForSEO API error ${response.status}: ${errorText}`);
-      throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
+      console.error('DataForSEO API error:', errorText);
+      throw new Error(`DataForSEO API error: ${response.status}`);
     }
 
-    // Parse response
-    const data = await parseApiResponse(response);
-    
-    // Debug the actual response structure
-    console.log("DataForSEO keywords response:", JSON.stringify(data).substring(0, 500) + "...");
-    
-    // Check for DataForSEO API-specific error status
-    checkApiResponseStatus(data);
-    
-    // Check if we have a valid response with tasks
+    const data = await response.json();
+
     if (!data.tasks || data.tasks.length === 0) {
-      console.warn(`DataForSEO API returned no tasks`);
-      throw new Error("API returned no tasks");
+      console.warn('DataForSEO API returned no tasks');
+      return [];
     }
-    
-    const task = data.tasks[0];
-    
-    // Check if the task has result data
-    if (!task.result || task.result.length === 0) {
-      console.warn(`DataForSEO API task has no results`);
-      throw new Error("API task has no results");
-    }
-    
-    // Parse the keywords from the response
-    const keywords: KeywordData[] = [];
-    
-    // Process all keywords in the results
-    for (const item of task.result) {
-      if (item.keyword_data) {
-        // Check for the keywords array
-        const keywordItems = item.keyword_data?.keywords || [];
-        
-        for (const keywordItem of keywordItems) {
-          keywords.push(convertToKeywordData(keywordItem));
-        }
-      }
-    }
-    
-    if (keywords.length === 0) {
-      // If no keywords were found in the primary structure, check for alternative structure
-      for (const item of task.result) {
-        if (item.keyword) {
-          keywords.push(convertToKeywordData(item));
-        }
-      }
-    }
-    
-    if (keywords.length === 0) {
-      console.warn(`DataForSEO API returned no valid keywords`);
-      throw new Error("API returned no valid keywords");
-    }
-    
-    console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
-    return keywords;
-  } catch (error) {
-    console.error(`Error fetching related keywords:`, error);
-    throw error;
-  }
-};
 
-/**
- * New function to fetch keywords for multiple seed keywords with improved error handling
- */
-export const fetchKeywordsForMultipleKeywords = async (
-  seedKeywords: string[],
-  locationCode: number = 2840
-): Promise<KeywordData[]> => {
-  try {
-    console.log(`Fetching keywords from DataForSEO API for keywords:`, seedKeywords);
-    
-    const { encodedCredentials, login } = getDataForSeoCredentials();
-    console.log(`Using provided DataForSEO credentials for user: ${login}`);
-    
-    // Filter out empty keywords
-    const filteredKeywords = seedKeywords.filter(kw => kw.trim() !== "");
-    
-    if (filteredKeywords.length === 0) {
-      throw new Error("No valid keywords provided");
-    }
-    
-    // Prepare the request body with explicit sort_by parameter
-    const requestBody = JSON.stringify([
-      {
-        location_code: locationCode,
-        language_code: "en",
-        keywords: filteredKeywords,
-        sort_by: "relevance"  // Adding the sort_by parameter as specified in the example
+    // Map the API response to our KeywordData format
+    const keywordData: KeywordData[] = [];
+    data.tasks.forEach((task: any) => {
+      if (task.result && Array.isArray(task.result)) {
+        task.result.forEach((resultItem: any) => {
+          if (resultItem.items && Array.isArray(resultItem.items)) {
+            resultItem.items.forEach((item: any) => {
+              keywordData.push({
+                keyword: item.keyword,
+                monthly_search: item.search_volume,
+                competition: item.competition,
+                competition_index: item.competition,
+                cpc: item.cpc,
+                position: null,
+                rankingUrl: null
+              });
+            });
+          }
+        });
       }
-    ]);
-    
-    console.log("DataForSEO keywords API URL:", DATAFORSEO_KEYWORDS_API_URL);
-    console.log("DataForSEO keywords request body:", requestBody);
-    console.log("DataForSEO credentials (encoded):", encodedCredentials.substring(0, 10) + "...");
-    
-    const response = await fetch(DATAFORSEO_KEYWORDS_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${encodedCredentials}`,
-        "Content-Type": "application/json"
-      },
-      body: requestBody
     });
 
-    console.log("DataForSEO API response status:", response.status);
-    
-    // Check for API errors
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`DataForSEO API error ${response.status}: ${errorText}`);
-      throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
-    }
-
-    // Parse response
-    const data = await parseApiResponse(response);
-    
-    // Debug the actual response structure
-    console.log("DataForSEO keywords response status_code:", data.status_code);
-    console.log("DataForSEO keywords response status_message:", data.status_message);
-    console.log("DataForSEO keywords response structure:", JSON.stringify(data).substring(0, 500) + "...");
-    
-    // Check for DataForSEO API-specific error status
-    checkApiResponseStatus(data);
-    
-    // Parse the response
-    if (!data.tasks || data.tasks.length === 0 || !data.tasks[0].result) {
-      console.error(`DataForSEO API returned no results for keywords`);
-      throw new Error("API returned no results");
-    }
-    
-    // Process the keywords from the response
-    const keywords: KeywordData[] = [];
-    
-    // Loop through each result
-    for (const item of data.tasks[0].result) {
-      if (item.keyword_data && item.keyword_data.keywords) {
-        // Process each keyword
-        for (const keywordItem of item.keyword_data.keywords) {
-          keywords.push(convertToKeywordData(keywordItem));
-        }
-      } else if (item.keyword) {
-        // Fallback for different response structure
-        keywords.push(convertToKeywordData(item));
-      }
-    }
-    
-    if (keywords.length === 0) {
-      console.error(`DataForSEO API returned no valid keywords`);
-      throw new Error("API returned no valid keywords");
-    }
-    
-    console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
-    return keywords;
+    return keywordData;
   } catch (error) {
-    console.error(`Error fetching keywords for multiple keywords:`, error);
+    console.error('Error fetching keyword volume data:', error);
     throw error;
   }
 };

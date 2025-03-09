@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { ContentOutline, GeneratedContent } from './types';
 import { generateContentWithRAG } from '../vector/ragService';
 import { isPineconeConfigured } from '../vector/pineconeService';
-import { OPENAI_API_KEY } from './apiConfig';
+import { getApiKey } from '@/services/apiIntegrationService';
 import { generateTitleSuggestions } from './generation/titleGenerator';
 import { getContentTemplates } from './generation/templateService';
 import { fillContentBlocks } from './generation/contentBlockService';

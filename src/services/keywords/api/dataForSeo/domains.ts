@@ -1,88 +1,59 @@
+import { getApiKey } from '@/services/apiIntegrationService';
 
-import { KeywordData } from '../../types';
-import { DATAFORSEO_API_URL } from '../../apiConfig';
-import { getDataForSeoCredentials } from './auth';
-import { parseApiResponse, convertToKeywordData, checkApiResponseStatus } from './utils';
+const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced";
 
-/**
- * Enhanced function to fetch DataForSEO API for domain keywords with location support
- */
-export const fetchDataForSEOKeywords = async (
-  domainUrl: string, 
-  locationCode: number = 2840
-): Promise<KeywordData[]> => {
+// Export function to fetch domain keywords using DataForSEO
+export const fetchDataForSeoDomainKeywords = async (domain: string) => {
   try {
-    console.log(`Fetching keywords from DataForSEO API for domain: ${domainUrl} in location: ${locationCode}`);
+    console.log(`Fetching DataForSEO domain keywords for: ${domain}`);
     
-    const { encodedCredentials } = getDataForSeoCredentials();
+    const apiCredentials = getApiKey('dataforseo');
+    if (!apiCredentials) {
+      throw new Error('DataForSEO API credentials not configured');
+    }
     
-    // Prepare the request body
-    const requestBody = JSON.stringify([
-      {
-        location_code: locationCode, // Use the provided location code
-        language_code: "en",
-        target: domainUrl,
-        sort_by: "relevance"
-      }
-    ]);
-    
-    console.log("DataForSEO domain keywords request body:", requestBody);
-    
+    const [login, password] = apiCredentials.split(':');
+
+    const postData = {
+      tasks: [
+        {
+          target: domain,
+          location_name: "United States",
+          language_name: "English"
+        }
+      ]
+    };
+
+    const auth = 'Basic ' + Buffer.from(`${login}:${password}`).toString('base64');
+
     const response = await fetch(DATAFORSEO_API_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Authorization": `Basic ${encodedCredentials}`,
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
+        'Authorization': auth
       },
-      body: requestBody
+      body: JSON.stringify(postData)
     });
 
-    // Check for API errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn(`DataForSEO API error ${response.status}: ${errorText}`);
-      throw new Error(`API error ${response.status}: ${errorText.substring(0, 100)}`);
+      console.error('DataForSEO API error:', response.status, errorText);
+      throw new Error(`DataForSEO API error: ${response.status}`);
     }
 
-    // Parse response
-    const data = await parseApiResponse(response);
-    
-    // Debug the actual response structure
-    console.log("DataForSEO domain keywords response:", JSON.stringify(data).substring(0, 500) + "...");
-    
-    // Check if we have a valid response with tasks
-    if (!data.tasks || data.tasks.length === 0) {
-      console.warn(`DataForSEO API returned no tasks for ${domainUrl}`);
-      throw new Error("API returned no tasks");
+    const data = await response.json();
+
+    if (data.tasks && data.tasks[0] && data.tasks[0].result && data.tasks[0].result[0]) {
+      const organicResults = data.tasks[0].result[0].items || [];
+      const keywords = organicResults.map((item: any) => item.keyword);
+      console.log(`DataForSEO keywords for ${domain}:`, keywords);
+      return keywords;
+    } else {
+      console.warn('No results from DataForSEO API for domain:', domain);
+      return [];
     }
-    
-    const task = data.tasks[0];
-    
-    // Check if the task has result data
-    if (!task.result || task.result.length === 0) {
-      console.warn(`DataForSEO API task has no results for ${domainUrl}`);
-      throw new Error("API task has no results");
-    }
-    
-    // Parse the keywords from the response
-    const keywords: KeywordData[] = [];
-    
-    // Process all keywords in the results
-    for (const item of task.result) {
-      if (item.keyword) {
-        keywords.push(convertToKeywordData(item));
-      }
-    }
-    
-    if (keywords.length === 0) {
-      console.warn(`DataForSEO API returned no valid keywords for ${domainUrl}`);
-      throw new Error("API returned no valid keywords");
-    }
-    
-    console.log(`Successfully extracted ${keywords.length} keywords from DataForSEO API`);
-    return keywords;
   } catch (error) {
-    console.error(`Error fetching DataForSEO keywords for ${domainUrl}:`, error);
+    console.error('Error fetching DataForSEO domain keywords:', error);
     throw error;
   }
 };

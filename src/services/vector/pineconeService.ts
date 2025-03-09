@@ -1,5 +1,4 @@
-
-import { OPENAI_API_KEY } from '../keywords/apiConfig';
+import { getApiKey } from '@/services/apiIntegrationService';
 
 // Pinecone configuration info
 let PINECONE_API_KEY = '';
@@ -146,7 +145,7 @@ export const createEmbedding = async (text: string): Promise<number[]> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${getApiKey('openai')}`
       },
       body: JSON.stringify({
         input: text,

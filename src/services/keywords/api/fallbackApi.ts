@@ -1,10 +1,5 @@
-
 import { KeywordData, DomainKeywordResponse } from '../types';
-import { 
-  API_HOST, 
-  API_KEY, 
-  API_URL 
-} from '../apiConfig';
+import { getApiKey } from '@/services/apiIntegrationService';
 
 /**
  * Function to fetch domain keywords using the original fallback API
@@ -20,11 +15,14 @@ export const fetchFallbackDomainKeywords = async (domainUrl: string): Promise<Ke
 
     console.log(`Falling back to original API for domain: ${domainUrl}`);
     
+    const API_HOST = "domain-seo-analysis.p.rapidapi.com";
+    const API_URL = "https://domain-seo-analysis.p.rapidapi.com/domain-seo-analysis";
+    
     const response = await fetch(`${API_URL}?${queryParams}`, {
       method: "GET",
       headers: {
         "x-rapidapi-host": API_HOST,
-        "x-rapidapi-key": API_KEY
+        "x-rapidapi-key": getApiKey('rapidapi')
       }
     });
 

@@ -1,11 +1,5 @@
-
 import { KeywordData, GoogleKeywordInsightResponse } from '../types';
-import { 
-  GOOGLE_KEYWORD_API_HOST, 
-  GOOGLE_KEYWORD_API_URL,
-  API_KEY
-} from '../apiConfig';
-import { getCompetitionLabel } from './apiUtils';
+import { getApiKey } from '@/services/apiIntegrationService';
 
 /**
  * Function to fetch keywords using Google Keyword Insight API
@@ -19,11 +13,14 @@ export const fetchGoogleKeywordInsights = async (domainUrl: string): Promise<Key
 
     console.log(`Fetching keywords from Google Keyword Insight API for domain: ${domainUrl}`);
     
+    const GOOGLE_KEYWORD_API_HOST = "google-keyword-research-api.p.rapidapi.com";
+    const GOOGLE_KEYWORD_API_URL = "https://google-keyword-research-api.p.rapidapi.com/keywords";
+    
     const response = await fetch(`${GOOGLE_KEYWORD_API_URL}?${queryParams}`, {
       method: "GET",
       headers: {
         "x-rapidapi-host": GOOGLE_KEYWORD_API_HOST,
-        "x-rapidapi-key": API_KEY
+        "x-rapidapi-key": getApiKey('rapidapi')
       }
     });
 
