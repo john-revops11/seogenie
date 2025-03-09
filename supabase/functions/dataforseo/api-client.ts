@@ -28,7 +28,21 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`DataForSEO API request failed with status ${response.status}: ${errorText}`);
-      throw new Error(`API request failed with status ${response.status}: ${errorText.substring(0, 200)}`);
+      
+      // Enhanced error message with more details
+      const errorMessage = `DataForSEO API request failed (${response.status} ${response.statusText})`;
+      const errorDetails = {
+        status: response.status,
+        statusText: response.statusText,
+        url: endpoint,
+        method,
+        responseText: errorText.substring(0, 200),
+      };
+      
+      throw new Error(JSON.stringify({
+        message: errorMessage,
+        details: errorDetails
+      }));
     }
     
     // Try to parse JSON response, handle empty or malformed responses
@@ -45,7 +59,13 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
       
       if (json.status_code !== 20000) {
         console.error(`API returned error code ${json.status_code}: ${json.status_message || 'Unknown error'}`);
-        throw new Error(`API returned error code ${json.status_code}: ${json.status_message || 'Unknown error'}`);
+        throw new Error(JSON.stringify({
+          message: `DataForSEO API error: ${json.status_message || 'Unknown error'}`,
+          details: {
+            statusCode: json.status_code,
+            statusMessage: json.status_message,
+          }
+        }));
       }
       
       return json;

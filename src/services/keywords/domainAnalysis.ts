@@ -45,13 +45,30 @@ export const analyzeDomains = async (
         throw new Error(`Edge function error: ${error.message}`);
       }
       
-      if (!data || !data.success) {
-        const errorMessage = data?.error || 'Unknown API error';
+      if (!data) {
+        throw new Error('Edge function returned empty response');
+      }
+      
+      if (!data.success) {
+        // Extract error details for better error messages
+        let errorMessage = data.error || 'Unknown API error';
+        
+        // Try to provide more context based on known error scenarios
+        if (errorMessage.includes('404')) {
+          errorMessage = `API returned 404: The domain may not be indexed or recognized by DataForSEO. Try a more established domain or check spelling.`;
+        } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
+          errorMessage = `Authentication error: Please check your API credentials in Settings.`;
+        } else if (errorMessage.includes('429')) {
+          errorMessage = `Rate limit exceeded: Too many requests to DataForSEO API. Please try again later.`;
+        } else if (errorMessage.includes('500')) {
+          errorMessage = `DataForSEO server error: The service is experiencing technical difficulties. Please try again later.`;
+        }
+        
         throw new Error(errorMessage);
       }
       
       if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-        throw new Error(`No keywords found for ${formattedMainDomain}`);
+        throw new Error(`No keywords found for ${formattedMainDomain}. This could mean the domain has no organic rankings yet.`);
       }
       
       mainKeywords = data.results;
