@@ -3,35 +3,38 @@ import { makeDataForSEORequest } from "./api-client.ts";
 
 // Function to get domain keywords - this is the main function we need
 export async function getDomainKeywords(domain: string, location_code = 2840) {
-  // Format the request based on the example - using keywords_for_site endpoint
+  // Format domain by removing http/https if present
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+  
+  // Format the request based on the API documentation example
   const data = [{
-    target: domain.startsWith('http') ? domain : `https://${domain}`,
+    target: cleanDomain,
     location_code,
     language_code: "en",
-    limit: 100
+    sort_by: "relevance"
   }];
   
   try {
-    // First create a task for getting keywords
-    const taskResult = await makeDataForSEORequest('/v3/keywords_data/google/organic/live', 'POST', data);
+    // Use the correct endpoint as shown in the documentation
+    const result = await makeDataForSEORequest('/v3/keywords_data/google_ads/keywords_for_site/live', 'POST', data);
     
-    if (!taskResult.tasks || taskResult.tasks.length === 0 || !taskResult.tasks[0].result) {
+    if (!result || !result.tasks || result.tasks.length === 0 || !result.tasks[0].result) {
       throw new Error(`No results found for domain: ${domain}`);
     }
     
-    const keywordsData = taskResult.tasks[0].result[0]?.items || [];
+    const keywordsData = result.tasks[0].result || [];
     console.log(`Got ${keywordsData.length} keywords for domain ${domain}`);
     
     return {
       success: true,
       results: keywordsData.map((item: any) => ({
         keyword: item.keyword || "",
-        position: item.position || null,
+        position: null, // Not provided in this endpoint
         monthly_search: item.search_volume || 0,
         cpc: item.cpc || 0,
         competition: item.competition || 0, 
         competition_index: item.competition_index || 50,
-        rankingUrl: item.url || null,
+        rankingUrl: null, // Not provided in this endpoint
       })),
     };
   } catch (error) {

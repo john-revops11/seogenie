@@ -42,10 +42,20 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
       // Check for specific status codes to provide better error messages
       if (response.status === 404) {
         throw new Error(JSON.stringify({
-          message: `DataForSEO API endpoint not found or no data available for this domain. This often happens with less established domains or incorrect formats.`,
+          message: `DataForSEO API endpoint not found or no data available for this domain. Domain may not have enough data for analysis.`,
           details: {
             ...errorDetails,
             recommendation: "Try using a more established domain or check if you're using the correct endpoint."
+          }
+        }));
+      }
+      
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(JSON.stringify({
+          message: `DataForSEO API authentication failed. Please check your API credentials.`,
+          details: {
+            ...errorDetails,
+            recommendation: "Verify your DataForSEO API credentials in the settings."
           }
         }));
       }

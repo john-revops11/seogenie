@@ -34,7 +34,7 @@ export const processCompetitorData = async (
     }
     
     if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-      throw new Error(`No keywords found for ${domain}`);
+      throw new Error(`No keywords found for ${domain}. This competitor may not have keyword data available.`);
     }
     
     const keywords = data.results;

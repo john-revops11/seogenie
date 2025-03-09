@@ -13,7 +13,9 @@ export const AnalysisError = ({ errorMessage, onReset }: AnalysisErrorProps) => 
   const showTroubleshootingTips = 
     errorMessage.includes('404') || 
     errorMessage.includes('API') || 
-    errorMessage.includes('credentials');
+    errorMessage.includes('credentials') ||
+    errorMessage.includes('domain has no') ||
+    errorMessage.includes('not have any keywords');
   
   return (
     <Card className="border-destructive/50">
@@ -31,12 +33,13 @@ export const AnalysisError = ({ errorMessage, onReset }: AnalysisErrorProps) => 
           <div className="bg-muted/50 p-3 rounded-md text-sm space-y-2">
             <h4 className="font-medium">Troubleshooting Tips:</h4>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              {errorMessage.includes('404') && (
+              {(errorMessage.includes('404') || errorMessage.includes('not have any keywords') || errorMessage.includes('domain has no')) && (
                 <>
-                  <li>Try using a more established domain with organic traffic</li>
+                  <li>Try using a more established domain with better search visibility</li>
+                  <li>Use domains that run Google Ads campaigns for better data availability</li>
                   <li>Double-check the domain spelling</li>
                   <li>Remove "www." or any subdomain and try again</li>
-                  <li>Make sure the domain has organic search visibility</li>
+                  <li>Popular domains like facebook.com, google.com, or nytimes.com should work</li>
                 </>
               )}
               {errorMessage.includes('credentials') && (
