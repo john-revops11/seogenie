@@ -1,95 +1,115 @@
-
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React from "react";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import ApiIntegrationManager from "@/components/ApiIntegrationManager";
+import { Toggle } from "@/components/ui/toggle";
+import ContentTypeSelector from "../ContentTypeSelector";
 
 interface SettingsTabContentProps {
-  showApiForm: boolean;
-  newApiName: string;
-  newApiKey: string;
-  setShowApiForm: (show: boolean) => void;
-  setNewApiName: (name: string) => void;
-  setNewApiKey: (key: string) => void;
-  handleAddNewApi: () => boolean;
+  contentType: string;
+  creativity: number;
+  contentPreferences: string[];
+  selectedTopic: string;
+  selectedKeywords: string[];
+  title: string;
+  onContentTypeChange: (value: string) => void;
+  onCreativityChange: (value: number) => void;
+  onContentPreferenceToggle: (preference: string) => void;
 }
 
-export const SettingsTabContent = ({
-  showApiForm,
-  newApiName,
-  newApiKey,
-  setShowApiForm,
-  setNewApiName,
-  setNewApiKey,
-  handleAddNewApi
-}: SettingsTabContentProps) => {
+export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
+  contentType,
+  creativity,
+  contentPreferences,
+  selectedTopic,
+  selectedKeywords,
+  title,
+  onContentTypeChange,
+  onCreativityChange,
+  onContentPreferenceToggle,
+}) => {
+  const contentPreferenceOptions = [
+    { label: "Data-Driven", value: "data-driven" },
+    { label: "SEO-Focused", value: "seo-focused" },
+    { label: "Examples", value: "examples" },
+    { label: "Statistics", value: "statistics" },
+    { label: "Actionable", value: "actionable" },
+    { label: "FAQ Section", value: "faq" },
+  ];
+
   return (
-    <Card>
-      <CardHeader className="border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="size-10 bg-revology rounded-full flex items-center justify-center text-white font-bold">RA</div>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Label className="text-base">Content Type</Label>
+        <ContentTypeSelector 
+          value={contentType}
+          onChange={onContentTypeChange}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <Label className="text-base">Creativity Level</Label>
+          <span className="text-sm text-muted-foreground">{creativity}%</span>
+        </div>
+        <Slider 
+          value={[creativity]} 
+          min={0} 
+          max={100} 
+          step={10}
+          onValueChange={(values) => onCreativityChange(values[0])}
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Factual</span>
+          <span>Balanced</span>
+          <span>Creative</span>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label className="text-base">Content Preferences</Label>
+        <div className="flex flex-wrap gap-2">
+          {contentPreferenceOptions.map((preference) => (
+            <Toggle
+              key={preference.value}
+              variant="outline"
+              pressed={contentPreferences.includes(preference.value)}
+              onPressedChange={() => onContentPreferenceToggle(preference.value)}
+            >
+              {preference.label}
+            </Toggle>
+          ))}
+        </div>
+      </div>
+      
+      <div className="space-y-2 p-3 border rounded-md">
+        <Label className="text-base">Content Overview</Label>
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <CardTitle>Revology Analytics Settings</CardTitle>
-            <CardDescription>Configure your analysis preferences</CardDescription>
+            <p className="text-sm font-medium">Title:</p>
+            <p className="text-sm text-muted-foreground">{title || "Not set"}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Topic:</p>
+            <p className="text-sm text-muted-foreground">{selectedTopic || "Not set"}</p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-6">
-        <div className="space-y-3">
-          <Label htmlFor="api-key">API Key</Label>
-          <Input id="api-key" type="password" value="b84198e677msh416f3b6bc96f2b3p1a60f3jsnaadb78e898c9" readOnly className="transition-all bg-muted/30" />
-          <p className="text-sm text-muted-foreground">Used for keyword research and data retrieval</p>
-        </div>
-        
-        <Separator />
-        
-        <ApiIntegrationManager />
-        
-        <Separator />
-        
-        <div className="space-y-3">
-          <Label htmlFor="webhook-url">Webhook URL</Label>
-          <Input id="webhook-url" placeholder="https://your-webhook-endpoint.com/seo-updates" className="transition-all" />
-          <p className="text-sm text-muted-foreground">Receive notifications when analysis is complete</p>
-          
-          <div className="pt-2">
-            <Label className="text-sm font-normal flex items-center gap-2">
-              <input type="checkbox" className="rounded text-revology" />
-              Enable webhook notifications
-            </Label>
+        <div className="mt-2">
+          <p className="text-sm font-medium">Keywords:</p>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {selectedKeywords.length > 0 ? (
+              selectedKeywords.map(keyword => (
+                <Badge key={keyword} variant="outline" className="text-xs">
+                  {keyword}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No keywords selected</p>
+            )}
           </div>
         </div>
-        
-        <div className="space-y-3">
-          <Label htmlFor="brand-voice">Brand Voice</Label>
-          <Textarea id="brand-voice" placeholder="Describe your brand's tone and voice for AI-generated content" className="transition-all" />
-        </div>
-        
-        <div className="space-y-3">
-          <Label>Content Preferences</Label>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
-              Include meta descriptions
-            </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
-              Focus on H1/H2 tags
-            </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
-              Use bullet points
-            </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-revology-light hover:text-revology hover:border-revology/30 transition-all">
-              Add internal links
-            </Badge>
-          </div>
-        </div>
-        
-        <Button className="transition-all bg-revology hover:bg-revology-dark">Save Settings</Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
