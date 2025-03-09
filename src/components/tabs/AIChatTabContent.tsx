@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import ChatMessages from "@/components/chat/ChatMessages";
 import ChatInput from "@/components/chat/ChatInput";
 import ChatSettings from "@/components/chat/ChatSettings";
-import { Message, ChatProps } from "@/components/chat/types";
+import { Message, ChatProps, FileAttachment } from "@/components/chat/types";
+import { analyzeDocument } from "@/services/keywords/generation/documentAnalysis";
 
 export const AIChatTabContent: React.FC<ChatProps> = ({
   analysisComplete,
@@ -32,7 +33,7 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
         {
           id: "initial-message",
           role: "assistant",
-          content: "Hello! I'm your Revology Analytics pricing and revenue consultant. How can I help you optimize pricing strategies, revenue growth management, or market positioning today?",
+          content: "Hello! I'm your Revology Analytics pricing and revenue consultant. I can help with pricing strategies, analyze documents, extract data from spreadsheets, or interpret PDFs. Upload files or ask me questions!",
           timestamp: new Date(),
         }
       ]);
@@ -51,16 +52,87 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
     setRagEnabled(enabled);
   };
   
-  const sendMessage = async (inputText: string) => {
-    if (!inputText.trim() || isLoading) return;
+  const processFiles = async (files: File[]): Promise<FileAttachment[]> => {
+    const fileAttachments: FileAttachment[] = [];
+    
+    for (const file of files) {
+      const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Create a basic file attachment first
+      const fileAttachment: FileAttachment = {
+        id: fileId,
+        name: file.name,
+        type: file.type,
+      };
+      
+      fileAttachments.push(fileAttachment);
+      
+      try {
+        // For document analysis (PDF, Excel, Word, etc.)
+        if (file.type === 'application/pdf' || 
+            file.name.endsWith('.xlsx') || 
+            file.name.endsWith('.xls') || 
+            file.name.endsWith('.csv') || 
+            file.name.endsWith('.doc') || 
+            file.name.endsWith('.docx') || 
+            file.type === 'text/plain') {
+          
+          const analysisResult = await analyzeDocument(file, selectedModel);
+          
+          // Update the file attachment with analysis results
+          const index = fileAttachments.findIndex(f => f.id === fileId);
+          if (index !== -1) {
+            fileAttachments[index] = {
+              ...fileAttachments[index],
+              analysis: analysisResult
+            };
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        toast.error(`Failed to process ${file.name}. ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+    
+    return fileAttachments;
+  };
+  
+  const sendMessage = async (inputText: string, files?: File[]) => {
+    if ((!inputText.trim() && (!files || files.length === 0)) || isLoading) return;
     
     const userMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Create the user message
     const userMessage: Message = {
       id: userMessageId,
       role: 'user',
       content: inputText,
       timestamp: new Date()
     };
+    
+    // Add file attachments if provided
+    if (files && files.length > 0) {
+      // First add message with loading state to show user message immediately
+      setMessages(prev => [...prev, userMessage]);
+      
+      try {
+        setIsLoading(true);
+        const fileAttachments = await processFiles(files);
+        
+        // Update user message with processed files
+        userMessage.files = fileAttachments;
+        
+        // Update message in state
+        setMessages(prev => 
+          prev.map(msg => msg.id === userMessageId ? userMessage : msg)
+        );
+      } catch (error) {
+        console.error("Error processing files:", error);
+        toast.error("Error processing files. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+    }
     
     const assistantMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const assistantMessage: Message = {
@@ -71,14 +143,78 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       isLoading: true
     };
     
-    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    // Add both messages to state if files were not already processed
+    if (!files || files.length === 0) {
+      setMessages(prev => [...prev, userMessage, assistantMessage]);
+    } else {
+      // Only add assistant message since user message was already added
+      setMessages(prev => [...prev, assistantMessage]);
+    }
+    
     setIsLoading(true);
     
     try {
       const context = messages
         .filter(msg => !msg.isLoading)
-        .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+        .map(msg => {
+          let msgText = `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`;
+          
+          // Add file context if available
+          if (msg.files && msg.files.length > 0) {
+            msgText += '\n\nAttached files:';
+            msg.files.forEach(file => {
+              msgText += `\n- ${file.name}`;
+              
+              if (file.analysis) {
+                if (file.analysis.summary) {
+                  msgText += `\n  Summary: ${file.analysis.summary}`;
+                }
+                
+                if (file.analysis.tables && file.analysis.tables.length > 0) {
+                  msgText += `\n  Contains ${file.analysis.tables.length} table(s)`;
+                }
+                
+                if (file.analysis.extractedText) {
+                  const textPreview = file.analysis.extractedText.substring(0, 100) + 
+                    (file.analysis.extractedText.length > 100 ? '...' : '');
+                  msgText += `\n  Text preview: ${textPreview}`;
+                }
+              }
+            });
+          }
+          
+          return msgText;
+        })
         .join("\n\n");
+      
+      // Build file context for the current message
+      let fileContext = '';
+      if (userMessage.files && userMessage.files.length > 0) {
+        fileContext = '\n\nThe user has uploaded the following files:\n';
+        
+        userMessage.files.forEach((file, index) => {
+          fileContext += `\nFile ${index + 1}: ${file.name} (${file.type})\n`;
+          
+          if (file.analysis) {
+            if (file.analysis.summary) {
+              fileContext += `Summary: ${file.analysis.summary}\n`;
+            }
+            
+            if (file.analysis.tables && file.analysis.tables.length > 0) {
+              fileContext += `Tables detected: ${file.analysis.tables.length}\n`;
+              file.analysis.tables.forEach((table, tableIndex) => {
+                fileContext += `Table ${tableIndex + 1}:\n${JSON.stringify(table, null, 2)}\n`;
+              });
+            }
+            
+            if (file.analysis.extractedText) {
+              fileContext += `Extracted text:\n${file.analysis.extractedText}\n`;
+            }
+          }
+        });
+        
+        fileContext += '\nPlease analyze these files and provide insights based on their content.';
+      }
       
       let prompt = `
       You are an expert pricing and revenue growth management consultant for Revology Analytics, specializing in helping businesses optimize their pricing strategies, revenue streams, and market positioning.
@@ -92,12 +228,14 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       - Subscription and recurring revenue models
       - Dynamic pricing implementation
       
+      You can also analyze documents, extract insights from spreadsheets, and interpret PDFs.
+      
       Respond conversationally and directly to the user's questions without following any particular structure or framework. Be helpful, informative, and concise.
       
       CONVERSATION HISTORY:
       ${context}
       
-      User: ${inputText}
+      User: ${inputText}${fileContext}
       
       Assistant: 
       `;
@@ -129,9 +267,12 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
         }
       }
       
+      // Use o1 model for document analysis when files are present
+      const modelToUse = userMessage.files && userMessage.files.length > 0 ? "gpt-4o" : selectedModel;
+      
       const response = await generateWithAI(
         provider,
-        selectedModel,
+        modelToUse,
         prompt,
         70
       );
@@ -151,7 +292,7 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
           msg.id === assistantMessageId 
             ? { 
                 ...msg, 
-                content: "I'm sorry, I couldn't generate a response about pricing or revenue strategy. Please try again or consider changing the model.", 
+                content: "I'm sorry, I couldn't generate a response. Please try again or consider changing the model.", 
                 isLoading: false 
               }
             : msg

@@ -10,6 +10,20 @@ export interface Message {
     chunksRetrieved?: number;
     relevanceScore?: number;
   };
+  files?: FileAttachment[];
+}
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;
+  url?: string;
+  content?: string;
+  analysis?: {
+    tables?: any[];
+    extractedText?: string;
+    summary?: string;
+  };
 }
 
 export interface ChatProps {

@@ -23,20 +23,20 @@ export const defaultAIModels: AIModel[] = [
     isPrimary: true
   },
   {
+    id: 'gpt-4o',
+    name: 'GPT-4o (o1)',
+    provider: 'openai',
+    description: 'Powerful multimodal model for document analysis and table extraction',
+    capabilities: ['text', 'vision', 'function calling', 'document analysis'],
+    maxTokens: 8192
+  },
+  {
     id: 'gpt-4.5-turbo',
     name: 'GPT-4.5 Turbo',
     provider: 'openai',
     description: 'Advanced successor to GPT-4 with improved reasoning capabilities',
     capabilities: ['text', 'vision', 'function calling'],
     maxTokens: 12288
-  },
-  {
-    id: 'gpt-4o',
-    name: 'GPT-4o',
-    provider: 'openai',
-    description: 'Powerful OpenAI model with multimodal capabilities',
-    capabilities: ['text', 'vision', 'function calling'],
-    maxTokens: 8192
   },
   {
     id: 'gpt-4o-mini',
