@@ -14,13 +14,29 @@ export interface AIModel {
 export const defaultAIModels: AIModel[] = [
   // OpenAI models
   {
+    id: 'gpt-4o-1',
+    name: 'GPT-4o-1',
+    provider: 'openai',
+    description: 'Latest and most capable OpenAI model with enhanced multimodal capabilities',
+    capabilities: ['text', 'vision', 'function calling'],
+    maxTokens: 16384,
+    isPrimary: true
+  },
+  {
+    id: 'gpt-4.5-turbo',
+    name: 'GPT-4.5 Turbo',
+    provider: 'openai',
+    description: 'Advanced successor to GPT-4 with improved reasoning capabilities',
+    capabilities: ['text', 'vision', 'function calling'],
+    maxTokens: 12288
+  },
+  {
     id: 'gpt-4o',
     name: 'GPT-4o',
     provider: 'openai',
-    description: 'Latest and most capable OpenAI model with multimodal capabilities',
+    description: 'Powerful OpenAI model with multimodal capabilities',
     capabilities: ['text', 'vision', 'function calling'],
-    maxTokens: 8192,
-    isPrimary: true
+    maxTokens: 8192
   },
   {
     id: 'gpt-4o-mini',

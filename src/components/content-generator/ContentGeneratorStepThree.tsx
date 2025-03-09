@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
@@ -51,7 +52,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
     
     setAvailableModels(getModelsForProvider(aiProvider));
     
-    if (!availableModels.some(m => m.id === aiModel)) {
+    if (!aiModel || !availableModels.some(m => m.id === aiModel)) {
       const primaryModel = getPrimaryModelForProvider(aiProvider);
       if (primaryModel) {
         onAIModelChange(primaryModel.id);
@@ -59,7 +60,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
         onAIModelChange(availableModels[0].id);
       }
     }
-  }, [aiProvider, aiModel]);
+  }, [aiProvider, aiModel, availableModels.length, onAIModelChange]);
 
   const handleGenerateClick = () => {
     if (!apiConfigured) {
@@ -67,6 +68,11 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
       return;
     }
     onGenerateContent();
+  };
+
+  const getModelName = (modelId: string): string => {
+    const model = availableModels.find(m => m.id === modelId);
+    return model ? model.name : modelId;
   };
 
   return (
@@ -139,7 +145,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
             <div><span className="font-medium">Creativity:</span> {creativity}%</div>
             <div><span className="font-medium">Generation Method:</span> {ragEnabled ? "RAG-Enhanced" : "Standard"}</div>
             <div><span className="font-medium">AI Provider:</span> {aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'}</div>
-            <div><span className="font-medium">AI Model:</span> {availableModels.find(m => m.id === aiModel)?.name || aiModel}</div>
+            <div><span className="font-medium">AI Model:</span> {getModelName(aiModel)}</div>
           </div>
         </div>
         
