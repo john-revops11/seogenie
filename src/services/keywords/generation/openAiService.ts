@@ -17,6 +17,30 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
     throw new Error("OpenAI API key is not configured");
   }
   
+  // The specialized system prompt for SEO and revenue growth management
+  const systemPrompt = `
+You are an advanced AI assistant with expertise in both SEO content creation and revenue growth management consulting.
+
+Your responsibilities and constraints:
+1. Content Generation:
+   - Incorporate the reference material into your final output.
+   - Ensure the output is optimized for SEO (target keywords, headings, readability).
+   - Infuse revenue growth management insights where appropriate.
+
+2. Accuracy & Relevance:
+   - Use the reference material provided as your primary factual basis.
+   - Do not invent or hallucinate details not found in the retrieved material.
+   - If there is conflicting or incomplete information, highlight or reconcile the discrepancy.
+
+3. Structure & Style:
+   - Present information in a clear, organized format (e.g., using headings, bullet points, or step-by-step outlines).
+   - Write in a professional, approachable tone suitable for SEO-driven content that also addresses high-level business strategy.
+
+4. Final Output:
+   - Respond directly to the request in a manner that satisfies both SEO best practices and revenue growth management perspectives.
+   - Reference or quote the reference material as needed for factual grounding.
+`;
+  
   // Try primary model (gpt-4o-1) first
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -30,7 +54,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
         messages: [
           {
             role: 'system',
-            content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -65,7 +89,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
           messages: [
             {
               role: 'system',
-              content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+              content: systemPrompt
             },
             {
               role: 'user',
@@ -92,7 +116,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
             messages: [
               {
                 role: 'system',
-                content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+                content: systemPrompt
               },
               {
                 role: 'user',
@@ -119,7 +143,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a professional content writer specializing in SEO-optimized content. Write engaging, informative paragraphs that naturally incorporate keywords.'
+                  content: systemPrompt
                 },
                 {
                   role: 'user',

@@ -156,20 +156,30 @@ export const enhanceWithRAG = async (
       .map(doc => doc.metadata.text || "")
       .join("\n\n");
     
-    // Enhanced prompt with the retrieved context and specific SEO structure guidelines
+    // Enhanced prompt with the retrieved context and specialized SEO + revenue growth management instructions
     const enhancedPrompt = `
       ${prompt}
       
-      Use the following retrieved information to enhance your response with factual, up-to-date content:
+      REFERENCE MATERIAL:
       ${context}
       
-      IMPORTANT GUIDELINES:
-      1. Create concise, well-structured content organized in short paragraphs (3-4 sentences max)
-      2. Naturally incorporate these keywords: ${keywords.join(', ')}
-      3. Ensure content flows logically and maintains readability
-      4. Support claims with factual information from the retrieved context
-      5. Format content appropriately for the web (short paragraphs, proper lists, etc.)
-      6. Do not mention that you're using retrieved information
+      SPECIALIZED INSTRUCTIONS:
+      1. You are an advanced AI assistant with expertise in both SEO content creation and revenue growth management consulting.
+      2. Create content that:
+         - Incorporates the reference material provided above into your output
+         - Is optimized for SEO using the keywords: ${keywords.join(', ')}
+         - Includes revenue growth management insights where appropriate
+         - Presents information in a clear, organized format
+         - Uses a professional, approachable tone
+      3. Focus on accuracy and relevance:
+         - Use the reference material as your primary factual basis
+         - Do not invent details not found in the reference material
+         - If there is conflicting information, highlight or reconcile it
+      4. Structure content with:
+         - Well-formatted headings, paragraphs, and lists
+         - Clear organization that flows logically
+         - Appropriate HTML formatting
+      5. Ensure all content directly addresses the topic "${heading}" within the broader context of "${title}"
     `;
     
     return enhancedPrompt;
@@ -178,4 +188,3 @@ export const enhanceWithRAG = async (
     return prompt; // Return the original prompt if RAG enhancement fails
   }
 };
-
