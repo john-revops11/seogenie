@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { defaultAIModels, AIProvider, AIModel, getModelsForProvider } from "@/types/aiModels";
+import { defaultAIModels, AIProvider, AIModel, getModelsForProvider, getPrimaryModelForProvider } from "@/types/aiModels";
 
 interface ContentGeneratorStepThreeProps {
   contentType: string;
@@ -50,16 +49,13 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
       setApiConfigured(true);
     }
     
-    // Update available models when AI provider changes
     setAvailableModels(getModelsForProvider(aiProvider));
     
-    // If the current model isn't available for this provider, select the primary model
     if (!availableModels.some(m => m.id === aiModel)) {
       const primaryModel = getPrimaryModelForProvider(aiProvider);
       if (primaryModel) {
         onAIModelChange(primaryModel.id);
       } else if (availableModels.length > 0) {
-        // Fallback to first available model if no primary model is defined
         onAIModelChange(availableModels[0].id);
       }
     }

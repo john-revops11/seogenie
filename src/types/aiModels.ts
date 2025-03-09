@@ -17,7 +17,7 @@ export const defaultAIModels: AIModel[] = [
     id: 'gpt-4o',
     name: 'GPT-4o',
     provider: 'openai',
-    description: 'Most capable model for complex tasks and reasoning',
+    description: 'Latest and most capable OpenAI model with multimodal capabilities',
     capabilities: ['text', 'vision', 'function calling'],
     maxTokens: 8192,
     isPrimary: true
@@ -40,21 +40,29 @@ export const defaultAIModels: AIModel[] = [
   },
   // Gemini models
   {
-    id: 'gemini-pro',
-    name: 'Gemini Pro',
+    id: 'gemini-1.5-pro',
+    name: 'Gemini 1.5 Pro',
     provider: 'gemini',
-    description: 'Google\'s most capable language model',
-    capabilities: ['text'],
-    maxTokens: 8192,
+    description: 'Latest Gemini model with advanced capabilities and context length',
+    capabilities: ['text', 'vision'],
+    maxTokens: 32768,
     isPrimary: true
   },
   {
-    id: 'gemini-pro-vision',
-    name: 'Gemini Pro Vision',
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
     provider: 'gemini',
-    description: 'Supports both text and image inputs',
+    description: 'Fast and efficient version of Gemini 1.5',
     capabilities: ['text', 'vision'],
-    maxTokens: 4096
+    maxTokens: 16384
+  },
+  {
+    id: 'gemini-pro',
+    name: 'Gemini Pro',
+    provider: 'gemini',
+    description: 'Previous generation Gemini model',
+    capabilities: ['text'],
+    maxTokens: 8192
   }
 ];
 

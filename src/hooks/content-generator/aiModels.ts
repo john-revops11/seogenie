@@ -16,7 +16,9 @@ export const generateTitlesWithAI = async (
   const prompt = `Generate 5 SEO-optimized title suggestions for a ${contentType} about "${topic}" that incorporates these keywords: ${keywords.join(", ")}. 
   Format the output as a simple list of titles, one per line. Include the current year where appropriate.`;
   
-  const titlesText = await generateWithAI(provider, provider === 'openai' ? 'gpt-4o-mini' : 'gemini-pro', prompt, 50);
+  // Use the most efficient model for title generation
+  const model = provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash';
+  const titlesText = await generateWithAI(provider, model, prompt, 50);
   
   // Parse the response into individual titles
   return titlesText

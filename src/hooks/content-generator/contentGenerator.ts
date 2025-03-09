@@ -45,7 +45,8 @@ export const generateContent = async ({
   }
 
   // Ensure we have a valid model, fallback to primary if needed
-  const modelToUse = aiModel || getPrimaryModelForProvider(aiProvider)?.id || 'gpt-4o';
+  const primaryModel = getPrimaryModelForProvider(aiProvider);
+  const modelToUse = aiModel || (primaryModel?.id || (aiProvider === 'openai' ? 'gpt-4o' : 'gemini-1.5-pro'));
 
   toast.info("Generating content outline...");
   
