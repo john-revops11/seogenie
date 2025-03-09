@@ -39,6 +39,13 @@ export function useKeywordGapAnalysis(
     getPaginationInfo
   } = useKeywordGapPagination(keywordGaps);
 
+  // Log competitor domains for debugging
+  useEffect(() => {
+    if (competitorDomains.length > 0) {
+      console.log("Current competitor domains in analysis:", competitorDomains);
+    }
+  }, [competitorDomains]);
+
   // Check if keywords array has changed (new analysis or competitor added)
   useEffect(() => {
     if (keywords.length !== lastKeywordsLength && keywords.length > 0) {
@@ -62,8 +69,8 @@ export function useKeywordGapAnalysis(
     
     if (hasChanged && keywords.length > 0 && keywordGapsCache.data?.length > 0) {
       console.log("Competitor domains have changed, refreshing analysis");
-      console.log("Cached:", normalizedCachedCompetitors);
-      console.log("Current:", normalizedCurrentCompetitors);
+      console.log("Cached competitors:", normalizedCachedCompetitors);
+      console.log("Current competitors:", normalizedCurrentCompetitors);
       refreshAnalysis();
     }
   }, [competitorDomains, domain, keywords]);
@@ -89,6 +96,7 @@ export function useKeywordGapAnalysis(
       setError(null);
       
       try {
+        // Make sure to pass normalized domain names for consistent display
         const gaps = await fetchKeywordGaps(domain, competitorDomains, keywords, apiSource, locationCode);
         
         if (gaps && gaps.length > 0) {

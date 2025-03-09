@@ -12,6 +12,9 @@ export const mergeKeywordData = (
 ): KeywordData[] => {
   const keywordMap = new Map<string, KeywordData>();
   
+  // Normalize main domain name
+  const normalizedMainDomain = mainDomain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+  
   // Add main domain keywords first
   mainKeywords.forEach(kw => {
     // Simulate a ranking position and URL for the main domain
@@ -33,8 +36,11 @@ export const mergeKeywordData = (
   
   // Add competitor keywords and rankings
   competitorResults.forEach(({ domain, keywords }) => {
-    // Extract just the domain name without protocol and www prefix for cleaner display
+    // Make sure to use the normalized domain that was returned from processCompetitorData
     const domainName = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    
+    // Debug log for domain normalization
+    console.log(`Processing competitor in mergeKeywordData: ${domain} -> ${domainName}`);
     
     keywords.forEach(kw => {
       if (keywordMap.has(kw.keyword)) {

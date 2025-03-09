@@ -21,10 +21,13 @@ export function KeywordGapFilter({
 }: KeywordGapFilterProps) {
   const [prevCompetitorCount, setPrevCompetitorCount] = useState(uniqueCompetitors.length);
   
-  // Debug logging
+  // Enhanced debugging for competitors
   useEffect(() => {
     console.log("Unique competitors in filter:", uniqueCompetitors);
-  }, [uniqueCompetitors]);
+    if (uniqueCompetitors.length !== prevCompetitorCount) {
+      console.log(`Competitor count changed: ${prevCompetitorCount} -> ${uniqueCompetitors.length}`);
+    }
+  }, [uniqueCompetitors, prevCompetitorCount]);
   
   // Detect when new competitors are added
   useEffect(() => {

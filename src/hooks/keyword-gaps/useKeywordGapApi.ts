@@ -4,7 +4,8 @@ import { KeywordGap } from "@/services/keywordService";
 import { findKeywordGaps, ApiSource } from "@/services/keywords/keywordGaps";
 import { 
   keywordGapsCache, 
-  getLocationNameByCode
+  getLocationNameByCode,
+  normalizeDomainList
 } from "@/components/keyword-gaps/KeywordGapUtils";
 
 export function useKeywordGapApi() {
@@ -17,10 +18,13 @@ export function useKeywordGapApi() {
     locationCode: number = 2840
   ): Promise<KeywordGap[] | null> => {
     try {
-      console.log(`Generating keyword gaps for ${domain} vs`, competitorDomains);
+      const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+      const validCompetitors = competitorDomains.filter(d => d && d.trim() !== '');
+      
+      console.log(`Generating keyword gaps for ${normalizedDomain} vs`, validCompetitors);
       console.log(`Using API source: ${apiSource} and location: ${getLocationNameByCode(locationCode)}`);
       
-      const gaps = await findKeywordGaps(domain, competitorDomains, keywords, 100, apiSource, locationCode);
+      const gaps = await findKeywordGaps(domain, validCompetitors, keywords, 100, apiSource, locationCode);
       
       if (gaps && gaps.length > 0) {
         console.log(`Found ${gaps.length} keyword gaps`);
@@ -34,8 +38,8 @@ export function useKeywordGapApi() {
         console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
         
         keywordGapsCache.data = gaps;
-        keywordGapsCache.domain = domain;
-        keywordGapsCache.competitorDomains = [...competitorDomains];
+        keywordGapsCache.domain = normalizedDomain;
+        keywordGapsCache.competitorDomains = normalizeDomainList(validCompetitors);
         keywordGapsCache.keywordsLength = keywords.length;
         keywordGapsCache.locationCode = locationCode;
         

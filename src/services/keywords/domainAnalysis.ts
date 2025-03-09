@@ -92,7 +92,8 @@ export const analyzeDomains = async (
         console.error(`Error processing competitor ${domain}:`, error);
         toast.error(`Failed to analyze ${domain}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         // Continue with next competitor instead of failing entire analysis
-        competitorResults.push({ domain, keywords: [] });
+        const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+        competitorResults.push({ domain: normalizedDomain, keywords: [] });
       }
     }
     

@@ -35,11 +35,22 @@ export function KeywordGapContent({
   onRefreshAnalysis,
   totalKeywords
 }: KeywordGapContentProps) {
-  // Log for debugging purposes
+  // Enhanced logging for debugging competitor issues
   useEffect(() => {
     if (keywordGaps && keywordGaps.length > 0) {
       const competitors = getUniqueCompetitors(keywordGaps);
       console.log("Available competitors in gaps:", competitors);
+      
+      // Group gaps by competitor for better debugging
+      const gapsByCompetitor = new Map<string, number>();
+      keywordGaps.forEach(gap => {
+        if (gap.competitor) {
+          gapsByCompetitor.set(gap.competitor, (gapsByCompetitor.get(gap.competitor) || 0) + 1);
+        }
+      });
+      console.log("Gaps distribution by competitor:", Object.fromEntries(gapsByCompetitor));
+    } else {
+      console.log("No keyword gaps data available yet");
     }
   }, [keywordGaps]);
 
