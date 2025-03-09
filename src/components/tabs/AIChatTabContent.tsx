@@ -1,61 +1,30 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, User, Bot, SendHorizontal, MessageCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { AIProvider, AIModel, getModelsForProvider } from "@/types/aiModels";
+
+import React, { useState, useEffect } from "react";
+import { AIProvider, getModelsForProvider } from "@/types/aiModels";
 import { enhanceWithRAG } from "@/services/vector/ragService";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { toast } from "sonner";
-import RagSettings from "@/components/content-generator/RagSettings";
+import ChatMessages from "@/components/chat/ChatMessages";
+import ChatInput from "@/components/chat/ChatInput";
+import ChatSettings from "@/components/chat/ChatSettings";
+import { Message, ChatProps } from "@/components/chat/types";
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  isLoading?: boolean;
-  ragInfo?: {
-    used: boolean;
-    chunksRetrieved?: number;
-    relevanceScore?: number;
-  };
-}
-
-interface AIChatTabContentProps {
-  analysisComplete: boolean;
-  onGoToAnalysis: () => void;
-}
-
-export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
+export const AIChatTabContent: React.FC<ChatProps> = ({
   analysisComplete,
   onGoToAnalysis
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [ragEnabled, setRagEnabled] = useState(false);
   const [provider, setProvider] = useState<AIProvider>("openai");
   const [selectedModel, setSelectedModel] = useState<string>("gpt-4o-mini");
-  const [availableModels, setAvailableModels] = useState<AIModel[]>(getModelsForProvider("openai"));
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [availableModels, setAvailableModels] = useState<any[]>(getModelsForProvider("openai"));
   
   useEffect(() => {
     const models = getModelsForProvider(provider);
     setAvailableModels(models);
     setSelectedModel(models.length > 0 ? models[0].id : "");
   }, [provider]);
-  
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
   
   useEffect(() => {
     if (messages.length === 0) {
@@ -70,8 +39,8 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
     }
   }, [messages]);
   
-  const handleProviderChange = (value: string) => {
-    setProvider(value as AIProvider);
+  const handleProviderChange = (value: AIProvider) => {
+    setProvider(value);
   };
   
   const handleModelChange = (value: string) => {
@@ -82,25 +51,14 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
     setRagEnabled(enabled);
   };
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-  
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (inputText: string) => {
+    if (!inputText.trim() || isLoading) return;
     
     const userMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const userMessage: Message = {
       id: userMessageId,
       role: 'user',
-      content: input,
+      content: inputText,
       timestamp: new Date()
     };
     
@@ -114,7 +72,6 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
     };
     
     setMessages(prev => [...prev, userMessage, assistantMessage]);
-    setInput("");
     setIsLoading(true);
     
     try {
@@ -138,7 +95,7 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
       CONVERSATION HISTORY:
       ${context}
       
-      User: ${input}
+      User: ${inputText}
       
       Assistant: 
       `;
@@ -155,7 +112,7 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
             prompt,
             "Pricing Strategy", 
             "Revology Analytics Pricing Consultant", 
-            input.split(" ")
+            inputText.split(" ")
           );
           
           if (enhancedPrompt !== prompt) {
@@ -212,124 +169,23 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full">
       <div className="col-span-1 md:col-span-3 flex flex-col h-[75vh]">
-        <Card className="flex-1 p-4 mb-4 flex flex-col">
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
-                >
-                  <div className={`flex items-start gap-2 max-w-[80%] ${message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'}`}>
-                    <div className={`rounded-full p-2 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
-                      {message.role === 'assistant' ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                    </div>
-                    <Card className={`p-3 ${message.role === 'assistant' ? 'bg-muted' : 'bg-primary/10'}`}>
-                      {message.isLoading ? (
-                        <div className="animate-pulse flex space-x-2 items-center">
-                          <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                          <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                          <div className="h-2 w-2 bg-current rounded-full animate-bounce"></div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="whitespace-pre-wrap">{message.content}</div>
-                          {message.ragInfo?.used && (
-                            <div className="mt-2 flex items-center gap-1">
-                              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1 py-0">
-                                <Sparkles className="h-3 w-3 text-amber-500" />
-                                <span className="text-xs">RAG-enhanced</span>
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-        </Card>
-        
-        <div className="relative">
-          <Textarea 
-            placeholder="Ask about pricing strategies, revenue optimization, or market positioning..." 
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            className="pr-12 resize-none min-h-[80px]"
-            disabled={isLoading}
-          />
-          <Button 
-            size="icon" 
-            className="absolute bottom-3 right-3" 
-            onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
-          >
-            <SendHorizontal className="h-5 w-5" />
-          </Button>
-        </div>
+        <ChatMessages messages={messages} />
+        <ChatInput isLoading={isLoading} onSendMessage={sendMessage} />
       </div>
       
       <div className="col-span-1 space-y-6">
-        <Card className="p-4 space-y-4">
-          <h3 className="text-lg font-medium flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Pricing Consultant
-          </h3>
-          
-          <div className="space-y-2">
-            <Label>AI Provider</Label>
-            <RadioGroup 
-              defaultValue={provider} 
-              onValueChange={handleProviderChange}
-              className="flex flex-col space-y-1"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="openai" id="openai" />
-                <Label htmlFor="openai">OpenAI</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="gemini" id="gemini" />
-                <Label htmlFor="gemini">Google Gemini</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Language Model</Label>
-            <Select value={selectedModel} onValueChange={handleModelChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a model" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableModels.map(model => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedModel && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {availableModels.find(m => m.id === selectedModel)?.description || ""}
-              </p>
-            )}
-          </div>
-          
-          <RagSettings enabled={ragEnabled} onToggle={handleRagToggle} />
-          
-          <Button 
-            variant="outline" 
-            onClick={clearChat} 
-            disabled={messages.length === 0 || isLoading} 
-            className="w-full"
-          >
-            Clear Chat
-          </Button>
-        </Card>
+        <ChatSettings 
+          provider={provider}
+          selectedModel={selectedModel}
+          availableModels={availableModels}
+          ragEnabled={ragEnabled}
+          messagesCount={messages.length}
+          isLoading={isLoading}
+          onProviderChange={handleProviderChange}
+          onModelChange={handleModelChange}
+          onRagToggle={handleRagToggle}
+          onClearChat={clearChat}
+        />
       </div>
     </div>
   );
