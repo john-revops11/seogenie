@@ -1,16 +1,15 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, User, Bot, SendHorizontal, PanelRightOpen, MessageCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sparkles, User, Bot, SendHorizontal, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { AIProvider, AIModel, defaultAIModels, getModelsForProvider } from "@/types/aiModels";
+import { AIProvider, AIModel, getModelsForProvider } from "@/types/aiModels";
 import { enhanceWithRAG } from "@/services/vector/ragService";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { toast } from "sonner";
@@ -65,7 +64,7 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
         {
           id: "initial-message",
           role: "assistant",
-          content: "Hello! I'm your Revology Analytics assistant. How can I help you with revenue growth management, distribution, or retail analytics today?",
+          content: "Hello! I'm your Revology Analytics pricing and revenue consultant. How can I help you optimize pricing strategies, revenue growth management, or market positioning today?",
           timestamp: new Date(),
         }
       ]);
@@ -126,6 +125,18 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
         .join("\n\n");
       
       let prompt = `
+      You are an expert pricing and revenue growth management consultant for Revology Analytics, specializing in helping businesses optimize their pricing strategies, revenue streams, and market positioning.
+      
+      Your expertise includes:
+      - Price optimization and elasticity analysis
+      - Revenue growth management
+      - Promotional effectiveness
+      - Customer segmentation and willingness-to-pay analysis
+      - Market penetration and pricing strategies
+      - Subscription and recurring revenue models
+      - Dynamic pricing implementation
+      
+      CONVERSATION HISTORY:
       ${context}
       
       User: ${input}
@@ -143,16 +154,16 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
         try {
           const enhancedPrompt = await enhanceWithRAG(
             prompt,
-            "Chat Response", 
-            "Revology Analytics Chat Assistant", 
+            "Pricing Strategy", 
+            "Revology Analytics Pricing Consultant", 
             input.split(" ")
           );
           
           if (enhancedPrompt !== prompt) {
             prompt = enhancedPrompt;
             ragInfo.used = true;
-            ragInfo.chunksRetrieved = 10;
-            ragInfo.relevanceScore = 0.85;
+            ragInfo.chunksRetrieved = 8;
+            ragInfo.relevanceScore = 0.87;
           }
         } catch (error) {
           console.error("RAG enhancement failed:", error);
@@ -182,7 +193,7 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
           msg.id === assistantMessageId 
             ? { 
                 ...msg, 
-                content: "I'm sorry, I couldn't generate a response. Please try again or consider changing the model.", 
+                content: "I'm sorry, I couldn't generate a response about pricing or revenue strategy. Please try again or consider changing the model.", 
                 isLoading: false 
               }
             : msg
@@ -202,118 +213,73 @@ export const AIChatTabContent: React.FC<AIChatTabContentProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full">
       <div className="col-span-1 md:col-span-3 flex flex-col h-[75vh]">
-        {!analysisComplete ? (
-          <div className="flex flex-col h-full">
-            <Card className="flex-1 p-4 mb-4 flex flex-col">
-              <ScrollArea className="flex-1 pr-4">
-                <div className="space-y-4 mb-4">
-                  <div className="flex justify-start">
-                    <div className="flex items-start gap-2 max-w-[80%]">
-                      <div className="rounded-full p-2 bg-primary text-primary-foreground">
-                        <Bot className="h-5 w-5" />
-                      </div>
-                      <Card className="p-3 bg-muted">
-                        <div className="whitespace-pre-wrap">
-                          Hello! I'm your Revology Analytics assistant. For the best experience with detailed insights, 
-                          I recommend running a domain analysis first. This will help me provide more accurate and 
-                          relevant information about your specific industry context.
-                        </div>
-                        <div className="mt-4">
-                          <Button onClick={onGoToAnalysis} variant="default" size="sm">
-                            Run Domain Analysis
-                          </Button>
-                        </div>
-                      </Card>
+        <Card className="flex-1 p-4 mb-4 flex flex-col">
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div 
+                  key={message.id} 
+                  className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
+                >
+                  <div className={`flex items-start gap-2 max-w-[80%] ${message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'}`}>
+                    <div className={`rounded-full p-2 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                      {message.role === 'assistant' ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
                     </div>
+                    <Card className={`p-3 ${message.role === 'assistant' ? 'bg-muted' : 'bg-primary/10'}`}>
+                      {message.isLoading ? (
+                        <div className="animate-pulse flex space-x-2 items-center">
+                          <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                          <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                          <div className="h-2 w-2 bg-current rounded-full animate-bounce"></div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          {message.ragInfo?.used && (
+                            <div className="mt-2 flex items-center gap-1">
+                              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1 py-0">
+                                <Sparkles className="h-3 w-3 text-amber-500" />
+                                <span className="text-xs">RAG-enhanced</span>
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Card>
                   </div>
                 </div>
-              </ScrollArea>
-            </Card>
-            
-            <div className="relative">
-              <Textarea 
-                placeholder="Type your message (analysis not required, but recommended)..." 
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                className="pr-12 resize-none min-h-[80px]"
-              />
-              <Button 
-                size="icon" 
-                className="absolute bottom-3 right-3" 
-                onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
-              >
-                <SendHorizontal className="h-5 w-5" />
-              </Button>
+              ))}
+              <div ref={messagesEndRef} />
             </div>
-          </div>
-        ) : (
-          <>
-            <ScrollArea className="flex-1 p-4 border rounded-lg mb-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div 
-                    key={message.id} 
-                    className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
-                  >
-                    <div className={`flex items-start gap-2 max-w-[80%] ${message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'}`}>
-                      <div className={`rounded-full p-2 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
-                        {message.role === 'assistant' ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                      </div>
-                      <Card className={`p-3 ${message.role === 'assistant' ? 'bg-muted' : 'bg-primary/10'}`}>
-                        {message.isLoading ? (
-                          <div className="animate-pulse flex space-x-2 items-center">
-                            <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                            <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                            <div className="h-2 w-2 bg-current rounded-full animate-bounce"></div>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="whitespace-pre-wrap">{message.content}</div>
-                            {message.ragInfo?.used && (
-                              <div className="mt-2 flex items-center gap-1">
-                                <Badge variant="outline" className="text-xs flex items-center gap-1 px-1 py-0">
-                                  <Sparkles className="h-3 w-3 text-amber-500" />
-                                  <span className="text-xs">RAG-enhanced</span>
-                                </Badge>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </Card>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-            
-            <div className="relative">
-              <Textarea 
-                placeholder="Type your message..." 
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                className="pr-12 resize-none min-h-[80px]"
-                disabled={isLoading}
-              />
-              <Button 
-                size="icon" 
-                className="absolute bottom-3 right-3" 
-                onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
-              >
-                <SendHorizontal className="h-5 w-5" />
-              </Button>
-            </div>
-          </>
-        )}
+          </ScrollArea>
+        </Card>
+        
+        <div className="relative">
+          <Textarea 
+            placeholder="Ask about pricing strategies, revenue optimization, or market positioning..." 
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            className="pr-12 resize-none min-h-[80px]"
+            disabled={isLoading}
+          />
+          <Button 
+            size="icon" 
+            className="absolute bottom-3 right-3" 
+            onClick={sendMessage}
+            disabled={!input.trim() || isLoading}
+          >
+            <SendHorizontal className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
       
       <div className="col-span-1 space-y-6">
         <Card className="p-4 space-y-4">
-          <h3 className="text-lg font-medium">Chat Settings</h3>
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Pricing Consultant
+          </h3>
           
           <div className="space-y-2">
             <Label>AI Provider</Label>
