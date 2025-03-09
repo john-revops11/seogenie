@@ -1,7 +1,9 @@
+
 import { makeDataForSEORequest } from "./api-client.ts";
 
 // Function to get domain keywords - this is the main function we need
 export async function getDomainKeywords(domain: string, location_code = 2840) {
+  // Format the request based on the example - using keywords_for_site endpoint
   const data = [{
     target: domain.startsWith('http') ? domain : `https://${domain}`,
     location_code,
@@ -10,14 +12,14 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
   }];
   
   try {
-    // Use the correct endpoint for domain keywords
-    const result = await makeDataForSEORequest('/v3/keywords_data/google/organic/live', 'POST', data);
+    // First create a task for getting keywords
+    const taskResult = await makeDataForSEORequest('/v3/keywords_data/google/organic/live', 'POST', data);
     
-    if (!result.tasks || result.tasks.length === 0 || !result.tasks[0].result) {
+    if (!taskResult.tasks || taskResult.tasks.length === 0 || !taskResult.tasks[0].result) {
       throw new Error(`No results found for domain: ${domain}`);
     }
     
-    const keywordsData = result.tasks[0].result[0]?.items || [];
+    const keywordsData = taskResult.tasks[0].result[0]?.items || [];
     console.log(`Got ${keywordsData.length} keywords for domain ${domain}`);
     
     return {

@@ -36,6 +36,7 @@ export const AnalysisError = ({ errorMessage, onReset }: AnalysisErrorProps) => 
                   <li>Try using a more established domain with organic traffic</li>
                   <li>Double-check the domain spelling</li>
                   <li>Remove "www." or any subdomain and try again</li>
+                  <li>Make sure the domain has organic search visibility</li>
                 </>
               )}
               {errorMessage.includes('credentials') && (

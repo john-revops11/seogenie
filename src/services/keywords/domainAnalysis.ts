@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { KeywordData } from './types';
 import { ensureValidUrl } from './api';
@@ -55,7 +54,7 @@ export const analyzeDomains = async (
         
         // Try to provide more context based on known error scenarios
         if (errorMessage.includes('404')) {
-          errorMessage = `API returned 404: The domain may not be indexed or recognized by DataForSEO. Try a more established domain or check spelling.`;
+          errorMessage = `API returned 404: The domain "${formattedMainDomain}" may not be indexed or have organic rankings. Try a more established domain or check spelling.`;
         } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
           errorMessage = `Authentication error: Please check your API credentials in Settings.`;
         } else if (errorMessage.includes('429')) {
