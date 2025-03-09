@@ -17,7 +17,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
     throw new Error("OpenAI API key is not configured");
   }
   
-  // Try primary model (GPT-4o-mini) first
+  // Try primary model (GPT-4o) first
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -26,7 +26,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -43,8 +43,8 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
     });
     
     if (!response.ok) {
-      console.error(`OpenAI API error with gpt-4o-mini: ${response.status}`, await response.text());
-      throw new Error(`OpenAI API error with gpt-4o-mini: ${response.status}`);
+      console.error(`OpenAI API error with gpt-4o: ${response.status}`, await response.text());
+      throw new Error(`OpenAI API error with gpt-4o: ${response.status}`);
     }
     
     const data = await response.json();
@@ -57,9 +57,9 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
     
     return data.choices[0].message.content.trim();
   } catch (primaryModelError) {
-    console.warn("Primary model (gpt-4o-mini) failed, using fallback model:", primaryModelError);
+    console.warn("Primary model (gpt-4o) failed, using fallback model:", primaryModelError);
     
-    // Fallback to GPT-3.5-turbo
+    // Fallback to GPT-4o-mini
     try {
       const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -68,7 +68,7 @@ export const generateParagraphContent = async (prompt: string, creativity: numbe
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',

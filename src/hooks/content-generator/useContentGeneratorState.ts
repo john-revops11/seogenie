@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GeneratedContent } from "@/services/keywords/types";
-import { AIProvider } from "@/types/aiModels";
+import { AIProvider, getPrimaryModelForProvider } from "@/types/aiModels";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 export type StepType = 1 | 2 | 3 | 4;
@@ -30,9 +29,12 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
   // Check if Pinecone is configured and enable RAG by default if it is
   const [ragEnabled, setRagEnabled] = useState(isPineconeConfigured());
   
-  // AI provider settings
+  // AI provider settings - default to OpenAI
   const [aiProvider, setAIProvider] = useState<AIProvider>("openai");
-  const [aiModel, setAIModel] = useState("gpt-4o-mini");
+  
+  // Get primary model for the selected provider as default
+  const primaryModel = getPrimaryModelForProvider(aiProvider);
+  const [aiModel, setAIModel] = useState(primaryModel?.id || "gpt-4o");
   
   // Content and generation state
   const [generatedContent, setGeneratedContent] = useState<GeneratedContentInternal | null>(null);
@@ -44,6 +46,14 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
   const [topics, setTopics] = useState<string[]>([]);
   const [titleSuggestions, setTitleSuggestions] = useState<{ [topic: string]: string[] }>({});
   const [selectedTopic, setSelectedTopic] = useState("");
+
+  // Update AI model when provider changes
+  useEffect(() => {
+    const primaryModel = getPrimaryModelForProvider(aiProvider);
+    if (primaryModel) {
+      setAIModel(primaryModel.id);
+    }
+  }, [aiProvider]);
 
   // Reset title when topic changes
   useEffect(() => {

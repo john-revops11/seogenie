@@ -53,11 +53,14 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
     // Update available models when AI provider changes
     setAvailableModels(getModelsForProvider(aiProvider));
     
-    // If the current model isn't available for this provider, select the first available one
+    // If the current model isn't available for this provider, select the primary model
     if (!availableModels.some(m => m.id === aiModel)) {
-      const firstModel = getModelsForProvider(aiProvider)[0];
-      if (firstModel) {
-        onAIModelChange(firstModel.id);
+      const primaryModel = getPrimaryModelForProvider(aiProvider);
+      if (primaryModel) {
+        onAIModelChange(primaryModel.id);
+      } else if (availableModels.length > 0) {
+        // Fallback to first available model if no primary model is defined
+        onAIModelChange(availableModels[0].id);
       }
     }
   }, [aiProvider, aiModel]);

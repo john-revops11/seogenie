@@ -1,4 +1,5 @@
-import { AIProvider } from "@/types/aiModels";
+
+import { AIProvider, getPrimaryModelForProvider } from "@/types/aiModels";
 import { toast } from "sonner";
 import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { generateContentOutline } from "@/services/vector/ragService";
@@ -43,6 +44,9 @@ export const generateContent = async ({
     throw new Error(`${aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured`);
   }
 
+  // Ensure we have a valid model, fallback to primary if needed
+  const modelToUse = aiModel || getPrimaryModelForProvider(aiProvider)?.id || 'gpt-4o';
+
   toast.info("Generating content outline...");
   
   // Generate content outline with headings
@@ -82,7 +86,7 @@ export const generateContent = async ({
     }
     
     // Generate content for this section
-    const blockContent = await generateWithAI(aiProvider, aiModel, prompt, creativity);
+    const blockContent = await generateWithAI(aiProvider, modelToUse, prompt, creativity);
     
     // Add paragraph block
     contentBlocks.push({
@@ -94,7 +98,7 @@ export const generateContent = async ({
 
   // Generate meta description
   const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
-  const metaDescription = await generateWithAI(aiProvider, aiModel, metaPrompt, 30);
+  const metaDescription = await generateWithAI(aiProvider, modelToUse, metaPrompt, 30);
 
   // Create a properly typed GeneratedContent object
   const generatedContent: GeneratedContent = {
@@ -104,7 +108,9 @@ export const generateContent = async ({
     blocks: contentBlocks,
     keywords: selectedKeywords,
     contentType: contentType,
-    generationMethod: ragEnabled ? 'rag' : 'standard'
+    generationMethod: ragEnabled ? 'rag' : 'standard',
+    aiProvider,
+    aiModel: modelToUse
   };
   
   // Convert blocks to content string

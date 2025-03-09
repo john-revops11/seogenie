@@ -31,7 +31,7 @@ export const analyzeKeywordsWithAI = async (
         'Authorization': `Bearer ${openaiApiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o', // Using a better model for improved analysis
+        model: 'gpt-4o', // Using the latest model for improved analysis
         messages: [
           {
             role: 'system',
