@@ -28,19 +28,35 @@ const ApiIntegrationManager = () => {
   
   useEffect(() => {
     const initialSetup = async () => {
+      // Check if Pinecone is configured
       const pineconeConfigured = isPineconeConfigured();
       
-      setApis(prev => prev.map(api => 
-        api.id === "pinecone" 
-          ? { 
-              ...api, 
-              isConfigured: pineconeConfigured,
-              apiKey: pineconeConfigured ? "pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797" : undefined,
-              isActive: pineconeConfigured
-            } 
-          : api
-      ));
+      // Update DataForSEO configuration
+      const dataforseoKey = "armin@revologyanalytics.com:ab4016dc9302b8cf"; // Default credentials
       
+      setApis(prev => prev.map(api => {
+        if (api.id === "pinecone") {
+          return { 
+            ...api, 
+            isConfigured: pineconeConfigured,
+            apiKey: pineconeConfigured ? "pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797" : undefined,
+            isActive: pineconeConfigured
+          };
+        }
+        
+        if (api.id === "dataforseo") {
+          return {
+            ...api,
+            apiKey: dataforseoKey,
+            isConfigured: true,
+            isActive: true
+          };
+        }
+        
+        return api;
+      }));
+      
+      // Load saved APIs from localStorage
       const savedApis = loadApisFromStorage();
       if (savedApis.length > 0) {
         setApis(prev => prev.map(api => {

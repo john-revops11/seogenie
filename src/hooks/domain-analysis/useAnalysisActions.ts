@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { analyzeDomains } from "@/services/keywordService";
+import { analyzeDomains } from "@/services/keywords/domainAnalysis";
 import { validateUrl, formatUrl } from "./domainUtils";
 
 /**
@@ -56,28 +56,17 @@ export function useAnalysisActions(
     const formattedCompetitorDomains = validCompetitorDomains.map(formatUrl);
     
     setIsAnalyzing(true);
-    setProgress(0);
+    setProgress(10);
     setKeywordData([]);
     setAnalysisComplete(false);
     
     console.info("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     
-    let progressInterval: number | NodeJS.Timeout | null = null;
-    progressInterval = setInterval(() => {
-      // Get the current progress value first
-      let currentProgress = 0;
-      
-      // Update progress with a direct value instead of using a function
-      // This avoids the TypeScript error
-      setProgress(Math.min(95, currentProgress + Math.random() * 15));
-      
-      // Check if we need to clear the interval
-      if (currentProgress >= 95 && progressInterval) {
-        clearInterval(progressInterval);
-      }
-    }, 800);
-    
     try {
+      // Set progress indicators manually
+      setTimeout(() => setProgress(30), 500);
+      setTimeout(() => setProgress(60), 1500);
+      
       const result = await analyzeDomains(formattedMainDomain, formattedCompetitorDomains);
       
       if (result.success) {
@@ -91,12 +80,11 @@ export function useAnalysisActions(
           toast.success("Analysis complete! View your results in the dashboard.");
         }, 500);
       } else {
-        // Fixed: Handle the case where result.error might not exist
+        // Handle case where result.error might not exist
         const errorMessage = result.error || "Analysis failed with unknown error";
         throw new Error(errorMessage);
       }
     } catch (error) {
-      if (progressInterval) clearInterval(progressInterval);
       setIsAnalyzing(false);
       
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";

@@ -29,7 +29,7 @@ export const analyzeDomains = async (
     let mainKeywords: KeywordData[] = [];
     
     try {
-      console.log(`Attempting to fetch keywords for main domain: ${formattedMainDomain}`);
+      console.log(`Fetching keywords for main domain: ${formattedMainDomain}`);
       
       // Call our DataForSEO edge function for the main domain
       const { data, error } = await supabase.functions.invoke('dataforseo', {
@@ -59,8 +59,8 @@ export const analyzeDomains = async (
       toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain}`);
     } catch (error) {
       console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
-      toast.error(`API error: ${(error as Error).message}`);
-      throw new Error(`Failed to fetch keywords: ${(error as Error).message}`);
+      toast.error(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to fetch keywords: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
     // Process competitor domains if main domain was successful
@@ -72,7 +72,7 @@ export const analyzeDomains = async (
         competitorResults.push(result);
       } catch (error) {
         console.error(`Error processing competitor ${domain}:`, error);
-        toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
+        toast.error(`Failed to analyze ${domain}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         // Continue with next competitor instead of failing entire analysis
         competitorResults.push({ domain, keywords: [] });
       }
@@ -91,11 +91,11 @@ export const analyzeDomains = async (
     };
   } catch (error) {
     console.error("Error analyzing domains:", error);
-    toast.error(`Domain analysis failed: ${(error as Error).message}`);
+    toast.error(`Domain analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return {
       keywords: [],
       success: false,
-      error: (error as Error).message
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 };

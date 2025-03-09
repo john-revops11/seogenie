@@ -12,7 +12,7 @@ export const processCompetitorData = async (
 ): Promise<{ domain: string, keywords: KeywordData[] }> => {
   try {
     toast.info(`Analyzing competitor: ${domain}`);
-    console.log(`Attempting to fetch keywords for competitor: ${domain} with location code: ${locationCode}`);
+    console.log(`Fetching keywords for competitor: ${domain} with location code: ${locationCode}`);
     
     // Call our DataForSEO edge function
     const { data, error } = await supabase.functions.invoke('dataforseo', {
@@ -43,9 +43,9 @@ export const processCompetitorData = async (
     return { domain, keywords };
   } catch (error) {
     console.error(`Error analyzing competitor ${domain}:`, error);
-    toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
+    toast.error(`Failed to analyze ${domain}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     
-    // Return empty keywords array - this allows the analysis to continue with other competitors
+    // Return empty keywords array to allow analysis to continue with other competitors
     return { domain, keywords: [] };
   }
 };
