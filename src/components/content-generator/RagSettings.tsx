@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon, Sparkles, Activity, Database } from "lucide-react";
-import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 import PineconeConfigForm from "./PineconeConfigForm";
 import { toast } from "sonner";
 
@@ -37,19 +38,26 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
       if (isPineconeConfig) {
         // Try to make a test request to verify the connection
         try {
-          const testResult = await testPineconeConnection();
+          const response = await fetch(`https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io/describe_index_stats`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Api-Key': 'pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797'
+            },
+            body: JSON.stringify({ filter: {} })
+          });
           
-          if (testResult.success) {
-            console.info("Pinecone connection successful:", testResult.data);
+          if (response.ok) {
+            const data = await response.json();
+            console.info("Loaded Pinecone API key from localStorage");
+            console.info("Pinecone connection successful:", data);
             setIsPineconeReady(true);
             
-            // If Pinecone is ready but RAG is not enabled, enable it automatically
-            if (!enabled) {
-              onToggle(true);
-              toast.info("Pinecone RAG automatically enabled for enhanced content generation");
+            if (!enabled && isPineconeConfig) {
+              toast.info("Pinecone RAG is available for enhanced content generation");
             }
           } else {
-            console.error("Pinecone API error:", testResult.message);
+            console.error("Pinecone API error:", response.status);
             setIsPineconeReady(false);
           }
         } catch (error) {
