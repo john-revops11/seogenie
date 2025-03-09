@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -9,7 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon, Sparkles, Activity, Database } from "lucide-react";
-import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
+import { isPineconeConfigured } from "@/services/vector/pineconeConfig";
+import { testPineconeConnection } from "@/services/vector/pineconeConnection";
 import PineconeConfigForm from "./PineconeConfigForm";
 import { toast } from "sonner";
 

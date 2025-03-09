@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ import {
   configurePinecone, 
   getPineconeConfig, 
   isPineconeConfigured 
-} from "@/services/vector/pineconeService";
+} from "@/services/vector/pineconeConfig";
 
 interface PineconeConfigFormProps {
   onConfigSuccess?: () => void;

@@ -1,5 +1,7 @@
 
-import { createEmbedding, isPineconeConfigured, retrieveSimilarDocuments, testPineconeConnection } from './pineconeService';
+import { isPineconeConfigured } from './pineconeConfig';
+import { testPineconeConnection } from './pineconeConnection';
+import { retrieveSimilarDocuments } from './vectorOperations';
 import { toast } from 'sonner';
 import { ContentOutline, GeneratedContent } from '../keywords/types';
 

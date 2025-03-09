@@ -1,5 +1,6 @@
 
-import { isPineconeConfigured, retrieveSimilarDocuments } from './pineconeService';
+import { isPineconeConfigured } from './pineconeConfig';
+import { retrieveSimilarDocuments } from './vectorOperations';
 
 /**
  * Simple function to enhance content with RAG
