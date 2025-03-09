@@ -1,11 +1,11 @@
 
 // Re-export all DataForSEO API functions from the refactored modules
 export {
-  fetchRelatedKeywords,
-  fetchKeywordsForMultipleKeywords,
-  fetchDataForSEOKeywords,
+  fetchKeywordVolumeData,
+  fetchDataForSeoDomainKeywords,
   createDataForSEOKeywordTask,
   getDataForSEOTaskResults,
   safeNumberConversion,
   parseApiResponse
 } from './dataForSeo';
+
