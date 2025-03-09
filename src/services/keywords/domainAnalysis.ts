@@ -25,9 +25,8 @@ export const analyzeDomains = async (
     console.log("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     console.log("Using location code:", locationCode);
     
-    // Try to fetch real data from API
+    // Get main domain keywords from DataForSEO
     let mainKeywords: KeywordData[] = [];
-    let useRealData = true;
     
     try {
       console.log(`Attempting to fetch keywords for main domain: ${formattedMainDomain}`);
@@ -46,29 +45,37 @@ export const analyzeDomains = async (
         throw new Error(`Edge function error: ${error.message}`);
       }
       
-      if (data && data.success && data.results && data.results.length > 0) {
-        mainKeywords = data.results;
-        console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
-      } else {
-        throw new Error('No keywords returned from DataForSEO API');
+      if (!data || !data.success) {
+        const errorMessage = data?.error || 'Unknown API error';
+        throw new Error(errorMessage);
       }
       
-      if (!mainKeywords.length) {
+      if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
         throw new Error(`No keywords found for ${formattedMainDomain}`);
       }
+      
+      mainKeywords = data.results;
+      console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
+      toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain}`);
     } catch (error) {
       console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
       toast.error(`API error: ${(error as Error).message}`);
-      useRealData = false;
       throw new Error(`Failed to fetch keywords: ${(error as Error).message}`);
     }
     
-    // Process competitor domains
+    // Process competitor domains if main domain was successful
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
-      const result = await processCompetitorData(domain, useRealData, locationCode);
-      competitorResults.push(result);
+      try {
+        const result = await processCompetitorData(domain, locationCode);
+        competitorResults.push(result);
+      } catch (error) {
+        console.error(`Error processing competitor ${domain}:`, error);
+        toast.error(`Failed to analyze ${domain}: ${(error as Error).message}`);
+        // Continue with next competitor instead of failing entire analysis
+        competitorResults.push({ domain, keywords: [] });
+      }
     }
     
     // Process and merge data

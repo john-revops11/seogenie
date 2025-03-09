@@ -1,13 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "./config.ts";
-import {
-  getDomainSERP,
-  getKeywordVolume,
-  getDomainTraffic,
-  getCompetitorDomains,
-  getDomainKeywords
-} from "./services.ts";
+import { getDomainKeywords, getKeywordVolume } from "./services.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -48,14 +42,12 @@ serve(async (req) => {
     let result;
     
     switch (action) {
-      case 'domain_serp':
+      case 'domain_keywords':
         if (!domain) {
           throw new Error('Domain is required');
         }
-        if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
-          throw new Error('Keywords array is required');
-        }
-        result = await getDomainSERP(domain, keywords, location_code);
+        console.log(`Fetching keywords for domain: ${domain}`);
+        result = await getDomainKeywords(domain, location_code);
         break;
         
       case 'keyword_volume':
@@ -63,50 +55,6 @@ serve(async (req) => {
           throw new Error('Keywords array is required');
         }
         result = await getKeywordVolume(keywords, location_code);
-        break;
-        
-      case 'domain_traffic':
-        if (!domain) {
-          throw new Error('Domain is required');
-        }
-        result = await getDomainTraffic(domain, location_code);
-        break;
-        
-      case 'competitor_domains':
-        if (!domain) {
-          throw new Error('Domain is required');
-        }
-        result = await getCompetitorDomains(domain, location_code);
-        break;
-        
-      case 'domain_keywords':
-        if (!domain) {
-          throw new Error('Domain is required');
-        }
-        result = await getDomainKeywords(domain, location_code);
-        break;
-        
-      case 'full_analysis':
-        if (!domain) {
-          throw new Error('Domain is required');
-        }
-        console.log(`Starting full analysis for domain ${domain}`);
-        // Get all data in parallel for efficiency
-        const [serpData, trafficData, competitorsData, keywordsData] = await Promise.all([
-          keywords && keywords.length > 0 ? getDomainSERP(domain, keywords, location_code) : { success: true, results: [] },
-          getDomainTraffic(domain, location_code),
-          getCompetitorDomains(domain, location_code),
-          getDomainKeywords(domain, location_code),
-        ]);
-        
-        result = {
-          serp: serpData,
-          traffic: trafficData,
-          competitors: competitorsData,
-          keywords: keywordsData
-        };
-        
-        console.log("Full analysis completed successfully");
         break;
         
       default:
