@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
 import { extractDomain } from './utils/domainUtils';
@@ -38,15 +39,30 @@ export const findKeywordGaps = async (
     console.log(`Finding keyword gaps for ${mainDomainName} vs ${competitorDomainNames.join(', ')}`);
     console.log(`Using API source: ${apiSource} with location code: ${locationCode}`);
     
-    // Try direct analysis first (based on ranking data we already have)
-    const directGaps = findDirectKeywordGaps(mainDomainName, competitorDomainNames, keywords, targetGapCount);
+    // Collect gaps for each competitor
+    let allGaps: KeywordGap[] = [];
     
-    if (directGaps.length > 0) {
+    // Try direct analysis first (based on ranking data we already have)
+    for (const competitorDomain of competitorDomainNames) {
+      const directGaps = findDirectKeywordGaps(
+        mainDomainName, 
+        [competitorDomain], 
+        keywords, 
+        Math.ceil(targetGapCount / competitorDomainNames.length)
+      );
+      
+      if (directGaps.length > 0) {
+        console.log(`Found ${directGaps.length} direct gaps for competitor ${competitorDomain}`);
+        allGaps.push(...directGaps);
+      }
+    }
+    
+    if (allGaps.length > 0) {
       console.log("Using directly identified gaps with local analysis");
-      console.log(`Found ${directGaps.length} potential keyword gaps before analysis`);
+      console.log(`Found ${allGaps.length} potential keyword gaps before analysis`);
       
       // Prioritize gaps and mark top opportunities
-      const prioritizedGaps = prioritizeKeywordGaps(directGaps);
+      const prioritizedGaps = prioritizeKeywordGaps(allGaps);
       
       console.log("Returning directly identified gaps:", prioritizedGaps.length);
       return prioritizedGaps;
@@ -164,11 +180,12 @@ function mockDataForSEOGaps(
   // Use all competitors or default to the first one
   const competitors = competitorDomains.length > 0 ? competitorDomains : ['competitor.com'];
   
+  // Distribute the target gap count evenly among competitors
+  const gapsPerCompetitor = Math.max(5, Math.ceil(targetGapCount / competitors.length));
+  console.log(`Generating approximately ${gapsPerCompetitor} mock gaps per competitor`);
+  
   // Generate gaps for each competitor
-  for (let c = 0; c < competitors.length; c++) {
-    const competitor = competitors[c];
-    const gapsPerCompetitor = Math.max(5, Math.ceil(targetGapCount / competitors.length));
-    
+  for (const competitor of competitors) {
     for (let i = 0; i < gapsPerCompetitor; i++) {
       // Generate a realistic keyword
       const keywordOptions = [

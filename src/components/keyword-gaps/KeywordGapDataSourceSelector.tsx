@@ -1,8 +1,10 @@
 
+import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ApiSource } from "@/services/keywords/keywordGaps";
-import { commonLocations, getLocationNameByCode } from "./KeywordGapUtils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import LocationSelector from "./LocationSelector";
+import { ApiSource } from "@/services/keywords/keywordGaps";
 
 interface KeywordGapDataSourceSelectorProps {
   apiSource: ApiSource;
@@ -11,45 +13,40 @@ interface KeywordGapDataSourceSelectorProps {
   onLocationChange: (locationCode: number) => void;
 }
 
-export function KeywordGapDataSourceSelector({ 
-  apiSource, 
+export function KeywordGapDataSourceSelector({
+  apiSource,
   onApiSourceChange,
   locationCode,
   onLocationChange
 }: KeywordGapDataSourceSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="space-y-3">
-      <div className="space-y-1">
-        <label className="text-xs text-muted-foreground">Data Source</label>
-        <Select value={apiSource} onValueChange={(v) => onApiSourceChange(v as ApiSource)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select data source" />
+    <div className="flex flex-col space-y-2">
+      <div className="flex justify-between items-center">
+        <Select
+          value={apiSource}
+          onValueChange={(val: ApiSource) => {
+            onApiSourceChange(val);
+            setIsOpen(false);
+          }}
+        >
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <SelectValue placeholder="Data source" />
           </SelectTrigger>
           <SelectContent className="bg-background z-50">
             <SelectItem value="sample">Sample Data</SelectItem>
+            <SelectItem value="dataforseo-live">DataForSEO Live</SelectItem>
+            <SelectItem value="dataforseo-task">DataForSEO Task</SelectItem>
             <SelectItem value="semrush">SEMrush</SelectItem>
-            <SelectItem value="dataforseo-live">DataForSEO (Live)</SelectItem>
-            <SelectItem value="dataforseo-task">DataForSEO (Tasks)</SelectItem>
           </SelectContent>
         </Select>
+        
+        <LocationSelector 
+          locationCode={locationCode}
+          onLocationChange={onLocationChange}
+        />
       </div>
-      
-      <LocationSelector 
-        locationCode={locationCode} 
-        onLocationChange={onLocationChange} 
-      />
-      
-      {apiSource === "dataforseo-live" && (
-        <div className="text-xs text-muted-foreground mt-1">
-          Live mode provides immediate results from the DataForSEO API.
-        </div>
-      )}
-      
-      {apiSource === "dataforseo-task" && (
-        <div className="text-xs text-muted-foreground mt-1">
-          Task mode queues the request for processing and retrieves results when available.
-        </div>
-      )}
     </div>
   );
 }

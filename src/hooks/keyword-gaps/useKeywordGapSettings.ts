@@ -1,28 +1,22 @@
 
-import { useState } from "react";
-import { toast } from "sonner";
-import { ApiSource } from "@/services/keywords/keywordGaps";
-import { keywordGapsCache, getLocationNameByCode } from "@/components/keyword-gaps/KeywordGapUtils";
+import { useState } from 'react';
+import { ApiSource } from '@/services/keywords/keywordGaps';
+import { keywordGapsCache } from '@/components/keyword-gaps/KeywordGapUtils';
 
 export function useKeywordGapSettings() {
-  const [apiSource, setApiSource] = useState<ApiSource>('sample');
-  const [locationCode, setLocationCode] = useState<number>(keywordGapsCache.locationCode || 2840);
-
+  const [apiSource, setApiSource] = useState<ApiSource>(keywordGapsCache.apiSource || 'sample');
+  const [locationCode, setLocationCode] = useState<number>(keywordGapsCache.locationCode || 2840); // Default to US
+  
   const handleApiSourceChange = (value: ApiSource) => {
-    if (value !== apiSource) {
-      setApiSource(value);
-      toast.info(`Switched to ${value} data source`);
-    }
+    setApiSource(value);
+    keywordGapsCache.apiSource = value;
   };
-
-  const handleLocationChange = (newLocationCode: number) => {
-    if (newLocationCode !== locationCode) {
-      setLocationCode(newLocationCode);
-      keywordGapsCache.locationCode = newLocationCode;
-      toast.info(`Switched location to ${getLocationNameByCode(newLocationCode)}`);
-    }
+  
+  const handleLocationChange = (value: number) => {
+    setLocationCode(value);
+    keywordGapsCache.locationCode = value;
   };
-
+  
   return {
     apiSource,
     locationCode,

@@ -4,7 +4,8 @@ import { KeywordGap } from "@/services/keywordService";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 import { 
   keywordGapsCache, 
-  normalizeDomainList
+  normalizeDomainList,
+  normalizeDomain
 } from "@/components/keyword-gaps/KeywordGapUtils";
 import { useKeywordGapApi } from "./keyword-gaps/useKeywordGapApi";
 import { useKeywordGapPagination } from "./keyword-gaps/useKeywordGapPagination";
@@ -79,15 +80,27 @@ export function useKeywordGapAnalysis(
     const generateKeywordGaps = async () => {
       if (isLoading || !keywords || keywords.length === 0) return;
       
-      const shouldRefreshAnalysis = checkCompetitorsChanged(domain, competitorDomains);
+      // Normalize domains for comparison
+      const normalizedDomain = normalizeDomain(domain);
+      const normalizedCompetitors = normalizeDomainList(competitorDomains);
+      
+      // Check if we need to refresh the analysis
+      const domainChanged = normalizedDomain !== normalizeDomain(keywordGapsCache.domain || '');
+      const competitorsChanged = keywordGapsCache.competitorDomains?.length !== normalizedCompetitors.length ||
+                               !normalizedCompetitors.every(comp => 
+                                 keywordGapsCache.competitorDomains?.map(normalizeDomain).includes(comp)
+                               );
+                               
+      console.log("Domain changed:", domainChanged, "Competitors changed:", competitorsChanged);
       
       if (
-        !shouldRefreshAnalysis &&
+        !domainChanged && 
+        !competitorsChanged &&
         keywordGapsCache.data &&
-        keywordGapsCache.domain === domain &&
         keywordGapsCache.keywordsLength === keywords.length &&
         keywordGapsCache.locationCode === locationCode
       ) {
+        console.log("Using cached keyword gaps data");
         setKeywordGaps(keywordGapsCache.data);
         return;
       }
@@ -117,7 +130,7 @@ export function useKeywordGapAnalysis(
     };
     
     generateKeywordGaps();
-  }, [domain, competitorDomains, keywords, isLoading, checkCompetitorsChanged, apiSource, locationCode]);
+  }, [domain, competitorDomains, keywords, isLoading, apiSource, locationCode]);
 
   const refreshAnalysis = async () => {
     keywordGapsCache.data = null;

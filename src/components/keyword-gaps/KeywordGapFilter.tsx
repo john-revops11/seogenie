@@ -23,9 +23,9 @@ export function KeywordGapFilter({
   
   // Enhanced debugging for competitors
   useEffect(() => {
-    console.log("Unique competitors in filter:", uniqueCompetitors);
+    console.log("Unique competitors in filter component:", uniqueCompetitors);
     if (uniqueCompetitors.length !== prevCompetitorCount) {
-      console.log(`Competitor count changed: ${prevCompetitorCount} -> ${uniqueCompetitors.length}`);
+      console.log(`Competitor count changed in filter: ${prevCompetitorCount} -> ${uniqueCompetitors.length}`);
     }
   }, [uniqueCompetitors, prevCompetitorCount]);
   
@@ -54,7 +54,7 @@ export function KeywordGapFilter({
         </Select>
       </div>
       <div className="flex gap-2 items-center">
-        <Badge variant="outline">
+        <Badge variant="outline" className="text-xs">
           {totalKeywords} keyword gaps found
         </Badge>
         <Button

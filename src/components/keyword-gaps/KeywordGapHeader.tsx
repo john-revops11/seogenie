@@ -34,12 +34,12 @@ export function KeywordGapHeader({
         <div className="flex flex-col gap-2">
           <span>Keywords competitors rank for that you don't</span>
           <div className="flex justify-between items-center">
-            <Badge variant="outline" className="text-xs">
+            <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
               {competitorDomains.length} competitors analyzed
-            </Badge>
-            <Badge variant="outline" className="text-xs">
+            </div>
+            <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
               {selectedKeywordsCount}/10 selected
-            </Badge>
+            </div>
           </div>
           
           <KeywordGapDataSourceSelector 

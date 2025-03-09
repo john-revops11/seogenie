@@ -19,22 +19,37 @@ export function useKeywordGapApi() {
   ): Promise<KeywordGap[] | null> => {
     try {
       const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
-      const validCompetitors = competitorDomains.filter(d => d && d.trim() !== '');
+      // Filter out empty domains and normalize remaining ones
+      const validCompetitors = competitorDomains
+        .filter(d => d && d.trim() !== '')
+        .map(d => d.trim());
       
       console.log(`Generating keyword gaps for ${normalizedDomain} vs`, validCompetitors);
       console.log(`Using API source: ${apiSource} and location: ${getLocationNameByCode(locationCode)}`);
+      
+      if (validCompetitors.length === 0) {
+        console.warn("No valid competitors provided for keyword gap analysis");
+        toast.warning("Please add at least one competitor domain to perform gap analysis");
+        return [];
+      }
       
       const gaps = await findKeywordGaps(domain, validCompetitors, keywords, 100, apiSource, locationCode);
       
       if (gaps && gaps.length > 0) {
         console.log(`Found ${gaps.length} keyword gaps`);
         
+        // Debug: Check which competitors actually appear in the results
+        const competitorsInGaps = new Set<string>();
         const gapsByCompetitor = new Map<string, number>();
+        
         gaps.forEach(gap => {
           if (gap.competitor) {
+            competitorsInGaps.add(gap.competitor);
             gapsByCompetitor.set(gap.competitor, (gapsByCompetitor.get(gap.competitor) || 0) + 1);
           }
         });
+        
+        console.log("Competitors present in the gaps:", Array.from(competitorsInGaps));
         console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
         
         keywordGapsCache.data = gaps;

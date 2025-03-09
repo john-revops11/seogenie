@@ -1,44 +1,39 @@
 
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 
-export function useKeywordSelection() {
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(keywordGapsCache.selectedKeywords || []);
-
-  // Update the cache whenever selectedKeywords changes
+export function useKeywordSelection(maxSelectedKeywords: number = 10) {
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(
+    keywordGapsCache.selectedKeywords || []
+  );
+  
   useEffect(() => {
-    keywordGapsCache.selectedKeywords = selectedKeywords;
-  }, [selectedKeywords]);
-
-  const handleKeywordSelection = (keyword: string) => {
-    const updatedSelection = selectedKeywords.includes(keyword)
-      ? selectedKeywords.filter(k => k !== keyword)
-      : [...selectedKeywords, keyword];
-    
-    if (updatedSelection.length > 10 && !selectedKeywords.includes(keyword)) {
-      toast.error("You can select a maximum of 10 keywords");
-      return;
+    // Load cached selected keywords if available
+    if (keywordGapsCache.selectedKeywords) {
+      setSelectedKeywords(keywordGapsCache.selectedKeywords);
     }
-    
-    setSelectedKeywords(updatedSelection);
+  }, []);
+  
+  const handleKeywordSelection = (keyword: string) => {
+    let newSelectedKeywords: string[];
     
     if (selectedKeywords.includes(keyword)) {
-      toast.info(`Removed "${keyword}" from selection`);
+      // If already selected, remove it from the selection
+      newSelectedKeywords = selectedKeywords.filter(k => k !== keyword);
     } else {
-      toast.success(`Added "${keyword}" to selection`);
+      // If not selected, add it if under the limit
+      if (selectedKeywords.length >= maxSelectedKeywords) {
+        return; // Don't add more than the limit
+      }
+      newSelectedKeywords = [...selectedKeywords, keyword];
     }
+    
+    setSelectedKeywords(newSelectedKeywords);
+    keywordGapsCache.selectedKeywords = newSelectedKeywords;
   };
-
-  // Add this getter function to ensure we can access the most current selection
-  const getSelectedKeywords = () => {
-    return selectedKeywords;
-  };
-
+  
   return {
     selectedKeywords,
-    setSelectedKeywords,
-    handleKeywordSelection,
-    getSelectedKeywords
+    handleKeywordSelection
   };
 }

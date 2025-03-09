@@ -2,6 +2,7 @@
 import { toast } from "sonner";
 import { KeywordData } from '../types';
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeDomain } from '@/components/keyword-gaps/KeywordGapUtils';
 
 /**
  * Process keyword data for a competitor domain
@@ -12,7 +13,7 @@ export const processCompetitorData = async (
 ): Promise<{ domain: string, keywords: KeywordData[] }> => {
   try {
     // Normalize domain for consistent display
-    const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    const normalizedDomain = normalizeDomain(domain);
     
     toast.info(`Analyzing competitor: ${normalizedDomain}`);
     console.log(`Fetching keywords for competitor: ${domain} with location code: ${locationCode}`);
@@ -52,7 +53,7 @@ export const processCompetitorData = async (
     toast.error(`Failed to analyze ${domain}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     
     // Return normalized domain even in error case
-    const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    const normalizedDomain = normalizeDomain(domain);
     return { domain: normalizedDomain, keywords: [] };
   }
 };

@@ -1,6 +1,7 @@
+
 import { KeywordGap } from "@/services/keywordService";
 
-// A global cache to prevent unnecessary API calls and data loss between component re-renders
+// Global cache for keyword gaps to avoid redundant API calls
 export const keywordGapsCache: {
   data: KeywordGap[] | null;
   domain: string;
@@ -18,117 +19,110 @@ export const keywordGapsCache: {
   page: 1,
   itemsPerPage: 15,
   selectedKeywords: [],
-  locationCode: 2840 // Default to US (2840)
+  locationCode: 2840 // Default to US
 };
 
-/**
- * Get a list of unique competitor domains from keyword gaps
- */
-export function getUniqueCompetitors(keywordGaps: any[]): string[] {
-  if (!keywordGaps || keywordGaps.length === 0) return [];
+// Extract unique competitor names from keyword gaps
+export const getUniqueCompetitors = (gaps: KeywordGap[]): string[] => {
+  const competitors = new Set<string>();
   
-  // Create a Set to track unique competitors
-  const competitorsSet = new Set<string>();
-  
-  // Process each keyword gap
-  keywordGaps.forEach(gap => {
-    if (gap.competitors && Array.isArray(gap.competitors)) {
-      gap.competitors.forEach((competitor: string) => {
-        // Normalize the competitor domain to handle different formats
-        const normalizedCompetitor = normalizeDomain(competitor);
-        if (normalizedCompetitor) {
-          competitorsSet.add(normalizedCompetitor);
-        }
-      });
-    } else if (gap.competitor) {
-      // Some implementations might use a single competitor field
-      const normalizedCompetitor = normalizeDomain(gap.competitor);
-      if (normalizedCompetitor) {
-        competitorsSet.add(normalizedCompetitor);
-      }
+  gaps.forEach(gap => {
+    if (gap.competitor) {
+      competitors.add(gap.competitor);
     }
   });
   
-  console.log("Found unique competitors:", Array.from(competitorsSet));
-  return Array.from(competitorsSet);
-}
+  // Sort alphabetically for consistent display
+  return Array.from(competitors).sort();
+};
 
-/**
- * Normalize a list of domains for comparison
- */
-export function normalizeDomainList(domains: string[]): string[] {
-  return domains
-    .filter(domain => domain && domain.trim() !== "")
-    .map(domain => domain.trim().toLowerCase());
-}
+// Normalize domain names to avoid mismatches due to formatting differences
+export const normalizeDomain = (domain: string): string => {
+  return domain.replace(/^https?:\/\//, '').replace(/^www\./, '').toLowerCase().trim();
+};
 
-/**
- * Categorize keyword intent based on keyword content, difficulty, and volume
- */
-export function categorizeKeywordIntent(keyword: string, difficulty: number, volume: number): 'informational' | 'navigational' | 'commercial' | 'transactional' {
-  const informationalPatterns = ['how', 'what', 'why', 'when', 'where', 'guide', 'tutorial', 'tips', 'learn', 'example', 'definition'];
-  const navigationalPatterns = ['login', 'signin', 'account', 'download', 'contact', 'support', 'official'];
-  const commercialPatterns = ['best', 'top', 'review', 'compare', 'vs', 'versus', 'comparison', 'alternative'];
-  const transactionalPatterns = ['buy', 'price', 'cost', 'purchase', 'cheap', 'deal', 'discount', 'order', 'shop'];
+// Normalize a list of domains
+export const normalizeDomainList = (domains: string[]): string[] => {
+  return domains.map(normalizeDomain);
+};
+
+// Categorize keyword intent based on keyword text and metrics
+export const categorizeKeywordIntent = (
+  keyword: string, 
+  competitionIndex: number, 
+  volume: number
+): 'informational' | 'commercial' | 'transactional' | 'navigational' => {
+  const lowercaseKeyword = keyword.toLowerCase();
   
-  const keywordLower = keyword.toLowerCase();
-  
-  if (informationalPatterns.some(pattern => keywordLower.includes(pattern))) {
+  // Check for informational intent first
+  if (
+    lowercaseKeyword.includes('what is') || 
+    lowercaseKeyword.includes('how to') || 
+    lowercaseKeyword.includes('guide') ||
+    lowercaseKeyword.includes('tutorial') ||
+    lowercaseKeyword.includes('tips') ||
+    lowercaseKeyword.includes('examples')
+  ) {
     return 'informational';
   }
   
-  if (navigationalPatterns.some(pattern => keywordLower.includes(pattern))) {
-    return 'navigational';
-  }
-  
-  if (commercialPatterns.some(pattern => keywordLower.includes(pattern))) {
-    return 'commercial';
-  }
-  
-  if (transactionalPatterns.some(pattern => keywordLower.includes(pattern))) {
+  // Check for transactional intent
+  if (
+    lowercaseKeyword.includes('buy') || 
+    lowercaseKeyword.includes('purchase') || 
+    lowercaseKeyword.includes('order') ||
+    lowercaseKeyword.includes('cheap') ||
+    lowercaseKeyword.includes('discount') ||
+    lowercaseKeyword.includes('deal') ||
+    lowercaseKeyword.includes('price') ||
+    lowercaseKeyword.includes('subscription')
+  ) {
     return 'transactional';
   }
   
-  return difficulty < 40 ? 'informational' : 'commercial';
-}
-
-/**
- * Common locations for DataForSEO
- */
-export const commonLocations = [
-  { code: 2840, name: "United States" },
-  { code: 2826, name: "United Kingdom" },
-  { code: 2124, name: "Canada" },
-  { code: 2036, name: "Australia" },
-  { code: 2276, name: "Germany" },
-  { code: 2250, name: "France" },
-  { code: 2724, name: "Spain" },
-  { code: 2380, name: "Italy" },
-  { code: 2643, name: "India" },
-  { code: 2392, name: "Japan" },
-  { code: 2076, name: "Brazil" },
-  { code: 2158, name: "China" }
-];
-
-/**
- * Get location name by code
- */
-export function getLocationNameByCode(code: number): string {
-  const location = commonLocations.find(loc => loc.code === code);
-  return location ? location.name : "Unknown";
-}
-
-// Helper function to normalize domain names
-function normalizeDomain(domain: string): string {
-  if (!domain) return '';
+  // Check for commercial intent
+  if (
+    lowercaseKeyword.includes('best') || 
+    lowercaseKeyword.includes('review') || 
+    lowercaseKeyword.includes('top') ||
+    lowercaseKeyword.includes('comparison') ||
+    lowercaseKeyword.includes('vs') ||
+    lowercaseKeyword.includes('versus') ||
+    lowercaseKeyword.includes('alternative') ||
+    (competitionIndex > 70 && volume > 100)
+  ) {
+    return 'commercial';
+  }
   
-  // Remove http://, https://, and www. from the domain
-  let normalized = domain.toLowerCase()
-    .replace(/^https?:\/\//i, '')
-    .replace(/^www\./i, '');
+  // Default to navigational if no other intent is detected
+  return 'navigational';
+};
+
+// Get location name from code
+export const getLocationNameByCode = (code: number): string => {
+  const locations: Record<number, string> = {
+    2840: "United States",
+    2826: "United Kingdom",
+    2124: "Canada",
+    2036: "Australia",
+    2276: "Germany",
+    2250: "France",
+    2724: "Spain",
+    2380: "Italy",
+    2528: "Netherlands",
+    2484: "Mexico"
+  };
   
-  // Remove trailing slashes
-  normalized = normalized.replace(/\/+$/, '');
-  
-  return normalized;
-}
+  return locations[code] || `Location ${code}`;
+};
+
+// Format keyword volume with K/M suffix
+export const formatVolume = (volume: number): string => {
+  if (volume >= 1000000) {
+    return `${(volume / 1000000).toFixed(1)}M`;
+  } else if (volume >= 1000) {
+    return `${(volume / 1000).toFixed(1)}K`;
+  } else {
+    return volume.toString();
+  }
+};
