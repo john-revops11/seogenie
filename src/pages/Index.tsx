@@ -42,6 +42,27 @@ const Index = () => {
     handleAddNewApi
   } = useApiManagement();
 
+  // Content generation state
+  const [contentType, setContentType] = useState("blog");
+  const [creativity, setCreativity] = useState(50);
+  const [contentPreferences, setContentPreferences] = useState<string[]>([]);
+
+  const handleContentTypeChange = (value: string) => {
+    setContentType(value);
+  };
+
+  const handleCreativityChange = (value: number) => {
+    setCreativity(value);
+  };
+
+  const handleContentPreferenceToggle = (preference: string) => {
+    setContentPreferences(prev => 
+      prev.includes(preference) 
+        ? prev.filter(p => p !== preference)
+        : [...prev, preference]
+    );
+  };
+
   useEffect(() => {
     setAnalysisError(null);
   }, [mainDomain, setAnalysisError]);
@@ -110,13 +131,15 @@ const Index = () => {
         
         <TabsContent value="settings" className="space-y-6">
           <SettingsTabContent 
-            showApiForm={showApiForm}
-            newApiName={newApiName}
-            newApiKey={newApiKey}
-            setShowApiForm={setShowApiForm}
-            setNewApiName={setNewApiName}
-            setNewApiKey={setNewApiKey}
-            handleAddNewApi={handleAddNewApi}
+            contentType={contentType}
+            creativity={creativity}
+            contentPreferences={contentPreferences}
+            selectedTopic=""
+            selectedKeywords={[]}
+            title=""
+            onContentTypeChange={handleContentTypeChange}
+            onCreativityChange={handleCreativityChange}
+            onContentPreferenceToggle={handleContentPreferenceToggle}
           />
         </TabsContent>
       </Tabs>
