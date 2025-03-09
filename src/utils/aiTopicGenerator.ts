@@ -1,6 +1,5 @@
-
 import { AIProvider } from "@/types/aiModels";
-import { getApiKey } from "@/services/keywords/apiConfig";
+import { getApiKey } from "@/services/apiIntegrationService";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 
 /**

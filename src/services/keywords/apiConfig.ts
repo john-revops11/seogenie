@@ -1,6 +1,6 @@
 
 // API configuration and keys
-import { getApiKey } from "@/services/apiIntegrationService";
+import { getApiKey as getApiKeyFromService } from "@/services/apiIntegrationService";
 
 // DataForSEO API configuration
 export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";

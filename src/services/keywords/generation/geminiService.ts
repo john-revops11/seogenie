@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import { getApiKey } from '../apiConfig';
+import { getApiKey } from '@/services/apiIntegrationService';
 
 /**
  * Generates a single paragraph of content using Google's Gemini API

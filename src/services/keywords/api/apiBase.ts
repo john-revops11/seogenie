@@ -1,5 +1,5 @@
 
-import { setApiKey, getApiKey as getDynamicApiKey } from '../apiConfig';
+import { getApiKey as getDynamicApiKey } from '../apiConfig';
 
 // Helper function to get API credentials from dynamic API keys
 export function getApiKey(apiName: string): string | null {

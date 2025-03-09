@@ -1,7 +1,7 @@
 
 import { KeywordGap, KeywordData } from '../types';
 import { toast } from "sonner";
-import { getApiKey } from '../apiConfig';
+import { getApiKey } from '@/services/apiIntegrationService';
 
 /**
  * Analyzes keywords using OpenAI to generate keyword gaps

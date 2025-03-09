@@ -3,7 +3,7 @@ import { ApiDetails } from "@/types/apiIntegration";
 import { 
   setApiKey as setApiKeyConfig, 
   removeApiKey as removeApiKeyConfig,
-  getApiKey 
+  getApiKey as getConfigApiKey 
 } from "@/services/keywords/apiConfig";
 import { configurePinecone } from "@/services/vector/pineconeService";
 import { testSemrushConnection } from "@/services/keywords/semrushApi";
@@ -120,4 +120,9 @@ export const removeApi = (apiId: string, apis: ApiDetails[]): ApiDetails[] => {
   }
   
   return updatedApis;
+};
+
+// Export function that gets the API key for use in other parts of the app
+export const getApiKey = (service: string): string => {
+  return getConfigApiKey(service);
 };
