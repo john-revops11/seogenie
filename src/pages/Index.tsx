@@ -6,6 +6,7 @@ import { DashboardTabContent } from "@/components/tabs/DashboardTabContent";
 import { ContentTabContent } from "@/components/tabs/ContentTabContent";
 import { HistoryTabContent } from "@/components/tabs/HistoryTabContent";
 import SettingsTabContent from "@/components/tabs/SettingsTabContent";
+import AIChatTabContent from "@/components/tabs/AIChatTabContent";
 import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
@@ -87,6 +88,7 @@ const Index = () => {
         <TabsList>
           <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -118,6 +120,13 @@ const Index = () => {
             analysisComplete={analysisComplete} 
             domain={mainDomain}
             allKeywords={keywordData.map(k => k.keyword)}
+            onGoToAnalysis={goToAnalysisTab}
+          />
+        </TabsContent>
+        
+        <TabsContent value="ai-chat" className="space-y-6">
+          <AIChatTabContent 
+            analysisComplete={analysisComplete} 
             onGoToAnalysis={goToAnalysisTab}
           />
         </TabsContent>
