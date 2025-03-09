@@ -21,6 +21,11 @@ export function KeywordGapFilter({
 }: KeywordGapFilterProps) {
   const [prevCompetitorCount, setPrevCompetitorCount] = useState(uniqueCompetitors.length);
   
+  // Debug logging
+  useEffect(() => {
+    console.log("Unique competitors in filter:", uniqueCompetitors);
+  }, [uniqueCompetitors]);
+  
   // Detect when new competitors are added
   useEffect(() => {
     if (uniqueCompetitors.length > prevCompetitorCount) {
@@ -38,7 +43,7 @@ export function KeywordGapFilter({
             <SelectValue placeholder="Filter by competitor" />
           </SelectTrigger>
           <SelectContent className="bg-background z-50">
-            <SelectItem value="all">All Competitors</SelectItem>
+            <SelectItem value="all">All Competitors ({uniqueCompetitors.length})</SelectItem>
             {uniqueCompetitors.map(comp => (
               <SelectItem key={comp} value={comp}>{comp}</SelectItem>
             ))}

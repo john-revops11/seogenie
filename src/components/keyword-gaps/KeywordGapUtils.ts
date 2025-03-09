@@ -1,4 +1,3 @@
-
 import { KeywordGap } from "@/services/keywordService";
 
 // A global cache to prevent unnecessary API calls and data loss between component re-renders
@@ -25,16 +24,33 @@ export const keywordGapsCache: {
 /**
  * Get a list of unique competitor domains from keyword gaps
  */
-export function getUniqueCompetitors(keywordGaps: KeywordGap[]): string[] {
-  const uniqueCompetitors = new Set<string>();
+export function getUniqueCompetitors(keywordGaps: any[]): string[] {
+  if (!keywordGaps || keywordGaps.length === 0) return [];
   
+  // Create a Set to track unique competitors
+  const competitorsSet = new Set<string>();
+  
+  // Process each keyword gap
   keywordGaps.forEach(gap => {
-    if (gap.competitor) {
-      uniqueCompetitors.add(gap.competitor);
+    if (gap.competitors && Array.isArray(gap.competitors)) {
+      gap.competitors.forEach((competitor: string) => {
+        // Normalize the competitor domain to handle different formats
+        const normalizedCompetitor = normalizeDomain(competitor);
+        if (normalizedCompetitor) {
+          competitorsSet.add(normalizedCompetitor);
+        }
+      });
+    } else if (gap.competitor) {
+      // Some implementations might use a single competitor field
+      const normalizedCompetitor = normalizeDomain(gap.competitor);
+      if (normalizedCompetitor) {
+        competitorsSet.add(normalizedCompetitor);
+      }
     }
   });
   
-  return Array.from(uniqueCompetitors).sort();
+  console.log("Found unique competitors:", Array.from(competitorsSet));
+  return Array.from(competitorsSet);
 }
 
 /**
@@ -100,4 +116,19 @@ export const commonLocations = [
 export function getLocationNameByCode(code: number): string {
   const location = commonLocations.find(loc => loc.code === code);
   return location ? location.name : "Unknown";
+}
+
+// Helper function to normalize domain names
+function normalizeDomain(domain: string): string {
+  if (!domain) return '';
+  
+  // Remove http://, https://, and www. from the domain
+  let normalized = domain.toLowerCase()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '');
+  
+  // Remove trailing slashes
+  normalized = normalized.replace(/\/+$/, '');
+  
+  return normalized;
 }

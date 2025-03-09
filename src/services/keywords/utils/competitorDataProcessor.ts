@@ -19,7 +19,8 @@ export const processCompetitorData = async (
       body: {
         action: 'domain_keywords',
         domain: domain,
-        location_code: locationCode
+        location_code: locationCode,
+        sort_by: "relevance"
       }
     });
     

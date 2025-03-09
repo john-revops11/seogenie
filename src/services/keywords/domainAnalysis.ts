@@ -36,7 +36,8 @@ export const analyzeDomains = async (
         body: {
           action: 'domain_keywords',
           domain: formattedMainDomain,
-          location_code: locationCode
+          location_code: locationCode,
+          sort_by: "relevance"
         }
       });
       

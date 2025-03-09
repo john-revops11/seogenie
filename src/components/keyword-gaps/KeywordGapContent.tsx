@@ -6,6 +6,7 @@ import KeywordGapList from "./KeywordGapList";
 import KeywordGapEmpty from "./KeywordGapEmpty";
 import KeywordGapLoader from "./KeywordGapLoader";
 import { getUniqueCompetitors } from "./KeywordGapUtils";
+import { useEffect } from "react";
 
 interface KeywordGapContentProps {
   keywordGaps: KeywordGap[] | null;
@@ -34,6 +35,14 @@ export function KeywordGapContent({
   onRefreshAnalysis,
   totalKeywords
 }: KeywordGapContentProps) {
+  // Log for debugging purposes
+  useEffect(() => {
+    if (keywordGaps && keywordGaps.length > 0) {
+      const competitors = getUniqueCompetitors(keywordGaps);
+      console.log("Available competitors in gaps:", competitors);
+    }
+  }, [keywordGaps]);
+
   return (
     <CardContent className="space-y-4">
       {error && !loading && !isLoading && (

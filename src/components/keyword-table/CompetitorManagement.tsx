@@ -59,6 +59,8 @@ const CompetitorManagement = ({
     }
     
     const normalizedNewCompetitor = extractDomainName(newCompetitor);
+    
+    // Check if this competitor already exists using normalized comparison
     const exists = competitorDomains.some(domain => 
       extractDomainName(domain) === normalizedNewCompetitor
     );
@@ -86,6 +88,7 @@ const CompetitorManagement = ({
       console.error("Error fetching competitor keywords:", error);
       toast.warning(`Added ${normalizedNewCompetitor} but couldn't fetch keywords. Will use sample data.`);
       
+      // Add the competitor anyway, even if we couldn't fetch keywords
       onAddCompetitor(formattedUrl);
     } finally {
       setLoadingCompetitor(false);
@@ -168,20 +171,23 @@ const CompetitorManagement = ({
         <div className="mt-4">
           <div className="text-sm text-muted-foreground mb-2">Competitors:</div>
           <div className="flex flex-wrap gap-2">
-            {competitorDomains.map((competitor, index) => (
-              <Badge key={index} variant="outline" className="flex items-center gap-1 px-3 py-1">
-                {extractDomainName(competitor)}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 ml-1 text-muted-foreground hover:text-destructive p-0"
-                  onClick={() => handleRemoveCompetitor(competitor)}
-                  disabled={isLoading}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </Badge>
-            ))}
+            {competitorDomains.map((competitor, index) => {
+              const displayName = extractDomainName(competitor);
+              return (
+                <Badge key={index} variant="outline" className="flex items-center gap-1 px-3 py-1">
+                  {displayName}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 ml-1 text-muted-foreground hover:text-destructive p-0"
+                    onClick={() => handleRemoveCompetitor(competitor)}
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              );
+            })}
           </div>
         </div>
       )}
