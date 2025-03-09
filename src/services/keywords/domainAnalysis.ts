@@ -2,7 +2,6 @@
 import { toast } from "sonner";
 import { KeywordData } from './types';
 import { ensureValidUrl } from './api';
-import { generateMockKeywords } from './utils/mockDataGenerator';
 import { processCompetitorData } from './utils/competitorDataProcessor';
 import { mergeKeywordData } from './utils/keywordDataMerger';
 import { supabase } from "@/integrations/supabase/client";
@@ -55,19 +54,16 @@ export const analyzeDomains = async (
       }
       
       if (!mainKeywords.length) {
-        console.warn(`No real keywords found for ${formattedMainDomain}, using mock data`);
-        useRealData = false;
-        mainKeywords = generateMockKeywords(formattedMainDomain, 30);
-        toast.warning(`No keywords found for ${formattedMainDomain}, using sample data instead`);
+        throw new Error(`No keywords found for ${formattedMainDomain}`);
       }
     } catch (error) {
-      console.warn(`Error fetching real keywords for ${formattedMainDomain}, using mock data:`, error);
+      console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
+      toast.error(`API error: ${(error as Error).message}`);
       useRealData = false;
-      mainKeywords = generateMockKeywords(formattedMainDomain, 30);
-      toast.warning(`API error when fetching keywords for ${formattedMainDomain}, using sample data`);
+      throw new Error(`Failed to fetch keywords: ${(error as Error).message}`);
     }
     
-    // Process competitor domains - use mock data if real data isn't available
+    // Process competitor domains
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
