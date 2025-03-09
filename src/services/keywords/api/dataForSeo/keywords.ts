@@ -1,4 +1,5 @@
-import { KeywordData, KeywordVolumeResponse } from '../../types';
+
+import { KeywordData } from '../../types';
 import { getApiKey } from '@/services/apiIntegrationService';
 
 const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/search_volume/live";
