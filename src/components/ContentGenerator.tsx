@@ -1,21 +1,18 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
-import GeneratedContent from "./content-generator/GeneratedContent";
 import useContentGenerator from "@/hooks/useContentGenerator";
 import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne";
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
 import ContentGeneratorStepFour from "./content-generator/ContentGeneratorStepFour";
 import ContentHistory from "./content-generator/ContentHistory";
-import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
-import { useEffect, useState } from "react";
 import { keywordGapsCache } from "./keyword-gaps/KeywordGapUtils";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, History } from "lucide-react";
 import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
-import ContentEditor from "./content-generator/ContentEditor";
+import ContentGeneratorLayout from "./content-generator/ContentGeneratorLayout";
+import ContentGeneratorRightPanel from "./content-generator/ContentGeneratorRightPanel";
+import KeywordEventHandler from "./content-generator/KeywordEventHandler";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -85,30 +82,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     }
   }, []);
 
-  // Listen for the custom event to handle keyword selection from other components
-  useEffect(() => {
-    const handleGenerateFromKeywordEvent = (event: CustomEvent) => {
-      const { primaryKeyword, relatedKeywords } = event.detail;
-      if (primaryKeyword) {
-        const keywordsToUse = [primaryKeyword];
-        if (relatedKeywords && Array.isArray(relatedKeywords)) {
-          keywordsToUse.push(...relatedKeywords.slice(0, 2)); // Add up to 2 related keywords
-        }
-        setSelectedKeywords(keywordsToUse);
-        console.log("Setting keywords from event:", keywordsToUse);
-        // Update cache with the new keywords
-        keywordGapsCache.selectedKeywords = keywordsToUse;
-        handleGenerateTopics(); // Automatically generate topics for selected keywords
-      }
-    };
-
-    window.addEventListener('generate-content-from-keyword', handleGenerateFromKeywordEvent as EventListener);
-    
-    return () => {
-      window.removeEventListener('generate-content-from-keyword', handleGenerateFromKeywordEvent as EventListener);
-    };
-  }, [handleGenerateTopics, setSelectedKeywords]);
-
   // Add function to handle keyword removal
   const handleRemoveKeyword = (keyword: string) => {
     const updatedKeywords = selectedKeywords.filter(k => k !== keyword);
@@ -123,12 +96,12 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   };
 
   // Handle content data update with proper type conversion
-  const handleContentDataUpdate = (contentData: GeneratedContentType) => {
+  const handleContentDataUpdate = (contentData: any) => {
     // Safely update generatedContentData with the incoming data
     setGeneratedContentData(contentData);
     
     // Convert blocks to HTML string
-    const contentHtml = contentData.blocks.map(block => block.content).join('\n');
+    const contentHtml = contentData.blocks.map((block: any) => block.content).join('\n');
     
     // Update the generatedContent with the new format
     setGeneratedContent({
@@ -234,80 +207,41 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   return (
     <div className="w-full">
       <TopicGenerationHandler onGenerateFromKeyword={handleGenerateFromKeyword} />
+      <KeywordEventHandler 
+        onGenerateFromKeyword={handleGenerateFromKeyword}
+        setSelectedKeywords={setSelectedKeywords}
+        handleGenerateTopics={handleGenerateTopics}
+      />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>AI Content Generator</CardTitle>
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "generator" | "history")} className="ml-auto">
-                  <TabsList>
-                    <TabsTrigger value="generator" className="flex items-center">
-                      <FileText className="mr-2 h-4 w-4" />
-                      Generator
-                    </TabsTrigger>
-                    <TabsTrigger value="history" className="flex items-center">
-                      <History className="mr-2 h-4 w-4" />
-                      History
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {activeTab === "generator" ? (
-                renderStepContent()
-              ) : (
-                <ContentHistory />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Right panel for both Block Editor and Preview */}
-        {shouldShowRightPanel && activeTab === "generator" && (
-          <div className="space-y-6">
-            {/* Block Editor - Only show in step 4 */}
-            {activeStep === 4 && generatedContentData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Block Editor</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="editor">
-                    <TabsList className="mb-4">
-                      <TabsTrigger value="editor">Block Editor</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="editor">
-                      <ContentEditor 
-                        generatedContent={generatedContentData}
-                        onContentUpdate={handleContentDataUpdate}
-                      />
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Preview Card - Show in step 4 or when content is generated */}
-            {generatedContent && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <GeneratedContent 
-                    generatedContent={generatedContent} 
-                    contentType={contentType} 
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
+      <ContentGeneratorLayout
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        generatorContent={renderStepContent()}
+        historyContent={<ContentHistory />}
+        editorContent={
+          activeStep === 4 && generatedContentData ? (
+            <ContentGeneratorRightPanel
+              showEditor={activeStep === 4}
+              generatedContent={generatedContent}
+              generatedContentData={generatedContentData}
+              contentType={contentType}
+              onContentUpdate={handleContentDataUpdate}
+            />
+          ) : null
+        }
+        previewContent={
+          generatedContent && activeTab === "generator" && activeStep !== 4 ? (
+            <ContentGeneratorRightPanel
+              showEditor={false}
+              generatedContent={generatedContent}
+              generatedContentData={generatedContentData}
+              contentType={contentType}
+              onContentUpdate={handleContentDataUpdate}
+            />
+          ) : null
+        }
+        shouldShowRightPanel={shouldShowRightPanel}
+      />
     </div>
   );
 };
