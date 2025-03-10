@@ -124,6 +124,25 @@
   .list-content li ul {
     @apply my-2 ml-2;
   }
+
+  .list-content ol {
+    counter-reset: item;
+  }
+  
+  .list-content ol > li {
+    @apply relative;
+    counter-increment: item;
+  }
+  
+  .list-content ol > li::before {
+    @apply absolute text-primary font-bold;
+    content: counter(item) ".";
+    left: -1.75rem;
+  }
+
+  .list-content ul > li {
+    @apply relative;
+  }
 }
 
 .transition-all {
