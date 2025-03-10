@@ -6,7 +6,7 @@ import KeywordGapList from "./KeywordGapList";
 import KeywordGapEmpty from "./KeywordGapEmpty";
 import KeywordGapLoader from "./KeywordGapLoader";
 import { getUniqueCompetitors } from "./KeywordGapUtils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface KeywordGapContentProps {
   keywordGaps: KeywordGap[] | null;
@@ -35,13 +35,15 @@ export function KeywordGapContent({
   onRefreshAnalysis,
   totalKeywords
 }: KeywordGapContentProps) {
-  // Enhanced logging for debugging competitor issues
+  const [volumeFilter, setVolumeFilter] = useState<[number, number]>([0, 10000]);
+  const [kdFilter, setKdFilter] = useState<[number, number]>([0, 100]);
+  const [filteredKeywords, setFilteredKeywords] = useState(displayedKeywords);
+
   useEffect(() => {
     if (keywordGaps && keywordGaps.length > 0) {
       const competitors = getUniqueCompetitors(keywordGaps);
       console.log("Available competitors in gaps:", competitors);
       
-      // Group gaps by competitor for better debugging
       const gapsByCompetitor = new Map<string, number>();
       keywordGaps.forEach(gap => {
         if (gap.competitor) {
@@ -53,6 +55,22 @@ export function KeywordGapContent({
       console.log("No keyword gaps data available yet");
     }
   }, [keywordGaps]);
+
+  useEffect(() => {
+    let filtered = [...displayedKeywords];
+    
+    // Apply volume filter
+    filtered = filtered.filter(
+      kw => kw.volume >= volumeFilter[0] && kw.volume <= volumeFilter[1]
+    );
+    
+    // Apply KD filter
+    filtered = filtered.filter(
+      kw => kw.difficulty >= kdFilter[0] && kw.difficulty <= kdFilter[1]
+    );
+    
+    setFilteredKeywords(filtered);
+  }, [displayedKeywords, volumeFilter, kdFilter]);
 
   return (
     <CardContent className="space-y-4">
@@ -70,10 +88,12 @@ export function KeywordGapContent({
             uniqueCompetitors={getUniqueCompetitors(keywordGaps)}
             totalKeywords={totalKeywords}
             onRefreshAnalysis={onRefreshAnalysis}
+            onVolumeFilterChange={(min, max) => setVolumeFilter([min, max])}
+            onKdFilterChange={(min, max) => setKdFilter([min, max])}
           />
           
           <KeywordGapList
-            keywords={displayedKeywords}
+            keywords={filteredKeywords}
             selectedKeywords={selectedKeywords}
             onKeywordSelection={onKeywordSelection}
           />
