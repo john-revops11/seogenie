@@ -31,7 +31,13 @@ interface WysiwygEditorProps {
 const WysiwygEditor: React.FC<WysiwygEditorProps> = ({ initialContent, onUpdate }) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: false, // Disable StarterKit heading to avoid duplicates
+        bulletList: false, // Disable StarterKit bulletList to avoid duplicates
+        orderedList: false, // Disable StarterKit orderedList to avoid duplicates
+        listItem: false, // Disable StarterKit listItem to avoid duplicates
+        bold: false, // Disable StarterKit bold to avoid duplicates
+      }),
       Heading.configure({ levels: [1, 2, 3] }),
       Link.configure({
         openOnClick: false,
@@ -45,11 +51,37 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({ initialContent, onUpdate 
     onUpdate: ({ editor }) => {
       onUpdate(editor.getHTML());
     },
+    // Add editor configuration to improve formatting
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg focus:outline-none',
+      },
+    },
   });
+
+  // Clean up Markdown artifacts before setting content
+  const cleanContent = (content: string): string => {
+    if (!content) return '';
+    
+    // Replace markdown headings (## Heading) with proper HTML
+    let cleaned = content.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    cleaned = cleaned.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    
+    // Ensure proper paragraph spacing
+    cleaned = cleaned.replace(/\n{2,}/g, '</p><p>');
+    
+    // Wrap plain text in paragraphs if not already wrapped
+    if (!cleaned.includes('<p>') && !cleaned.includes('<h')) {
+      cleaned = `<p>${cleaned}</p>`;
+    }
+    
+    return cleaned;
+  };
 
   useEffect(() => {
     if (editor && initialContent !== editor.getHTML()) {
-      editor.commands.setContent(initialContent);
+      const cleanedContent = cleanContent(initialContent);
+      editor.commands.setContent(cleanedContent);
     }
   }, [initialContent, editor]);
 
@@ -165,8 +197,8 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({ initialContent, onUpdate 
           <Redo className="h-4 w-4" />
         </Button>
       </div>
-      <div className="p-3 min-h-[200px] prose max-w-none">
-        <EditorContent editor={editor} />
+      <div className="p-4 min-h-[250px] prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none">
+        <EditorContent editor={editor} className="h-full focus:outline-none" />
       </div>
     </div>
   );
