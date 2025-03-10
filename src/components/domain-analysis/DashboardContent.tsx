@@ -27,8 +27,8 @@ export const DashboardContent = ({
 }: DashboardContentProps) => {
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-        <div className="md:col-span-2 lg:col-span-2">
+      <div className="grid gap-6">
+        <div>
           <KeywordTable 
             domain={domain} 
             competitorDomains={competitorDomains} 
@@ -39,7 +39,7 @@ export const DashboardContent = ({
           />
         </div>
         
-        <div className="lg:col-span-1">
+        <div>
           <KeywordGapCard 
             domain={domain} 
             competitorDomains={competitorDomains} 
@@ -48,7 +48,7 @@ export const DashboardContent = ({
           />
         </div>
         
-        <div className="lg:col-span-1">
+        <div>
           <SeoRecommendationsCard 
             domain={domain} 
             keywords={keywords || []}
