@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContentEditor from "./ContentEditor";
@@ -28,21 +27,6 @@ const ContentGeneratorStepFour: React.FC<ContentGeneratorStepFourProps> = ({
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Step 4: Edit Content</h3>
       
-      <Tabs defaultValue="editor">
-        <TabsList className="mb-4">
-          <TabsTrigger value="editor">Block Editor</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="editor">
-          {generatedContentData && (
-            <ContentEditor 
-              generatedContent={generatedContentData}
-              onContentUpdate={onContentUpdate}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
-      
       <div className="flex justify-between">
         <button
           onClick={onBack}
@@ -51,6 +35,8 @@ const ContentGeneratorStepFour: React.FC<ContentGeneratorStepFourProps> = ({
           Back
         </button>
       </div>
+
+      {/* Editor content has been removed here since it will now be displayed on the right side */}
     </div>
   );
 };

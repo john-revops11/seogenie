@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, History } from "lucide-react";
 import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
+import ContentEditor from "./content-generator/ContentEditor";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -227,6 +228,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     }
   };
 
+  // Determine if we should show the right panel with editor and preview
+  const shouldShowRightPanel = activeStep === 4 || (generatedContent && activeTab === "generator");
+
   return (
     <div className="w-full">
       <TopicGenerationHandler onGenerateFromKeyword={handleGenerateFromKeyword} />
@@ -261,28 +265,45 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
           </Card>
         </div>
         
-        {/* Generated Content Panel - Always visible on desktop, only when content exists on mobile */}
-        {(generatedContent || activeStep === 4) && activeTab === "generator" && (
-          <div className="space-y-4">
-            {activeStep === 4 ? (
+        {/* Right panel for both Block Editor and Preview */}
+        {shouldShowRightPanel && activeTab === "generator" && (
+          <div className="space-y-6">
+            {/* Block Editor - Only show in step 4 */}
+            {activeStep === 4 && generatedContentData && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Block Editor</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="editor">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="editor">Block Editor</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="editor">
+                      <ContentEditor 
+                        generatedContent={generatedContentData}
+                        onContentUpdate={handleContentDataUpdate}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Preview Card - Show in step 4 or when content is generated */}
+            {generatedContent && (
               <Card>
                 <CardHeader>
                   <CardTitle>Preview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {generatedContent && (
-                    <GeneratedContent 
-                      generatedContent={generatedContent} 
-                      contentType={contentType} 
-                    />
-                  )}
+                  <GeneratedContent 
+                    generatedContent={generatedContent} 
+                    contentType={contentType} 
+                  />
                 </CardContent>
               </Card>
-            ) : (
-              <GeneratedContent 
-                generatedContent={generatedContent} 
-                contentType={contentType} 
-              />
             )}
           </div>
         )}
