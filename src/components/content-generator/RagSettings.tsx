@@ -22,7 +22,7 @@ interface RagSettingsProps {
 export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPineconeReady, setIsPineconeReady] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   
   // Check Pinecone status initially and when component mounts
   useEffect(() => {
@@ -53,8 +53,10 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
             console.info("Pinecone connection successful:", data);
             setIsPineconeReady(true);
             
+            // If RAG is available but not enabled, enable it automatically
             if (!enabled && isPineconeConfig) {
-              toast.info("Pinecone RAG is available for enhanced content generation");
+              onToggle(true);
+              toast.success("RAG-enhanced content generation automatically enabled");
             }
           } else {
             console.error("Pinecone API error:", response.status);

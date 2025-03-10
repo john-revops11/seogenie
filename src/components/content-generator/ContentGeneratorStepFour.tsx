@@ -2,7 +2,6 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContentEditor from "./ContentEditor";
-import GeneratedContent from "./GeneratedContent";
 import { GeneratedContent as GeneratedContentType } from "@/services/keywords/types";
 
 interface ContentGeneratorStepFourProps {
@@ -32,7 +31,6 @@ const ContentGeneratorStepFour: React.FC<ContentGeneratorStepFourProps> = ({
       <Tabs defaultValue="editor">
         <TabsList className="mb-4">
           <TabsTrigger value="editor">Block Editor</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
         
         <TabsContent value="editor">
@@ -40,15 +38,6 @@ const ContentGeneratorStepFour: React.FC<ContentGeneratorStepFourProps> = ({
             <ContentEditor 
               generatedContent={generatedContentData}
               onContentUpdate={onContentUpdate}
-            />
-          )}
-        </TabsContent>
-        
-        <TabsContent value="preview">
-          {generatedContent && (
-            <GeneratedContent 
-              generatedContent={generatedContent} 
-              contentType={contentType} 
             />
           )}
         </TabsContent>

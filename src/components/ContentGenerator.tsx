@@ -228,46 +228,65 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="w-full">
       <TopicGenerationHandler onGenerateFromKeyword={handleGenerateFromKeyword} />
       
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>AI Content Generator</CardTitle>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "generator" | "history")} className="ml-auto">
-                <TabsList>
-                  <TabsTrigger value="generator" className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generator
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="flex items-center">
-                    <History className="mr-2 h-4 w-4" />
-                    History
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {activeTab === "generator" ? (
-              renderStepContent()
-            ) : (
-              <ContentHistory />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {generatedContent && activeStep !== 4 && activeTab === "generator" && (
-        <div className="space-y-4">
-          <GeneratedContent 
-            generatedContent={generatedContent} 
-            contentType={contentType} 
-          />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>AI Content Generator</CardTitle>
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "generator" | "history")} className="ml-auto">
+                  <TabsList>
+                    <TabsTrigger value="generator" className="flex items-center">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Generator
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="flex items-center">
+                      <History className="mr-2 h-4 w-4" />
+                      History
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {activeTab === "generator" ? (
+                renderStepContent()
+              ) : (
+                <ContentHistory />
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
+        
+        {/* Generated Content Panel - Always visible on desktop, only when content exists on mobile */}
+        {(generatedContent || activeStep === 4) && activeTab === "generator" && (
+          <div className="space-y-4">
+            {activeStep === 4 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Preview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {generatedContent && (
+                    <GeneratedContent 
+                      generatedContent={generatedContent} 
+                      contentType={contentType} 
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <GeneratedContent 
+                generatedContent={generatedContent} 
+                contentType={contentType} 
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
