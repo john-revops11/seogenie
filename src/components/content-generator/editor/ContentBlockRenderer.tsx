@@ -7,16 +7,28 @@ interface ContentBlockRendererProps {
 }
 
 const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) => {
+  // Add specific class names based on block type
+  const getBlockClasses = () => {
+    switch (block.type) {
+      case 'heading1':
+        return 'text-2xl font-bold mt-6 mb-3';
+      case 'heading2':
+        return 'text-xl font-bold mt-5 mb-2';
+      case 'heading3':
+        return 'text-lg font-bold mt-4 mb-2';
+      case 'list':
+        return 'mt-3 mb-4 list-content';
+      case 'paragraph':
+        return 'mt-3 mb-4 leading-relaxed';
+      default:
+        return 'mt-3 mb-4';
+    }
+  };
+
   return (
     <div 
       dangerouslySetInnerHTML={{ __html: block.content }} 
-      className={
-        block.type === 'heading1' ? 'text-2xl font-bold mt-4 mb-2' :
-        block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2' :
-        block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2' :
-        block.type === 'list' ? 'mt-2 mb-2 pl-5 space-y-1 list-content' :
-        'mt-2 mb-2'
-      }
+      className={getBlockClasses()}
     />
   );
 };

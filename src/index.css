@@ -103,6 +103,27 @@
   .focus-ring {
     @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
+  
+  .list-content ul {
+    @apply list-disc pl-6 my-2 space-y-2;
+  }
+  
+  .list-content ol {
+    @apply list-decimal pl-6 my-2 space-y-2;
+  }
+  
+  .list-content li {
+    @apply pl-2 mb-2;
+  }
+  
+  .list-content li::marker {
+    @apply text-primary font-medium;
+  }
+  
+  .list-content li ol,
+  .list-content li ul {
+    @apply my-2 ml-2;
+  }
 }
 
 .transition-all {
@@ -159,7 +180,6 @@
   }
 }
 
-/* Progress Bar Animation */
 .progress-bar-animated .bar {
   transition: width 0.6s ease;
 }
