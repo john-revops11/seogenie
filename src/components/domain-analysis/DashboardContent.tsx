@@ -39,7 +39,7 @@ export const DashboardContent = ({
           />
         </div>
         
-        <div>
+        <div className="w-full">
           <KeywordGapCard 
             domain={domain} 
             competitorDomains={competitorDomains} 
@@ -48,7 +48,7 @@ export const DashboardContent = ({
           />
         </div>
         
-        <div>
+        <div className="w-full">
           <SeoRecommendationsCard 
             domain={domain} 
             keywords={keywords || []}

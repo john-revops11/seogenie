@@ -43,6 +43,14 @@ export function useContentActions(
     };
   };
 
+  // Handle word count change
+  const handleWordCountChange = (
+    setWordCountOption: (option: string) => void,
+    option: string
+  ) => {
+    setWordCountOption(option);
+  };
+
   // Generate content with specified parameters
   const handleGenerateContent = async (
     title: string,
@@ -52,7 +60,8 @@ export function useContentActions(
     ragEnabled: boolean,
     aiProvider: AIProvider,
     aiModel: string,
-    creativity: number
+    creativity: number,
+    wordCountOption: string = "standard"
   ) => {
     if (!title) {
       toast.error("Please enter a title");
@@ -77,14 +86,16 @@ export function useContentActions(
         templateId: "",
         aiProvider,
         aiModel,
-        ragEnabled
+        ragEnabled,
+        wordCountOption
       });
 
       // Include AI provider and model in the generated content data
       const contentDataWithAIInfo = {
         ...result.generatedContent,
         aiProvider,
-        aiModel
+        aiModel,
+        wordCountOption
       };
 
       // Update state with generated content
@@ -128,6 +139,7 @@ export function useContentActions(
     handleContentPreferenceToggle,
     handleRagToggle,
     handleContentTypeChange,
-    handleCreativityChange
+    handleCreativityChange,
+    handleWordCountChange
   };
 }

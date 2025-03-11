@@ -17,6 +17,7 @@ interface GeneratorFormProps {
   contentType: string;
   creativity: number;
   contentPreferences: string[];
+  wordCountOption: string;
   isLoadingTopics: boolean;
   isGenerating: boolean;
   onTopicSelect: (topic: string) => void;
@@ -25,6 +26,7 @@ interface GeneratorFormProps {
   onContentTypeChange: (value: string) => void;
   onCreativityChange: (value: number) => void;
   onContentPreferenceToggle: (preference: string) => void;
+  onWordCountChange: (value: string) => void;
   onGenerateTopics: () => void;
   onRegenerateTopics: () => void;
   onGenerateContent: () => void;
@@ -43,6 +45,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   contentType,
   creativity,
   contentPreferences,
+  wordCountOption,
   isLoadingTopics,
   isGenerating,
   onTopicSelect,
@@ -51,6 +54,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
   onContentTypeChange,
   onCreativityChange,
   onContentPreferenceToggle,
+  onWordCountChange,
   onGenerateTopics,
   onRegenerateTopics,
   onGenerateContent,
@@ -96,9 +100,11 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
             selectedTopic={selectedTopic}
             title={title}
             selectedKeywords={selectedKeywords}
+            wordCountOption={wordCountOption}
             onContentTypeChange={onContentTypeChange}
             onCreativityChange={onCreativityChange}
             onContentPreferenceToggle={onContentPreferenceToggle}
+            onWordCountChange={onWordCountChange}
           />
         </TabsContent>
         

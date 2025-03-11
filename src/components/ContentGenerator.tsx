@@ -31,6 +31,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     contentType,
     creativity,
     contentPreferences,
+    wordCountOption,
     generatedContent,
     isLoadingTopics,
     isGenerating,
@@ -59,6 +60,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
     handleContentTypeChange,
     handleCreativityChange,
     handleContentPreferenceToggle,
+    handleWordCountChange,
     handleRagToggle,
     handleGenerateContent,
     handleAddCustomTopic,
@@ -117,7 +119,8 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
       const contentToSave = {
         ...contentData,
         aiProvider,
-        aiModel
+        aiModel,
+        wordCountOption
       };
       saveToHistory(contentToSave);
     }
@@ -136,6 +139,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             contentType={contentType}
             creativity={creativity}
             contentPreferences={contentPreferences}
+            wordCountOption={wordCountOption}
             isLoadingTopics={isLoadingTopics}
             isGenerating={isGenerating}
             ragEnabled={ragEnabled}
@@ -145,6 +149,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             onContentTypeChange={handleContentTypeChange}
             onCreativityChange={handleCreativityChange}
             onContentPreferenceToggle={handleContentPreferenceToggle}
+            onWordCountChange={handleWordCountChange}
             onGenerateTopics={handleGenerateTopics}
             onRegenerateTopics={handleRegenerateTopics}
             onGenerateContent={handleGenerateContent}
@@ -178,6 +183,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords
             isGenerating={isGenerating}
             aiProvider={aiProvider}
             aiModel={aiModel}
+            wordCountOption={wordCountOption}
             onAIProviderChange={setAIProvider}
             onAIModelChange={setAIModel}
             onGenerateContent={handleGenerateContent}

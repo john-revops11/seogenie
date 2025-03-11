@@ -19,6 +19,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     selectedKeywords,
     creativity,
     contentPreferences,
+    wordCountOption,
     generatedContent,
     generatedContentData,
     isGenerating,
@@ -38,6 +39,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     setSelectedKeywords,
     setCreativity,
     setContentPreferences,
+    setWordCountOption,
     setGeneratedContent,
     setGeneratedContentData,
     setIsGenerating,
@@ -64,7 +66,8 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     handleContentPreferenceToggle,
     handleRagToggle,
     handleContentTypeChange,
-    handleCreativityChange
+    handleCreativityChange,
+    handleWordCountChange
   } = useContentActions(
     setIsGenerating, 
     setGeneratedContent, 
@@ -116,6 +119,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     selectedKeywords,
     creativity,
     contentPreferences,
+    wordCountOption,
     generatedContent,
     generatedContentData,
     isGenerating,
@@ -149,6 +153,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
     handleDeleteTopic: (topic: string) => handleDeleteTopic(topics, selectedTopic, topic),
     handleContentTypeChange: (type: string) => handleContentTypeChange(setContentType, type),
     handleCreativityChange: (value: number) => handleCreativityChange(setCreativity, value),
+    handleWordCountChange: (value: string) => handleWordCountChange(setWordCountOption, value),
     handleContentPreferenceToggle: toggleContentPreference,
     handleRagToggle: toggleRag,
     handleGenerateContent: () => handleGenerateContent(
@@ -159,7 +164,8 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
       ragEnabled,
       aiProvider,
       aiModel,
-      creativity
+      creativity,
+      wordCountOption
     ),
     handleAddCustomTopic: (topic: string) => 
       handleAddCustomTopic(topics, selectedKeywords, contentType, topic),

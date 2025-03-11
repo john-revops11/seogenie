@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GeneratedContent } from "@/services/keywords/types";
@@ -25,6 +26,7 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(allKeywords.slice(0, 3));
   const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
+  const [wordCountOption, setWordCountOption] = useState("standard");
   
   // Check if Pinecone is configured and enable RAG by default if it is
   const [ragEnabled, setRagEnabled] = useState(isPineconeConfigured());
@@ -117,6 +119,7 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
     selectedKeywords,
     creativity,
     contentPreferences,
+    wordCountOption,
     generatedContent,
     generatedContentData,
     isGenerating,
@@ -136,6 +139,7 @@ export function useContentGeneratorState(domain: string = "", allKeywords: strin
     setSelectedKeywords,
     setCreativity,
     setContentPreferences,
+    setWordCountOption,
     setGeneratedContent,
     setGeneratedContentData,
     setIsGenerating,

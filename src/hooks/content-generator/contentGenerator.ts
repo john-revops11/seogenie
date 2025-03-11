@@ -5,6 +5,7 @@ import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { generateContentOutline } from "@/services/vector/ragService";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { isAIProviderConfigured } from "./aiModels";
+import { WORD_COUNT_OPTIONS } from "@/components/content-generator/WordCountSelector";
 
 /**
  * Generates content based on provided parameters
@@ -19,7 +20,8 @@ export const generateContent = async ({
   templateId: selectedTemplateId,
   aiProvider,
   aiModel,
-  ragEnabled
+  ragEnabled,
+  wordCountOption = "standard"
 }: {
   domain: string;
   keywords: string[];
@@ -31,6 +33,7 @@ export const generateContent = async ({
   aiProvider: AIProvider;
   aiModel: string;
   ragEnabled: boolean;
+  wordCountOption?: string;
 }): Promise<{
   content: string;
   generatedContent: GeneratedContent;
@@ -43,6 +46,11 @@ export const generateContent = async ({
   if (!isAIProviderConfigured(aiProvider)) {
     throw new Error(`${aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured`);
   }
+
+  // Get word count range from selected option
+  const wordCountOption1 = WORD_COUNT_OPTIONS.find(option => option.value === wordCountOption) || WORD_COUNT_OPTIONS[1]; // Default to standard
+  const minWordCount = wordCountOption1.min;
+  const maxWordCount = wordCountOption1.max;
 
   // Ensure we have a valid model, fallback to primary if needed
   const primaryModel = getPrimaryModelForProvider(aiProvider);
@@ -57,7 +65,7 @@ export const generateContent = async ({
     contentType
   );
 
-  toast.info("Generating content blocks...");
+  toast.info(`Generating content blocks (${minWordCount}-${maxWordCount} words)...`);
   
   // Create proper ContentBlock array with correct types
   const contentBlocks: ContentBlock[] = [];
@@ -69,6 +77,9 @@ export const generateContent = async ({
     content: `<h1>${title}</h1>`
   });
   
+  // Calculate approximate words per section to hit target word count
+  const targetSectionWords = Math.floor((minWordCount + maxWordCount) / 2 / outline.headings.length);
+  
   // Generate each content block
   for (const heading of outline.headings) {
     // Add heading block
@@ -79,6 +90,7 @@ export const generateContent = async ({
     });
     
     let prompt = `Write a detailed section for an article titled "${title}" focusing on the section heading "${heading}". `;
+    prompt += `The content should be approximately ${targetSectionWords} words. `;
     prompt += `Incorporate these keywords naturally: ${selectedKeywords.join(", ")}. `;
     prompt += `The content type is ${contentType}. `;
     
@@ -111,7 +123,12 @@ export const generateContent = async ({
     contentType: contentType,
     generationMethod: ragEnabled ? 'rag' : 'standard',
     aiProvider,
-    aiModel: modelToUse
+    aiModel: modelToUse,
+    wordCount: {
+      min: minWordCount,
+      max: maxWordCount,
+      target: Math.floor((minWordCount + maxWordCount) / 2)
+    }
   };
   
   // Convert blocks to content string

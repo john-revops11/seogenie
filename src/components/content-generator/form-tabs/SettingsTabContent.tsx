@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Toggle } from "@/components/ui/toggle";
 import ContentTypeSelector from "../ContentTypeSelector";
+import WordCountSelector from "../WordCountSelector";
 
 interface SettingsTabContentProps {
   contentType: string;
@@ -13,9 +14,11 @@ interface SettingsTabContentProps {
   selectedTopic: string;
   selectedKeywords: string[];
   title: string;
+  wordCountOption: string;
   onContentTypeChange: (value: string) => void;
   onCreativityChange: (value: number) => void;
   onContentPreferenceToggle: (preference: string) => void;
+  onWordCountChange: (value: string) => void;
 }
 
 export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
@@ -25,9 +28,11 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
   selectedTopic,
   selectedKeywords,
   title,
+  wordCountOption,
   onContentTypeChange,
   onCreativityChange,
   onContentPreferenceToggle,
+  onWordCountChange,
 }) => {
   const contentPreferenceOptions = [
     { label: "Data-Driven", value: "data-driven" },
@@ -45,6 +50,13 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
         <ContentTypeSelector 
           value={contentType}
           onChange={onContentTypeChange}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <WordCountSelector
+          value={wordCountOption}
+          onChange={onWordCountChange}
         />
       </div>
       

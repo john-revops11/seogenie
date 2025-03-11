@@ -12,6 +12,7 @@ interface ContentGeneratorStepOneProps {
   contentType: string;
   creativity: number;
   contentPreferences: string[];
+  wordCountOption: string;
   isLoadingTopics: boolean;
   isGenerating: boolean;
   ragEnabled: boolean;
@@ -21,6 +22,7 @@ interface ContentGeneratorStepOneProps {
   onContentTypeChange: (value: string) => void;
   onCreativityChange: (value: number) => void;
   onContentPreferenceToggle: (preference: string) => void;
+  onWordCountChange: (value: string) => void;
   onGenerateTopics: () => void;
   onRegenerateTopics: () => void;
   onGenerateContent: () => void;
@@ -39,6 +41,7 @@ const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
   contentType,
   creativity,
   contentPreferences,
+  wordCountOption,
   isLoadingTopics,
   isGenerating,
   ragEnabled,
@@ -48,6 +51,7 @@ const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
   onContentTypeChange,
   onCreativityChange,
   onContentPreferenceToggle,
+  onWordCountChange,
   onGenerateTopics,
   onRegenerateTopics,
   onCustomTopicAdd,
@@ -73,6 +77,7 @@ const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
           contentType={contentType}
           creativity={creativity}
           contentPreferences={contentPreferences}
+          wordCountOption={wordCountOption}
           isLoadingTopics={isLoadingTopics}
           isGenerating={isGenerating}
           onTopicSelect={onTopicSelect}
@@ -81,6 +86,7 @@ const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
           onContentTypeChange={onContentTypeChange}
           onCreativityChange={onCreativityChange}
           onContentPreferenceToggle={onContentPreferenceToggle}
+          onWordCountChange={onWordCountChange}
           onGenerateTopics={onGenerateTopics}
           onRegenerateTopics={onRegenerateTopics}
           onGenerateContent={onContinue}
