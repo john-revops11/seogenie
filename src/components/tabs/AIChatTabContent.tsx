@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AIProvider, getModelsForProvider } from "@/types/aiModels";
 import { enhanceWithRAG } from "@/services/vector/ragService";
@@ -269,7 +270,7 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       // Update the model selection to use correct model names
       const modelToUse = userMessage.files && userMessage.files.length > 0 
         ? "gpt-4" 
-        : aiModel || "gpt-4"; // Default to gpt-4 if no model selected
+        : selectedModel || "gpt-4"; // Use selectedModel instead of aiModel, with fallback to gpt-4
 
       const response = await generateWithAI(
         provider,
