@@ -10,15 +10,18 @@ import { Check } from "lucide-react";
 interface TemplateSelectorProps {
   contentType: string;
   selectedTemplateId: string;
+  templates?: ContentTemplate[]; // Add the templates prop to the interface
   onSelectTemplate: (templateId: string) => void;
 }
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   contentType,
   selectedTemplateId,
+  templates: propTemplates,
   onSelectTemplate
 }) => {
-  const templates = getContentTemplates(contentType);
+  // Use provided templates from props or fetch them if not provided
+  const templates = propTemplates || getContentTemplates(contentType);
   
   if (templates.length === 0) {
     return (
