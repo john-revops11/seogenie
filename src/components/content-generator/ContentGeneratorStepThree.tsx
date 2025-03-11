@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { defaultAIModels, AIProvider, AIModel, getModelsForProvider, getPrimaryModelForProvider } from "@/types/aiModels";
+import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
 
 interface ContentGeneratorStepThreeProps {
   contentType: string;
@@ -17,6 +18,7 @@ interface ContentGeneratorStepThreeProps {
   isGenerating: boolean;
   aiProvider: AIProvider;
   aiModel: string;
+  wordCountOption: string;
   onAIProviderChange: (provider: AIProvider) => void;
   onAIModelChange: (model: string) => void;
   onGenerateContent: () => void;
@@ -33,6 +35,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
   isGenerating,
   aiProvider,
   aiModel,
+  wordCountOption,
   onAIProviderChange,
   onAIModelChange,
   onGenerateContent,
@@ -74,6 +77,9 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
     const model = availableModels.find(m => m.id === modelId);
     return model ? model.name : modelId;
   };
+
+  // Find the selected word count option
+  const selectedWordCount = WORD_COUNT_OPTIONS.find(option => option.value === wordCountOption);
 
   return (
     <div className="space-y-6">
@@ -143,6 +149,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
             <div><span className="font-medium">Title:</span> {title}</div>
             <div><span className="font-medium">Keywords:</span> {selectedKeywords.join(", ")}</div>
             <div><span className="font-medium">Creativity:</span> {creativity}%</div>
+            <div><span className="font-medium">Word Count:</span> {selectedWordCount ? selectedWordCount.description : "Standard"}</div>
             <div><span className="font-medium">Generation Method:</span> {ragEnabled ? "RAG-Enhanced" : "Standard"}</div>
             <div><span className="font-medium">AI Provider:</span> {aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'}</div>
             <div><span className="font-medium">AI Model:</span> {getModelName(aiModel)}</div>

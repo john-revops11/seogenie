@@ -66,6 +66,12 @@ export interface GeneratedContent {
   aiProvider?: AIProvider;
   aiModel?: string;
   createdAt?: string;
+  wordCountOption?: string;
+  wordCount?: {
+    min: number;
+    max: number;
+    target: number;
+  };
   // Add the missing ragInfo property
   ragInfo?: {
     chunksRetrieved: number;

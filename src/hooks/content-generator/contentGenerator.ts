@@ -124,6 +124,7 @@ export const generateContent = async ({
     generationMethod: ragEnabled ? 'rag' : 'standard',
     aiProvider,
     aiModel: modelToUse,
+    wordCountOption,
     wordCount: {
       min: minWordCount,
       max: maxWordCount,
