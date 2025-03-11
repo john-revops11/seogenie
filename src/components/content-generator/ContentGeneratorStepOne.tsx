@@ -1,100 +1,52 @@
 
 import React from "react";
-import { GeneratorForm } from "./GeneratorForm";
+import { ContentTemplate } from "@/services/keywords/types";
 import ContentTypeSelector from "./ContentTypeSelector";
+import TemplateSelector from "./TemplateSelector";
+import { Button } from "@/components/ui/button";
 
 interface ContentGeneratorStepOneProps {
-  topics: string[];
-  titleSuggestions: {[topic: string]: string[]};
-  selectedTopic: string;
-  selectedKeywords: string[];
-  title: string;
   contentType: string;
-  creativity: number;
-  contentPreferences: string[];
-  wordCountOption: string;
-  isLoadingTopics: boolean;
-  isGenerating: boolean;
-  ragEnabled: boolean;
-  onTopicSelect: (topic: string) => void;
-  onTitleSelect: (title: string) => void;
-  onTopicDelete: (topic: string) => void;
-  onContentTypeChange: (value: string) => void;
-  onCreativityChange: (value: number) => void;
-  onContentPreferenceToggle: (preference: string) => void;
-  onWordCountChange: (value: string) => void;
-  onGenerateTopics: () => void;
-  onRegenerateTopics: () => void;
-  onGenerateContent: () => void;
-  onCustomTopicAdd: (topic: string) => void;
-  onRagToggle: (enabled: boolean) => void;
-  onContinue: () => void;
-  onKeywordRemove?: (keyword: string) => void;
+  selectedTemplateId: string;
+  templates: ContentTemplate[];
+  onContentTypeChange: (type: string) => void;
+  onTemplateChange: (templateId: string) => void;
+  onNext: () => void;
 }
 
 const ContentGeneratorStepOne: React.FC<ContentGeneratorStepOneProps> = ({
-  topics,
-  titleSuggestions,
-  selectedTopic,
-  selectedKeywords,
-  title,
   contentType,
-  creativity,
-  contentPreferences,
-  wordCountOption,
-  isLoadingTopics,
-  isGenerating,
-  ragEnabled,
-  onTopicSelect,
-  onTitleSelect,
-  onTopicDelete,
+  selectedTemplateId,
+  templates,
   onContentTypeChange,
-  onCreativityChange,
-  onContentPreferenceToggle,
-  onWordCountChange,
-  onGenerateTopics,
-  onRegenerateTopics,
-  onCustomTopicAdd,
-  onRagToggle,
-  onContinue,
-  onKeywordRemove
+  onTemplateChange,
+  onNext
 }) => {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Step 1: Select Content Type</h3>
-      <ContentTypeSelector 
-        value={contentType}
-        onChange={onContentTypeChange}
-      />
       
-      <div className="space-y-2 pt-4">
-        <GeneratorForm
-          topics={topics}
-          titleSuggestions={titleSuggestions}
-          selectedTopic={selectedTopic}
-          selectedKeywords={selectedKeywords}
-          title={title}
-          contentType={contentType}
-          creativity={creativity}
-          contentPreferences={contentPreferences}
-          wordCountOption={wordCountOption}
-          isLoadingTopics={isLoadingTopics}
-          isGenerating={isGenerating}
-          onTopicSelect={onTopicSelect}
-          onTitleSelect={onTitleSelect}
-          onTopicDelete={onTopicDelete}
-          onContentTypeChange={onContentTypeChange}
-          onCreativityChange={onCreativityChange}
-          onContentPreferenceToggle={onContentPreferenceToggle}
-          onWordCountChange={onWordCountChange}
-          onGenerateTopics={onGenerateTopics}
-          onRegenerateTopics={onRegenerateTopics}
-          onGenerateContent={onContinue}
-          onCustomTopicAdd={onCustomTopicAdd}
-          ragEnabled={ragEnabled}
-          onRagToggle={onRagToggle}
-          onKeywordRemove={onKeywordRemove}
+      <div className="space-y-4">
+        <ContentTypeSelector 
+          value={contentType}
+          onChange={onContentTypeChange}
         />
+        
+        <div className="pt-4">
+          <h4 className="text-sm font-medium mb-3">Choose a Template</h4>
+          <TemplateSelector 
+            contentType={contentType}
+            selectedTemplateId={selectedTemplateId}
+            templates={templates.filter(t => t.contentType === contentType)}
+            onSelectTemplate={onTemplateChange}
+          />
+        </div>
+      </div>
+      
+      <div className="flex justify-end">
+        <Button onClick={onNext}>
+          Continue
+        </Button>
       </div>
     </div>
   );

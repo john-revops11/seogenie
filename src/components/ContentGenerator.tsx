@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 import { toast } from "sonner";
 import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne";
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";

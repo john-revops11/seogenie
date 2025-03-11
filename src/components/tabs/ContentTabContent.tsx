@@ -22,7 +22,7 @@ export const ContentTabContent = ({
   return (
     <ContentGenerator 
       domain={domain} 
-      allKeywords={allKeywords}
+      selectedKeywords={allKeywords}
     />
   );
 };
