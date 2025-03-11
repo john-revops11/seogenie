@@ -1,254 +1,254 @@
-
-import { useState, useEffect } from "react";
-import TopicGenerationHandler from "./content-generator/TopicGenerationHandler";
-import useContentGenerator from "@/hooks/useContentGenerator";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Loader2, ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne";
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
-import ContentGeneratorStepFour from "./content-generator/ContentGeneratorStepFour";
-import ContentHistory from "./content-generator/ContentHistory";
-import { keywordGapsCache } from "./keyword-gaps/KeywordGapUtils";
-import { toast } from "sonner";
-import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
-import ContentGeneratorLayout from "./content-generator/ContentGeneratorLayout";
-import ContentGeneratorRightPanel from "./content-generator/ContentGeneratorRightPanel";
-import KeywordEventHandler from "./content-generator/KeywordEventHandler";
+import ContentPreview from "./content-generator/ContentPreview";
+import { generateContent } from "@/hooks/content-generator/contentGenerator";
+import { useContentTemplates } from "@/hooks/content-generator/contentTemplates";
+import { useContentPreferences } from "@/hooks/content-generator/contentPreferences";
+import { AIProvider } from "@/types/aiModels";
+import { GeneratedContent } from "@/services/keywords/types";
+import { WORD_COUNT_OPTIONS } from "./content-generator/WordCountSelector";
 
 interface ContentGeneratorProps {
   domain: string;
-  allKeywords: string[];
+  selectedKeywords?: string[];
+  initialTitle?: string;
 }
 
-const ContentGenerator: React.FC<ContentGeneratorProps> = ({ domain, allKeywords }) => {
-  const [activeTab, setActiveTab] = useState<"generator" | "history">("generator");
+const ContentGenerator: React.FC<ContentGeneratorProps> = ({
+  domain,
+  selectedKeywords = [],
+  initialTitle = ""
+}) => {
+  const [step, setStep] = useState(1);
+  const [contentType, setContentType] = useState("blog-post");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [keywords, setKeywords] = useState<string[]>(selectedKeywords);
+  const [creativity, setCreativity] = useState(50);
+  const [ragEnabled, setRagEnabled] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [contentHtml, setContentHtml] = useState("");
+  const [aiProvider, setAIProvider] = useState<AIProvider>("openai");
+  const [aiModel, setAIModel] = useState("");
+  const [wordCountOption, setWordCountOption] = useState("standard");
   
-  const {
-    // State
-    topics,
-    titleSuggestions,
-    selectedTopic,
-    title,
-    contentType,
-    creativity,
-    contentPreferences,
-    wordCountOption,
-    generatedContent,
-    isLoadingTopics,
-    isGenerating,
-    ragEnabled,
-    activeStep,
-    selectedTemplateId,
-    generatedContentData,
-    selectedKeywords,
-    aiProvider,
-    aiModel,
-    
-    // State setters
-    setGeneratedContent,
-    setGeneratedContentData,
-    setSelectedKeywords,
-    
-    // Actions
-    setActiveStep,
-    setSelectedTemplateId,
-    handleGenerateFromKeyword,
-    handleGenerateTopics,
-    handleRegenerateTopics,
-    handleSelectTopic,
-    handleSelectTitle,
-    handleDeleteTopic,
-    handleContentTypeChange,
-    handleCreativityChange,
-    handleContentPreferenceToggle,
-    handleWordCountChange,
-    handleRagToggle,
-    handleGenerateContent,
-    handleAddCustomTopic,
-    setAIProvider,
-    setAIModel
-  } = useContentGenerator(domain, allKeywords);
+  const { templates } = useContentTemplates();
+  const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
 
-  const { saveToHistory } = useContentHistory();
-
-  // Sync selected keywords from cache when component mounts
   useEffect(() => {
-    const cachedKeywords = keywordGapsCache.selectedKeywords || [];
-    if (cachedKeywords.length > 0) {
-      console.log("Loaded selected keywords from cache:", cachedKeywords);
-      setSelectedKeywords(cachedKeywords);
-    } else if (allKeywords && allKeywords.length > 0) {
-      // Take up to 3 keywords from allKeywords if no cached keywords
-      const initialKeywords = allKeywords.slice(0, 3);
-      console.log("Initializing with keywords from props:", initialKeywords);
-      setSelectedKeywords(initialKeywords);
+    if (selectedKeywords.length > 0) {
+      setKeywords(selectedKeywords);
     }
-  }, []);
-
-  // Add function to handle keyword removal
-  const handleRemoveKeyword = (keyword: string) => {
-    const updatedKeywords = selectedKeywords.filter(k => k !== keyword);
-    setSelectedKeywords(updatedKeywords);
-    // Also update the cache
-    keywordGapsCache.selectedKeywords = updatedKeywords;
-    console.log("Removed keyword:", keyword, "Updated keywords:", updatedKeywords);
     
-    if (updatedKeywords.length === 0) {
-      toast.warning("No keywords selected. Topics may not be as SEO-optimized.");
+    if (initialTitle) {
+      setTitle(initialTitle);
     }
+  }, [selectedKeywords, initialTitle]);
+
+  const handleNextStep = () => {
+    if (step === 1 && !contentType) {
+      toast.error("Please select a content type");
+      return;
+    }
+    
+    if (step === 2) {
+      if (!title) {
+        toast.error("Please enter a title");
+        return;
+      }
+      
+      if (keywords.length === 0) {
+        toast.error("Please add at least one keyword");
+        return;
+      }
+    }
+    
+    setStep(step + 1);
   };
 
-  // Handle content data update with proper type conversion
-  const handleContentDataUpdate = (contentData: any) => {
-    // Safely update generatedContentData with the incoming data
-    setGeneratedContentData(contentData);
+  const handleBackStep = () => {
+    setStep(step - 1);
+  };
+
+  const handleContentTypeChange = (type: string) => {
+    setContentType(type);
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+  };
+
+  const handleTitleChange = (newTitle: string) => {
+    setTitle(newTitle);
+  };
+
+  const handleKeywordsChange = (newKeywords: string[]) => {
+    setKeywords(newKeywords);
+  };
+
+  const handleCreativityChange = (value: number) => {
+    setCreativity(value);
+  };
+
+  const handleRagToggle = (enabled: boolean) => {
+    setRagEnabled(enabled);
+  };
+
+  const handleAIProviderChange = (provider: AIProvider) => {
+    setAIProvider(provider);
+    setAIModel(""); // Reset model when provider changes
+  };
+
+  const handleAIModelChange = (model: string) => {
+    setAIModel(model);
+  };
+
+  const handleWordCountOptionChange = (option: string) => {
+    setWordCountOption(option);
+  };
+
+  const handleBackToStepTwo = () => {
+    setStep(2);
+  };
+
+  const handleGenerateContent = async () => {
+    setIsGenerating(true);
     
-    // Convert blocks to HTML string
-    const contentHtml = contentData.blocks.map((block: any) => block.content).join('\n');
-    
-    // Update the generatedContent with the new format
-    setGeneratedContent({
-      title: contentData.title,
-      metaDescription: contentData.metaDescription,
-      outline: contentData.outline,
-      content: contentHtml
-    });
-    
-    // Save to history
-    if (contentData.title && contentData.blocks.length > 0) {
-      // Add aiProvider and aiModel to contentData before saving
-      const contentToSave = {
-        ...contentData,
+    try {
+      const result = await generateContent({
+        domain,
+        keywords,
+        contentType,
+        title,
+        creativity,
+        contentPreferences: selectedPreferences,
+        templateId: selectedTemplateId,
         aiProvider,
         aiModel,
+        ragEnabled,
         wordCountOption
-      };
-      saveToHistory(contentToSave);
+      });
+      
+      setContentHtml(result.content);
+      setGeneratedContent(result.generatedContent);
+      
+      toast.success("Content generated successfully!");
+      setStep(4); // Move to preview step
+    } catch (error) {
+      console.error("Error generating content:", error);
+      toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const renderStepContent = () => {
-    switch (activeStep) {
+    switch (step) {
       case 1:
         return (
-          <ContentGeneratorStepOne 
-            topics={topics}
-            titleSuggestions={titleSuggestions}
-            selectedTopic={selectedTopic}
-            selectedKeywords={selectedKeywords}
-            title={title}
+          <ContentGeneratorStepOne
             contentType={contentType}
-            creativity={creativity}
-            contentPreferences={contentPreferences}
-            wordCountOption={wordCountOption}
-            isLoadingTopics={isLoadingTopics}
-            isGenerating={isGenerating}
-            ragEnabled={ragEnabled}
-            onTopicSelect={handleSelectTopic}
-            onTitleSelect={handleSelectTitle}
-            onTopicDelete={handleDeleteTopic}
+            selectedTemplateId={selectedTemplateId}
+            templates={templates}
             onContentTypeChange={handleContentTypeChange}
-            onCreativityChange={handleCreativityChange}
-            onContentPreferenceToggle={handleContentPreferenceToggle}
-            onWordCountChange={handleWordCountChange}
-            onGenerateTopics={handleGenerateTopics}
-            onRegenerateTopics={handleRegenerateTopics}
-            onGenerateContent={handleGenerateContent}
-            onCustomTopicAdd={handleAddCustomTopic}
-            onRagToggle={handleRagToggle}
-            onContinue={() => setActiveStep(2)}
-            onKeywordRemove={handleRemoveKeyword}
+            onTemplateChange={handleTemplateChange}
+            onNext={handleNextStep}
           />
         );
-        
       case 2:
         return (
-          <ContentGeneratorStepTwo 
-            contentType={contentType}
-            selectedTemplateId={selectedTemplateId}
-            onSelectTemplate={setSelectedTemplateId}
-            onBack={() => setActiveStep(1)}
-            onContinue={() => setActiveStep(3)}
+          <ContentGeneratorStepTwo
+            title={title}
+            keywords={keywords}
+            creativity={creativity}
+            ragEnabled={ragEnabled}
+            contentPreferences={contentPreferences}
+            selectedPreferences={selectedPreferences}
+            wordCountOption={wordCountOption}
+            onTitleChange={handleTitleChange}
+            onKeywordsChange={handleKeywordsChange}
+            onCreativityChange={handleCreativityChange}
+            onRagToggle={handleRagToggle}
+            onTogglePreference={togglePreference}
+            onWordCountOptionChange={handleWordCountOptionChange}
+            onNext={handleNextStep}
+            onBack={handleBackStep}
           />
         );
-        
       case 3:
         return (
-          <ContentGeneratorStepThree 
+          <ContentGeneratorStepThree
             contentType={contentType}
             selectedTemplateId={selectedTemplateId}
             title={title}
-            selectedKeywords={selectedKeywords}
+            selectedKeywords={keywords}
             creativity={creativity}
             ragEnabled={ragEnabled}
             isGenerating={isGenerating}
             aiProvider={aiProvider}
             aiModel={aiModel}
             wordCountOption={wordCountOption}
-            onAIProviderChange={setAIProvider}
-            onAIModelChange={setAIModel}
+            onAIProviderChange={handleAIProviderChange}
+            onAIModelChange={handleAIModelChange}
             onGenerateContent={handleGenerateContent}
-            onBack={() => setActiveStep(2)}
+            onBack={handleBackToStepTwo}
           />
         );
-        
       case 4:
         return (
-          <ContentGeneratorStepFour 
+          <ContentPreview
+            content={contentHtml}
             generatedContent={generatedContent}
-            generatedContentData={generatedContentData}
-            contentType={contentType}
-            onContentUpdate={handleContentDataUpdate}
-            onBack={() => setActiveStep(3)}
+            onBack={() => setStep(3)}
           />
         );
-        
       default:
         return null;
     }
   };
 
-  // Determine if we should show the right panel with editor and preview
-  const shouldShowRightPanel = activeStep === 4 || (generatedContent && activeTab === "generator");
-
   return (
-    <div className="w-full">
-      <TopicGenerationHandler onGenerateFromKeyword={handleGenerateFromKeyword} />
-      <KeywordEventHandler 
-        onGenerateFromKeyword={handleGenerateFromKeyword}
-        setSelectedKeywords={setSelectedKeywords}
-        handleGenerateTopics={handleGenerateTopics}
-      />
-      
-      <ContentGeneratorLayout
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        generatorContent={renderStepContent()}
-        historyContent={<ContentHistory />}
-        editorContent={
-          activeStep === 4 && generatedContentData ? (
-            <ContentGeneratorRightPanel
-              showEditor={activeStep === 4}
-              generatedContent={generatedContent}
-              generatedContentData={generatedContentData}
-              contentType={contentType}
-              onContentUpdate={handleContentDataUpdate}
-            />
-          ) : null
-        }
-        previewContent={
-          generatedContent && activeTab === "generator" && activeStep !== 4 ? (
-            <ContentGeneratorRightPanel
-              showEditor={false}
-              generatedContent={generatedContent}
-              generatedContentData={generatedContentData}
-              contentType={contentType}
-              onContentUpdate={handleContentDataUpdate}
-            />
-          ) : null
-        }
-        shouldShowRightPanel={shouldShowRightPanel}
-      />
-    </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Content Generator</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-2">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${step >= 1 ? 'bg-primary text-white' : 'border border-input bg-background'}`}>
+                {step > 1 ? <Check className="h-4 w-4" /> : "1"}
+              </div>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${step >= 2 ? 'bg-primary text-white' : 'border border-input bg-background'}`}>
+                {step > 2 ? <Check className="h-4 w-4" /> : "2"}
+              </div>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${step >= 3 ? 'bg-primary text-white' : 'border border-input bg-background'}`}>
+                {step > 3 ? <Check className="h-4 w-4" /> : "3"}
+              </div>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${step >= 4 ? 'bg-primary text-white' : 'border border-input bg-background'}`}>
+                {step > 4 ? <Check className="h-4 w-4" /> : "4"}
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {step === 1 && "Content Type"}
+              {step === 2 && "Content Details"}
+              {step === 3 && "AI Settings"}
+              {step === 4 && "Preview"}
+            </div>
+          </div>
+        </div>
+        
+        {renderStepContent()}
+      </CardContent>
+    </Card>
   );
 };
 

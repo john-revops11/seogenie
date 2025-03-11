@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -185,11 +184,9 @@ const KeywordResearch = ({
   };
 
   const handleGenerateContent = (keyword: string, relatedKeywords: string[]) => {
-    const initialTopics = generateTopicSuggestions(domain, [], null, [keyword, ...relatedKeywords]);
-    
     onGenerateContent(keyword, relatedKeywords);
     
-    toast.success(`Preparing to generate content for "${keyword}" - switched to Content tab`);
+    toast.success(`Preparing to generate content for "${keyword}"`);
     
     console.log(`Generating content for keyword: ${keyword} with related keywords:`, relatedKeywords);
   };

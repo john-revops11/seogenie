@@ -33,7 +33,10 @@ export const generateTopicSuggestions = (
   } | null = null,
   selectedKeywords: string[] = []
 ): string[] => {
-  if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations) {
+  console.log("Generating topic suggestions for:", domain);
+  console.log("Selected keywords:", selectedKeywords);
+  
+  if ((!keywordGaps || keywordGaps.length === 0) && !seoRecommendations && selectedKeywords.length === 0) {
     return [];
   }
   
