@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AIProvider, getModelsForProvider } from "@/types/aiModels";
 import { enhanceWithRAG } from "@/services/vector/ragService";
@@ -267,39 +266,57 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
         }
       }
       
-      // Use o1 model for document analysis when files are present
-      const modelToUse = userMessage.files && userMessage.files.length > 0 ? "gpt-4o" : selectedModel;
-      
+      // Update the model selection to use correct model names
+      const modelToUse = userMessage.files && userMessage.files.length > 0 
+        ? "gpt-4" 
+        : aiModel || "gpt-4"; // Default to gpt-4 if no model selected
+
       const response = await generateWithAI(
         provider,
         modelToUse,
         prompt,
-        70
+        70 // Keep reasonable temperature
       );
-      
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { ...msg, content: response, isLoading: false, ragInfo }
-            : msg
-        )
-      );
-    } catch (error) {
-      console.error("Error generating response:", error);
-      
+
+      // Ensure response is not empty
+      if (!response) {
+        throw new Error("Empty response received from AI");
+      }
+
       setMessages(prev => 
         prev.map(msg => 
           msg.id === assistantMessageId 
             ? { 
                 ...msg, 
-                content: "I'm sorry, I couldn't generate a response. Please try again or consider changing the model.", 
+                content: response, 
+                isLoading: false,
+                ragInfo
+              }
+            : msg
+        )
+      );
+
+    } catch (error) {
+      console.error("Error generating response:", error);
+      
+      // Show more descriptive error message
+      const errorMessage = error instanceof Error 
+        ? `Generation failed: ${error.message}` 
+        : "Failed to generate response. Please try again.";
+
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { 
+                ...msg, 
+                content: errorMessage,
                 isLoading: false 
               }
             : msg
         )
       );
       
-      toast.error("Failed to generate response. Please try again.");
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
