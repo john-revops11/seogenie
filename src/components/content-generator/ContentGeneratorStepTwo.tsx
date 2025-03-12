@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, RefreshCw } from "lucide-react";
+import { X, RefreshCw, InfoCircle } from "lucide-react";
 import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
 import { AIProvider } from "@/types/aiModels";
 import { generateTitlesWithAI } from "@/hooks/content-generator/aiModels";
 import { toast } from "sonner";
+import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ContentGeneratorStepTwoProps {
   title: string;
@@ -73,6 +75,25 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     }
   };
 
+  // Function to add keywords from the keyword gap analysis
+  const addKeywordsFromGapAnalysis = () => {
+    if (keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
+      // Filter out keywords that are already in the current list
+      const newKeywords = keywordGapsCache.selectedKeywords.filter(
+        k => !keywords.includes(k)
+      );
+      
+      if (newKeywords.length > 0) {
+        onKeywordsChange([...keywords, ...newKeywords]);
+        toast.success(`Added ${newKeywords.length} keywords from your Keyword Gap Analysis`);
+      } else {
+        toast.info("All selected keywords from Keyword Gap Analysis are already added");
+      }
+    } else {
+      toast.info("No keywords selected in Keyword Gap Analysis. Go to the Dashboard tab to select keywords first.");
+    }
+  };
+
   const generateTitleSuggestions = async () => {
     if (keywords.length === 0) {
       toast.error("Please add at least one keyword to generate title suggestions");
@@ -113,6 +134,14 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   useEffect(() => {
     if (keywords.length >= 2 && !loadingTitles && suggestedTitles.length === 0) {
       generateTitleSuggestions();
+    }
+  }, []);
+
+  // Check for keywords from keyword gap analysis when component mounts
+  useEffect(() => {
+    if (keywords.length === 0 && keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
+      onKeywordsChange([...keywordGapsCache.selectedKeywords]);
+      toast.success(`Loaded ${keywordGapsCache.selectedKeywords.length} keywords from your Keyword Gap Analysis`);
     }
   }, []);
 
@@ -177,7 +206,17 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
         )}
         
         <div className="space-y-2">
-          <Label htmlFor="keywords">Keywords</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="keywords">Keywords</Label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={addKeywordsFromGapAnalysis}
+            >
+              Use Selected Gap Keywords
+            </Button>
+          </div>
           <div className="flex space-x-2">
             <Input
               id="keywords"
@@ -227,7 +266,19 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="rag-toggle">Use RAG (Retrieval Augmented Generation)</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="rag-toggle">Use RAG (Retrieval Augmented Generation)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>RAG allows the AI to reference your website's existing content to create more accurate and consistent articles</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Switch
               id="rag-toggle"
               checked={ragEnabled}
