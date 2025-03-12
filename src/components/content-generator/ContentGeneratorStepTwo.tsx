@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, RefreshCw, InfoCircle } from "lucide-react";
+import { X, RefreshCw, Info } from "lucide-react";
 import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
 import { AIProvider } from "@/types/aiModels";
 import { generateTitlesWithAI } from "@/hooks/content-generator/aiModels";
@@ -75,10 +74,8 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     }
   };
 
-  // Function to add keywords from the keyword gap analysis
   const addKeywordsFromGapAnalysis = () => {
     if (keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
-      // Filter out keywords that are already in the current list
       const newKeywords = keywordGapsCache.selectedKeywords.filter(
         k => !keywords.includes(k)
       );
@@ -102,9 +99,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
 
     setLoadingTitles(true);
     try {
-      // We'll default to OpenAI as it tends to give better title suggestions
       const provider: AIProvider = 'openai';
-      // Use the first keyword as the primary topic
       const primaryKeyword = keywords[0];
       const remainingKeywords = keywords.slice(1);
       
@@ -130,14 +125,12 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     toast.success("Title selected!");
   };
 
-  // Generate title suggestions when keywords change significantly
   useEffect(() => {
     if (keywords.length >= 2 && !loadingTitles && suggestedTitles.length === 0) {
       generateTitleSuggestions();
     }
   }, []);
 
-  // Check for keywords from keyword gap analysis when component mounts
   useEffect(() => {
     if (keywords.length === 0 && keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
       onKeywordsChange([...keywordGapsCache.selectedKeywords]);
@@ -181,7 +174,6 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
           />
         </div>
 
-        {/* Title Suggestions Section */}
         {suggestedTitles.length > 0 && (
           <div className="space-y-2 bg-muted/40 p-3 rounded-md">
             <Label>Title Suggestions</Label>
@@ -271,7 +263,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <InfoCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p>RAG allows the AI to reference your website's existing content to create more accurate and consistent articles</p>
