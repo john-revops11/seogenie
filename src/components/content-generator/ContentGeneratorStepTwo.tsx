@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +59,18 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   const [suggestedTopics, setSuggestedTopics] = useState<string[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string>("");
-  
+
+  useEffect(() => {
+    if (keywords.length === 0 && keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
+      onKeywordsChange([...keywordGapsCache.selectedKeywords]);
+      toast.success(`Loaded ${keywordGapsCache.selectedKeywords.length} selected keywords from Keyword Gap Analysis`);
+      
+      if (keywordGapsCache.selectedKeywords.length >= 2) {
+        generateTopics();
+      }
+    }
+  }, []);
+
   const handleAddKeyword = () => {
     if (newKeyword.trim() && !keywords.includes(newKeyword.trim())) {
       onKeywordsChange([...keywords, newKeyword.trim()]);
@@ -87,12 +97,16 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
       
       if (newKeywords.length > 0) {
         onKeywordsChange([...keywords, ...newKeywords]);
-        toast.success(`Added ${newKeywords.length} keywords from your Keyword Gap Analysis`);
+        toast.success(`Added ${newKeywords.length} selected keywords from Keyword Gap Analysis`);
+        
+        if ((keywords.length + newKeywords.length) >= 2) {
+          generateTopics();
+        }
       } else {
         toast.info("All selected keywords from Keyword Gap Analysis are already added");
       }
     } else {
-      toast.info("No keywords selected in Keyword Gap Analysis. Go to the Dashboard tab to select keywords first.");
+      toast.info("No keywords selected in Keyword Gap Analysis. Go to the Keyword Gaps section and use the 'Add' button to select keywords first.");
     }
   };
 
@@ -104,20 +118,24 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
 
     setLoadingTopics(true);
     try {
-      // Use the domain analysis utility to generate topics
-      const domain = "yourdomain.com"; // Using a placeholder domain
-      const topics = generateTopicSuggestions(domain, [], null, keywords);
+      const topics = generateTopicSuggestions("", [], null, keywords);
       
-      // Ensure we have at least 10 topics
       if (topics.length < 10) {
-        // Generate additional generic topics if needed
-        const additionalTopics = keywords.map(keyword => 
-          `Complete Guide to ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`
-        );
+        const currentYear = new Date().getFullYear();
+        const additionalTopics = [
+          `Complete Guide to ${keywords[0]} in ${currentYear}`,
+          `How to Master ${keywords[0]}: Expert Tips`,
+          `${keywords[0]}: Everything You Need to Know`,
+          `The Ultimate ${keywords[0]} Strategy Guide`,
+          `Understanding ${keywords[0]}: A Comprehensive Guide`,
+          ...keywords.slice(1).map(kw => `${keywords[0]} and ${kw}: Complete Guide`),
+          ...keywords.map(kw => `${kw} Mastery: Step by Step Guide`)
+        ];
+        
         const allTopics = [...topics, ...additionalTopics];
-        setSuggestedTopics(Array.from(new Set(allTopics)).slice(0, 15)); // Deduplicate and limit to 15
+        setSuggestedTopics(Array.from(new Set(allTopics)).slice(0, 15));
       } else {
-        setSuggestedTopics(topics.slice(0, 15)); // Limit to 15 topics
+        setSuggestedTopics(topics.slice(0, 15));
       }
       
       toast.success("Topic suggestions generated!");
@@ -131,9 +149,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
 
   const selectTopic = (topic: string) => {
     setSelectedTopic(topic);
-    // When a topic is selected, also set it as the title and generate title variations
     onTitleChange(topic);
-    // Generate title suggestions based on the selected topic
     generateTitleSuggestionsForTopic(topic);
   };
 
@@ -154,64 +170,18 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
         contentType
       );
       
-      // Ensure we have at least 5 title suggestions
       if (titles.length < 5) {
         const currentYear = new Date().getFullYear();
         const additionalTitles = [
-          `The Ultimate Guide to ${topic} in ${currentYear}`,
-          `How to Master ${topic}: Expert Tips and Strategies`,
-          `${topic}: Everything You Need to Know`,
-          `Why ${topic} Matters for Your Business`,
-          `${topic} Made Simple: A Step-by-Step Approach`
+          `The Complete Guide to ${topic} (${currentYear} Edition)`,
+          `How to Master ${topic}: Expert Strategies and Tips`,
+          `${topic}: A Comprehensive Guide for Success`,
+          `Understanding ${topic}: From Basics to Advanced`,
+          `The Ultimate ${topic} Guide: Everything You Need to Know`
         ];
         
         const combinedTitles = [...titles, ...additionalTitles];
-        setSuggestedTitles(Array.from(new Set(combinedTitles)).slice(0, 10)); // Deduplicate and limit to 10
-      } else {
-        setSuggestedTitles(titles);
-      }
-      
-      toast.success("Title suggestions generated for the selected topic!");
-    } catch (error) {
-      console.error("Error generating title suggestions:", error);
-      toast.error("Failed to generate title suggestions. Please try again.");
-    } finally {
-      setLoadingTitles(false);
-    }
-  };
-
-  const generateTitleSuggestions = async () => {
-    if (keywords.length === 0) {
-      toast.error("Please add at least one keyword to generate title suggestions");
-      return;
-    }
-
-    setLoadingTitles(true);
-    try {
-      const provider: AIProvider = 'openai';
-      const primaryKeyword = keywords[0];
-      const remainingKeywords = keywords.slice(1);
-      
-      const titles = await generateTitlesWithAI(
-        provider,
-        primaryKeyword,
-        remainingKeywords,
-        contentType
-      );
-      
-      // Ensure we have at least 5 title suggestions
-      if (titles.length < 5) {
-        const currentYear = new Date().getFullYear();
-        const additionalTitles = [
-          `The Ultimate Guide to ${primaryKeyword} in ${currentYear}`,
-          `How to Master ${primaryKeyword}: Expert Tips and Strategies`,
-          `${primaryKeyword}: Everything You Need to Know`,
-          `Why ${primaryKeyword} Matters for Your Business`,
-          `${primaryKeyword} Made Simple: A Step-by-Step Approach`
-        ];
-        
-        const combinedTitles = [...titles, ...additionalTitles];
-        setSuggestedTitles(Array.from(new Set(combinedTitles)).slice(0, 10)); // Deduplicate and limit to 10
+        setSuggestedTitles(Array.from(new Set(combinedTitles)).slice(0, 10));
       } else {
         setSuggestedTitles(titles);
       }
@@ -230,20 +200,6 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     toast.success("Title selected!");
   };
 
-  useEffect(() => {
-    if (keywords.length >= 2 && !loadingTitles && suggestedTitles.length === 0 && !loadingTopics && suggestedTopics.length === 0) {
-      // First generate topics
-      generateTopics();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (keywords.length === 0 && keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
-      onKeywordsChange([...keywordGapsCache.selectedKeywords]);
-      toast.success(`Loaded ${keywordGapsCache.selectedKeywords.length} keywords from your Keyword Gap Analysis`);
-    }
-  }, []);
-
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Step 2: Content Details</h3>
@@ -261,6 +217,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
               Use Selected Gap Keywords
             </Button>
           </div>
+          
           <div className="flex space-x-2">
             <Input
               id="keywords"
@@ -289,8 +246,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
           )}
         </div>
 
-        {/* Topic Suggestions Section */}
-        <div className="space-y-2">
+        <div className="space-y-2 mt-6">
           <div className="flex justify-between items-center">
             <Label>Topic Suggestions</Label>
             <Button 
@@ -326,10 +282,14 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
                     onClick={() => selectTopic(topic)}
                   >
                     <span>{topic}</span>
-                    <Button size="sm" variant="ghost" onClick={(e) => {
-                      e.stopPropagation();
-                      selectTopic(topic);
-                    }}>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectTopic(topic);
+                      }}
+                    >
                       Use
                     </Button>
                   </div>
@@ -339,15 +299,17 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
           )}
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-2 mt-6">
           <div className="flex justify-between items-center">
             <Label htmlFor="title">Title</Label>
             <Button 
               type="button" 
               variant="outline" 
               size="sm"
-              onClick={selectedTopic ? () => generateTitleSuggestionsForTopic(selectedTopic) : generateTitleSuggestions}
-              disabled={loadingTitles || keywords.length === 0}
+              onClick={() => selectedTopic ? 
+                generateTitleSuggestionsForTopic(selectedTopic) : 
+                toast.error("Please select a topic first")}
+              disabled={loadingTitles || !selectedTopic}
             >
               {loadingTitles ? (
                 <>
@@ -381,10 +343,14 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
                   onClick={() => selectSuggestedTitle(suggestedTitle)}
                 >
                   <span>{suggestedTitle}</span>
-                  <Button size="sm" variant="ghost" onClick={(e) => {
-                    e.stopPropagation();
-                    selectSuggestedTitle(suggestedTitle);
-                  }}>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectSuggestedTitle(suggestedTitle);
+                    }}
+                  >
                     Use
                   </Button>
                 </div>
