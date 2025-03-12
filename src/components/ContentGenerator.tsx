@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
@@ -6,6 +7,7 @@ import ContentGeneratorStepOne from "./content-generator/ContentGeneratorStepOne
 import ContentGeneratorStepTwo from "./content-generator/ContentGeneratorStepTwo";
 import ContentGeneratorStepThree from "./content-generator/ContentGeneratorStepThree";
 import ContentPreview from "./content-generator/ContentPreview";
+import SubheadingRecommendations from "./content-generator/SubheadingRecommendations";
 import { generateContent } from "@/hooks/content-generator/contentGenerator";
 import { useContentTemplates } from "@/hooks/content-generator/contentTemplates";
 import { useContentPreferences } from "@/hooks/content-generator/contentPreferences";
@@ -37,6 +39,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const [aiProvider, setAIProvider] = useState<AIProvider>("openai");
   const [aiModel, setAIModel] = useState("");
   const [wordCountOption, setWordCountOption] = useState("standard");
+  const [selectedSubheadings, setSelectedSubheadings] = useState<string[]>([]);
   
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
@@ -116,6 +119,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   const handleBackToStepTwo = () => {
     setStep(2);
   };
+  
+  const handleSubheadingsSelected = (subheadings: string[]) => {
+    setSelectedSubheadings(subheadings);
+    setStep(4); // Move to AI settings step
+  };
 
   const handleGenerateContent = async () => {
     setIsGenerating(true);
@@ -132,14 +140,15 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
         aiProvider,
         aiModel,
         ragEnabled,
-        wordCountOption
+        wordCountOption,
+        customSubheadings: selectedSubheadings
       });
       
       setContentHtml(result.content);
       setGeneratedContent(result.generatedContent);
       
       toast.success("Content generated successfully!");
-      setStep(4); // Move to preview step
+      setStep(5); // Move to preview step
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -183,6 +192,16 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
         );
       case 3:
         return (
+          <SubheadingRecommendations
+            title={title}
+            keywords={keywords}
+            contentType={contentType}
+            onSubheadingsSelected={handleSubheadingsSelected}
+            onBack={handleBackStep}
+          />
+        );
+      case 4:
+        return (
           <ContentGeneratorStepThree
             contentType={contentType}
             selectedTemplateId={selectedTemplateId}
@@ -194,18 +213,19 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
             aiProvider={aiProvider}
             aiModel={aiModel}
             wordCountOption={wordCountOption}
+            customSubheadings={selectedSubheadings}
             onAIProviderChange={handleAIProviderChange}
             onAIModelChange={handleAIModelChange}
             onGenerateContent={handleGenerateContent}
-            onBack={handleBackToStepTwo}
+            onBack={() => setStep(3)}
           />
         );
-      case 4:
+      case 5:
         return (
           <ContentPreview
             content={contentHtml}
             generatedContent={generatedContent}
-            onBack={() => setStep(3)}
+            onBack={() => setStep(4)}
           />
         );
       default:
@@ -234,12 +254,16 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
               <div className={`flex h-8 w-8 items-center justify-center rounded-full ${step >= 4 ? 'bg-primary text-white' : 'border border-input bg-background'}`}>
                 {step > 4 ? <Check className="h-4 w-4" /> : "4"}
               </div>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${step >= 5 ? 'bg-primary text-white' : 'border border-input bg-background'}`}>
+                {step > 5 ? <Check className="h-4 w-4" /> : "5"}
+              </div>
             </div>
             <div className="text-sm text-muted-foreground">
               {step === 1 && "Content Type"}
               {step === 2 && "Content Details"}
-              {step === 3 && "AI Settings"}
-              {step === 4 && "Preview"}
+              {step === 3 && "Subheadings"}
+              {step === 4 && "AI Settings"}
+              {step === 5 && "Preview"}
             </div>
           </div>
         </div>

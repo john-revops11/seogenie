@@ -21,7 +21,8 @@ export const generateContent = async ({
   aiProvider,
   aiModel,
   ragEnabled,
-  wordCountOption = "standard"
+  wordCountOption = "standard",
+  customSubheadings = []
 }: {
   domain: string;
   keywords: string[];
@@ -34,6 +35,7 @@ export const generateContent = async ({
   aiModel: string;
   ragEnabled: boolean;
   wordCountOption?: string;
+  customSubheadings?: string[];
 }): Promise<{
   content: string;
   generatedContent: GeneratedContent;
@@ -56,14 +58,23 @@ export const generateContent = async ({
   const primaryModel = getPrimaryModelForProvider(aiProvider);
   const modelToUse = aiModel || (primaryModel?.id || (aiProvider === 'openai' ? 'gpt-4o' : 'gemini-1.5-pro'));
 
-  toast.info("Generating content outline...");
-  
-  // Generate content outline with headings
-  const outline = await generateContentOutline(
-    title,
-    selectedKeywords,
-    contentType
-  );
+  // If custom subheadings provided, use them; otherwise generate an outline
+  let outline;
+  if (customSubheadings && customSubheadings.length > 0) {
+    toast.info("Using selected subheadings...");
+    outline = {
+      title,
+      headings: customSubheadings,
+      faqs: []
+    };
+  } else {
+    toast.info("Generating content outline...");
+    outline = await generateContentOutline(
+      title,
+      selectedKeywords,
+      contentType
+    );
+  }
 
   toast.info(`Generating content blocks (${minWordCount}-${maxWordCount} words)...`);
   

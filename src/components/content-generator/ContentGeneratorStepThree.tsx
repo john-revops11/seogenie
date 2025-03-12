@@ -19,6 +19,7 @@ interface ContentGeneratorStepThreeProps {
   aiProvider: AIProvider;
   aiModel: string;
   wordCountOption: string;
+  customSubheadings?: string[];
   onAIProviderChange: (provider: AIProvider) => void;
   onAIModelChange: (model: string) => void;
   onGenerateContent: () => void;
@@ -36,6 +37,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
   aiProvider,
   aiModel,
   wordCountOption,
+  customSubheadings = [],
   onAIProviderChange,
   onAIModelChange,
   onGenerateContent,
@@ -83,7 +85,7 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Step 3: Generate Content</h3>
+      <h3 className="text-lg font-medium">Step 4: Generate Content</h3>
       
       {!apiConfigured && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-md flex items-start space-x-2">
@@ -154,6 +156,17 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
             <div><span className="font-medium">AI Provider:</span> {aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'}</div>
             <div><span className="font-medium">AI Model:</span> {getModelName(aiModel)}</div>
           </div>
+          
+          {customSubheadings.length > 0 && (
+            <div className="mt-3">
+              <h5 className="text-sm font-medium">Selected Subheadings ({customSubheadings.length})</h5>
+              <ul className="mt-1 text-xs list-disc pl-5">
+                {customSubheadings.map((heading, index) => (
+                  <li key={index}>{heading}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         
         <button
