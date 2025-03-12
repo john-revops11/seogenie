@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, RefreshCw } from "lucide-react";
 import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
+import { AIProvider } from "@/types/aiModels";
+import { generateTitlesWithAI } from "@/hooks/content-generator/aiModels";
+import { toast } from "sonner";
 
 interface ContentGeneratorStepTwoProps {
   title: string;
@@ -19,6 +22,7 @@ interface ContentGeneratorStepTwoProps {
   contentPreferences: string[];
   selectedPreferences: string[];
   wordCountOption: string;
+  contentType: string;
   onTitleChange: (title: string) => void;
   onKeywordsChange: (keywords: string[]) => void;
   onCreativityChange: (value: number) => void;
@@ -37,6 +41,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   contentPreferences,
   selectedPreferences,
   wordCountOption,
+  contentType,
   onTitleChange,
   onKeywordsChange,
   onCreativityChange,
@@ -46,7 +51,9 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   onNext,
   onBack
 }) => {
-  const [newKeyword, setNewKeyword] = React.useState("");
+  const [newKeyword, setNewKeyword] = useState("");
+  const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
+  const [loadingTitles, setLoadingTitles] = useState(false);
   
   const handleAddKeyword = () => {
     if (newKeyword.trim() && !keywords.includes(newKeyword.trim())) {
@@ -66,13 +73,77 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     }
   };
 
+  const generateTitleSuggestions = async () => {
+    if (keywords.length === 0) {
+      toast.error("Please add at least one keyword to generate title suggestions");
+      return;
+    }
+
+    setLoadingTitles(true);
+    try {
+      // We'll default to OpenAI as it tends to give better title suggestions
+      const provider: AIProvider = 'openai';
+      // Use the first keyword as the primary topic
+      const primaryKeyword = keywords[0];
+      const remainingKeywords = keywords.slice(1);
+      
+      const titles = await generateTitlesWithAI(
+        provider,
+        primaryKeyword,
+        remainingKeywords,
+        contentType
+      );
+      
+      setSuggestedTitles(titles);
+      toast.success("Title suggestions generated!");
+    } catch (error) {
+      console.error("Error generating title suggestions:", error);
+      toast.error("Failed to generate title suggestions. Please try again.");
+    } finally {
+      setLoadingTitles(false);
+    }
+  };
+
+  const selectSuggestedTitle = (suggestedTitle: string) => {
+    onTitleChange(suggestedTitle);
+    toast.success("Title selected!");
+  };
+
+  // Generate title suggestions when keywords change significantly
+  useEffect(() => {
+    if (keywords.length >= 2 && !loadingTitles && suggestedTitles.length === 0) {
+      generateTitleSuggestions();
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Step 2: Content Details</h3>
       
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="title">Title</Label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={generateTitleSuggestions}
+              disabled={loadingTitles || keywords.length === 0}
+            >
+              {loadingTitles ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Generate Title Ideas
+                </>
+              )}
+            </Button>
+          </div>
           <Input
             id="title"
             value={title}
@@ -80,6 +151,30 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
             placeholder="Enter your content title"
           />
         </div>
+
+        {/* Title Suggestions Section */}
+        {suggestedTitles.length > 0 && (
+          <div className="space-y-2 bg-muted/40 p-3 rounded-md">
+            <Label>Title Suggestions</Label>
+            <div className="space-y-2">
+              {suggestedTitles.map((suggestedTitle, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer transition-colors"
+                  onClick={() => selectSuggestedTitle(suggestedTitle)}
+                >
+                  <span>{suggestedTitle}</span>
+                  <Button size="sm" variant="ghost" onClick={(e) => {
+                    e.stopPropagation();
+                    selectSuggestedTitle(suggestedTitle);
+                  }}>
+                    Use
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="space-y-2">
           <Label htmlFor="keywords">Keywords</Label>

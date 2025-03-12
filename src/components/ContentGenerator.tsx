@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
@@ -180,6 +179,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
             contentPreferences={contentPreferences}
             selectedPreferences={selectedPreferences}
             wordCountOption={wordCountOption}
+            contentType={contentType}
             onTitleChange={handleTitleChange}
             onKeywordsChange={handleKeywordsChange}
             onCreativityChange={handleCreativityChange}
