@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string>("");
 
+  // Only load selected keywords from cache when component mounts if keywords array is empty
   useEffect(() => {
     if (keywords.length === 0 && keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
       onKeywordsChange([...keywordGapsCache.selectedKeywords]);
@@ -120,6 +122,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     try {
       const topics = generateTopicSuggestions("", [], null, keywords);
       
+      // Ensure we have at least 10 topics
       if (topics.length < 10) {
         const currentYear = new Date().getFullYear();
         const additionalTopics = [
@@ -170,6 +173,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
         contentType
       );
       
+      // Ensure we have at least 5 titles
       if (titles.length < 5) {
         const currentYear = new Date().getFullYear();
         const additionalTitles = [
