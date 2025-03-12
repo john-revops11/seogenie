@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, RefreshCw, Info } from "lucide-react";
+import { X, RefreshCw, Info, BookOpen } from "lucide-react";
 import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
 import { AIProvider } from "@/types/aiModels";
 import { generateTitlesWithAI } from "@/hooks/content-generator/aiModels";
 import { toast } from "sonner";
 import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { generateTopicSuggestions } from "@/utils/topicGenerator";
 
 interface ContentGeneratorStepTwoProps {
   title: string;
@@ -55,6 +57,9 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   const [newKeyword, setNewKeyword] = useState("");
   const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
   const [loadingTitles, setLoadingTitles] = useState(false);
+  const [suggestedTopics, setSuggestedTopics] = useState<string[]>([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
   
   const handleAddKeyword = () => {
     if (newKeyword.trim() && !keywords.includes(newKeyword.trim())) {
@@ -91,6 +96,90 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     }
   };
 
+  const generateTopics = () => {
+    if (keywords.length === 0) {
+      toast.error("Please add at least one keyword to generate topic suggestions");
+      return;
+    }
+
+    setLoadingTopics(true);
+    try {
+      // Use the domain analysis utility to generate topics
+      const domain = "yourdomain.com"; // Using a placeholder domain
+      const topics = generateTopicSuggestions(domain, [], null, keywords);
+      
+      // Ensure we have at least 10 topics
+      if (topics.length < 10) {
+        // Generate additional generic topics if needed
+        const additionalTopics = keywords.map(keyword => 
+          `Complete Guide to ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`
+        );
+        const allTopics = [...topics, ...additionalTopics];
+        setSuggestedTopics(Array.from(new Set(allTopics)).slice(0, 15)); // Deduplicate and limit to 15
+      } else {
+        setSuggestedTopics(topics.slice(0, 15)); // Limit to 15 topics
+      }
+      
+      toast.success("Topic suggestions generated!");
+    } catch (error) {
+      console.error("Error generating topic suggestions:", error);
+      toast.error("Failed to generate topic suggestions. Please try again.");
+    } finally {
+      setLoadingTopics(false);
+    }
+  };
+
+  const selectTopic = (topic: string) => {
+    setSelectedTopic(topic);
+    // When a topic is selected, also set it as the title and generate title variations
+    onTitleChange(topic);
+    // Generate title suggestions based on the selected topic
+    generateTitleSuggestionsForTopic(topic);
+  };
+
+  const generateTitleSuggestionsForTopic = async (topic: string) => {
+    if (!topic) {
+      toast.error("Please select a topic first");
+      return;
+    }
+
+    setLoadingTitles(true);
+    try {
+      const provider: AIProvider = 'openai';
+      
+      const titles = await generateTitlesWithAI(
+        provider,
+        topic,
+        keywords,
+        contentType
+      );
+      
+      // Ensure we have at least 5 title suggestions
+      if (titles.length < 5) {
+        const currentYear = new Date().getFullYear();
+        const additionalTitles = [
+          `The Ultimate Guide to ${topic} in ${currentYear}`,
+          `How to Master ${topic}: Expert Tips and Strategies`,
+          `${topic}: Everything You Need to Know`,
+          `Why ${topic} Matters for Your Business`,
+          `${topic} Made Simple: A Step-by-Step Approach`
+        ];
+        
+        const combinedTitles = [...titles, ...additionalTitles];
+        setSuggestedTitles(Array.from(new Set(combinedTitles)).slice(0, 10)); // Deduplicate and limit to 10
+      } else {
+        setSuggestedTitles(titles);
+      }
+      
+      toast.success("Title suggestions generated for the selected topic!");
+    } catch (error) {
+      console.error("Error generating title suggestions:", error);
+      toast.error("Failed to generate title suggestions. Please try again.");
+    } finally {
+      setLoadingTitles(false);
+    }
+  };
+
   const generateTitleSuggestions = async () => {
     if (keywords.length === 0) {
       toast.error("Please add at least one keyword to generate title suggestions");
@@ -110,7 +199,23 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
         contentType
       );
       
-      setSuggestedTitles(titles);
+      // Ensure we have at least 5 title suggestions
+      if (titles.length < 5) {
+        const currentYear = new Date().getFullYear();
+        const additionalTitles = [
+          `The Ultimate Guide to ${primaryKeyword} in ${currentYear}`,
+          `How to Master ${primaryKeyword}: Expert Tips and Strategies`,
+          `${primaryKeyword}: Everything You Need to Know`,
+          `Why ${primaryKeyword} Matters for Your Business`,
+          `${primaryKeyword} Made Simple: A Step-by-Step Approach`
+        ];
+        
+        const combinedTitles = [...titles, ...additionalTitles];
+        setSuggestedTitles(Array.from(new Set(combinedTitles)).slice(0, 10)); // Deduplicate and limit to 10
+      } else {
+        setSuggestedTitles(titles);
+      }
+      
       toast.success("Title suggestions generated!");
     } catch (error) {
       console.error("Error generating title suggestions:", error);
@@ -126,8 +231,9 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   };
 
   useEffect(() => {
-    if (keywords.length >= 2 && !loadingTitles && suggestedTitles.length === 0) {
-      generateTitleSuggestions();
+    if (keywords.length >= 2 && !loadingTitles && suggestedTitles.length === 0 && !loadingTopics && suggestedTopics.length === 0) {
+      // First generate topics
+      generateTopics();
     }
   }, []);
 
@@ -145,12 +251,102 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
+            <Label htmlFor="keywords">Keywords</Label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={addKeywordsFromGapAnalysis}
+            >
+              Use Selected Gap Keywords
+            </Button>
+          </div>
+          <div className="flex space-x-2">
+            <Input
+              id="keywords"
+              value={newKeyword}
+              onChange={(e) => setNewKeyword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Add keywords"
+            />
+            <Button type="button" onClick={handleAddKeyword} variant="secondary">
+              Add
+            </Button>
+          </div>
+          
+          {keywords.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {keywords.map((keyword) => (
+                <Badge key={keyword} variant="secondary" className="px-2 py-1">
+                  {keyword}
+                  <X 
+                    className="ml-1 h-3 w-3 cursor-pointer" 
+                    onClick={() => handleRemoveKeyword(keyword)}
+                  />
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Topic Suggestions Section */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label>Topic Suggestions</Label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={generateTopics}
+              disabled={loadingTopics || keywords.length === 0}
+            >
+              {loadingTopics ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Generate Topics
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {suggestedTopics.length > 0 && (
+            <div className="bg-muted/40 p-3 rounded-md max-h-60 overflow-y-auto">
+              <div className="space-y-2">
+                {suggestedTopics.map((topic, index) => (
+                  <div 
+                    key={index}
+                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
+                      selectedTopic === topic ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted'
+                    }`}
+                    onClick={() => selectTopic(topic)}
+                  >
+                    <span>{topic}</span>
+                    <Button size="sm" variant="ghost" onClick={(e) => {
+                      e.stopPropagation();
+                      selectTopic(topic);
+                    }}>
+                      Use
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
             <Label htmlFor="title">Title</Label>
             <Button 
               type="button" 
               variant="outline" 
               size="sm"
-              onClick={generateTitleSuggestions}
+              onClick={selectedTopic ? () => generateTitleSuggestionsForTopic(selectedTopic) : generateTitleSuggestions}
               disabled={loadingTitles || keywords.length === 0}
             >
               {loadingTitles ? (
@@ -196,46 +392,6 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
             </div>
           </div>
         )}
-        
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="keywords">Keywords</Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={addKeywordsFromGapAnalysis}
-            >
-              Use Selected Gap Keywords
-            </Button>
-          </div>
-          <div className="flex space-x-2">
-            <Input
-              id="keywords"
-              value={newKeyword}
-              onChange={(e) => setNewKeyword(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Add keywords"
-            />
-            <Button type="button" onClick={handleAddKeyword} variant="secondary">
-              Add
-            </Button>
-          </div>
-          
-          {keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {keywords.map((keyword) => (
-                <Badge key={keyword} variant="secondary" className="px-2 py-1">
-                  {keyword}
-                  <X 
-                    className="ml-1 h-3 w-3 cursor-pointer" 
-                    onClick={() => handleRemoveKeyword(keyword)}
-                  />
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
         
         <div className="space-y-2">
           <div className="flex justify-between">
