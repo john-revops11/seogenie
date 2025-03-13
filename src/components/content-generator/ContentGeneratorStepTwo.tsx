@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 import { generateTitlesWithAI } from "@/hooks/content-generator/aiModels";
 import { generateTopicSuggestions } from "@/utils/topicGenerator";
 import KeywordManager from "./step-two/KeywordManager";
@@ -51,17 +51,6 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   const [suggestedTopics, setSuggestedTopics] = useState<string[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string>("");
-
-  useEffect(() => {
-    if (keywords.length === 0 && keywordGapsCache.selectedKeywords && keywordGapsCache.selectedKeywords.length > 0) {
-      onKeywordsChange([...keywordGapsCache.selectedKeywords]);
-      toast.success(`Loaded ${keywordGapsCache.selectedKeywords.length} selected keywords from Keyword Gap Analysis`);
-      
-      if (keywordGapsCache.selectedKeywords.length >= 2) {
-        generateTopics();
-      }
-    }
-  }, []);
 
   const generateTopics = () => {
     if (keywords.length === 0) {
