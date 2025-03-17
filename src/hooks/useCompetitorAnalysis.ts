@@ -93,6 +93,11 @@ export function useCompetitorAnalysis(domain: string) {
       } else {
         setCompetitors(processedData);
         setLastUpdated(new Date().toLocaleString());
+        
+        // If we have at least 3 competitors, highlight them as recommended
+        if (processedData.length >= 3) {
+          toast.success(`Found ${processedData.length} competitors for ${cleanDomain}`);
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

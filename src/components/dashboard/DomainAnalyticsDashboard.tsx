@@ -176,7 +176,7 @@ export function DomainAnalyticsDashboard() {
         </>
       )}
       
-      {/* Add the Competitors Table component with onMetricsLoaded callback */}
+      {/* Competitors Table - now allows custom domain input and shows top 3 recommended competitors */}
       <CompetitorsTable 
         domain={domain} 
         onMetricsLoaded={handleMetricsLoaded}
