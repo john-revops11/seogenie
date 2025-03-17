@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GeneratedContent } from "@/services/keywords/types";
 import ContentGeneratorSteps from "./ContentGeneratorSteps";
 import { useContentTemplates } from "@/hooks/content-generator/contentTemplates";
-import ContentGeneratorStateManager from "./state/ContentGeneratorStateManager";
+import ContentGeneratorProvider from "./state/ContentGeneratorProvider";
 import ContentGeneratorStepRenderer from "./steps/ContentGeneratorStepRenderer";
 import ContentGeneratorBackgroundWorker from "./workers/ContentGeneratorBackgroundWorker";
 
@@ -29,7 +29,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
         <CardTitle>Content Generator</CardTitle>
       </CardHeader>
       <CardContent>
-        <ContentGeneratorStateManager
+        <ContentGeneratorProvider
           domain={domain}
           selectedKeywords={selectedKeywords}
           initialTitle={initialTitle}
@@ -37,7 +37,10 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
         >
           {({ state, dispatch, handleContentGenerated, setBackgroundGenerationActive, backgroundGenerationActive }) => (
             <>
-              <ContentGeneratorSteps step={state.step} stepLabels={["Content Type", "Content Details", "Subheadings", "AI Settings", "Preview"]} />
+              <ContentGeneratorSteps 
+                step={state.step} 
+                stepLabels={["Content Type", "Content Details", "Subheadings", "AI Settings", "Preview"]} 
+              />
               
               <form onSubmit={(e) => e.preventDefault()}>
                 <ContentGeneratorStepRenderer 
@@ -62,7 +65,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
               </form>
             </>
           )}
-        </ContentGeneratorStateManager>
+        </ContentGeneratorProvider>
       </CardContent>
     </Card>
   );
