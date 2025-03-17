@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileEdit, Copy, Download, RefreshCw, Check, ArrowLeft, Code } from "lucide-react";
+import { FileEdit, Copy, Download, RefreshCw, Check, ArrowLeft, Code, Save } from "lucide-react";
 import { toast } from "sonner";
 import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { formatBlocksToHtml } from "@/services/keywords/generation/contentBlockService";
@@ -16,6 +16,7 @@ interface ContentPreviewProps {
   onBack: () => void;
   onRegenerateContent?: () => void;
   isGenerating?: boolean;
+  saveToHistory?: (content: GeneratedContent) => Promise<void>;
 }
 
 const ContentPreview = ({ 
@@ -23,12 +24,14 @@ const ContentPreview = ({
   generatedContent, 
   onBack,
   onRegenerateContent,
-  isGenerating = false
+  isGenerating = false,
+  saveToHistory
 }: ContentPreviewProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content || "");
   const [activeTab, setActiveTab] = useState<string>("preview"); // "preview" or "blocks"
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Reset edited content when content changes
   useEffect(() => {
@@ -73,6 +76,21 @@ const ContentPreview = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success(`${activeTab === "blocks" ? "Custom blocks" : "Content"} downloaded as ${fileExtension.toUpperCase()} file`);
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!generatedContent || !saveToHistory) return;
+    
+    setIsSaving(true);
+    try {
+      await saveToHistory(generatedContent);
+      toast.success("Content saved as draft");
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      toast.error("Failed to save draft");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEditBlock = (blockId: string) => {
@@ -138,6 +156,18 @@ const ContentPreview = ({
             <Download className="h-4 w-4" />
             Download
           </Button>
+          {saveToHistory && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveAsDraft}
+              disabled={isSaving}
+              className="flex items-center gap-1"
+            >
+              <Save className={`h-4 w-4 ${isSaving ? 'animate-spin' : ''}`} />
+              Save as Draft
+            </Button>
+          )}
           {onRegenerateContent && (
             <Button
               variant="outline"

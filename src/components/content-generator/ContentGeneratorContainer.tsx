@@ -318,7 +318,24 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
               onBack={() => dispatch({ type: 'SET_STEP', payload: 3 })}
             />
           )}
-          {state.step !== 4 && renderStepContent()}
+          {state.step === 5 && (
+            <ContentPreview
+              content={state.contentHtml}
+              generatedContent={state.generatedContent}
+              onBack={() => dispatch({ type: 'SET_STEP', payload: 4 })}
+              onRegenerateContent={async () => {
+                dispatch({ type: 'SET_IS_GENERATING', payload: true });
+                dispatch({ type: 'SET_STEP', payload: 4 });
+                
+                setTimeout(() => {
+                  dispatch({ type: 'SET_IS_GENERATING', payload: false });
+                }, 500);
+              }}
+              isGenerating={state.isGenerating}
+              saveToHistory={saveToHistory}
+            />
+          )}
+          {state.step !== 4 && state.step !== 5 && renderStepContent()}
         </form>
       </CardContent>
     </Card>
