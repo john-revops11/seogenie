@@ -10,28 +10,208 @@ import { RankingData } from "@/services/keywords/api/dataForSeo/positionTracking
 // Mock data for demonstration purposes
 const mockHistoryData: Record<string, RankingData[]> = {
   "2023-06-01": [
-    { keyword: "seo tools", position: 12, url: "https://example.com/seo-tools" },
-    { keyword: "keyword research", position: 8, url: "https://example.com/keyword-research" }
+    { 
+      keyword: "seo tools", 
+      position: 12, 
+      url: "https://example.com/seo-tools",
+      previousPosition: 15,
+      change: 3,
+      timestamp: "2023-06-01T12:00:00Z",
+      hasSnippet: false,
+      hasFeaturedSnippet: false,
+      hasPaa: false,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: false,
+      serp_features: []
+    },
+    { 
+      keyword: "keyword research", 
+      position: 8, 
+      url: "https://example.com/keyword-research",
+      previousPosition: 10,
+      change: 2,
+      timestamp: "2023-06-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: true,
+      serp_features: ["snippet", "people_also_ask", "images"]
+    }
   ],
   "2023-07-01": [
-    { keyword: "seo tools", position: 10, url: "https://example.com/seo-tools" },
-    { keyword: "keyword research", position: 7, url: "https://example.com/keyword-research" }
+    { 
+      keyword: "seo tools", 
+      position: 10, 
+      url: "https://example.com/seo-tools",
+      previousPosition: 12,
+      change: 2,
+      timestamp: "2023-07-01T12:00:00Z",
+      hasSnippet: false,
+      hasFeaturedSnippet: false,
+      hasPaa: false,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: false,
+      serp_features: []
+    },
+    { 
+      keyword: "keyword research", 
+      position: 7, 
+      url: "https://example.com/keyword-research",
+      previousPosition: 8,
+      change: 1,
+      timestamp: "2023-07-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: true,
+      serp_features: ["snippet", "people_also_ask", "images"]
+    }
   ],
   "2023-08-01": [
-    { keyword: "seo tools", position: 9, url: "https://example.com/seo-tools" },
-    { keyword: "keyword research", position: 6, url: "https://example.com/keyword-research" }
+    { 
+      keyword: "seo tools", 
+      position: 9, 
+      url: "https://example.com/seo-tools",
+      previousPosition: 10,
+      change: 1,
+      timestamp: "2023-08-01T12:00:00Z",
+      hasSnippet: false,
+      hasFeaturedSnippet: false,
+      hasPaa: false,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: false,
+      serp_features: []
+    },
+    { 
+      keyword: "keyword research", 
+      position: 6, 
+      url: "https://example.com/keyword-research",
+      previousPosition: 7,
+      change: 1,
+      timestamp: "2023-08-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: true,
+      serp_features: ["snippet", "people_also_ask", "images"]
+    }
   ],
   "2023-09-01": [
-    { keyword: "seo tools", position: 8, url: "https://example.com/seo-tools" },
-    { keyword: "keyword research", position: 5, url: "https://example.com/keyword-research" }
+    { 
+      keyword: "seo tools", 
+      position: 8, 
+      url: "https://example.com/seo-tools",
+      previousPosition: 9,
+      change: 1,
+      timestamp: "2023-09-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: false,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: false,
+      serp_features: ["snippet"]
+    },
+    { 
+      keyword: "keyword research", 
+      position: 5, 
+      url: "https://example.com/keyword-research",
+      previousPosition: 6,
+      change: 1,
+      timestamp: "2023-09-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: true,
+      hasImage: true,
+      serp_features: ["snippet", "people_also_ask", "video", "images"]
+    }
   ],
   "2023-10-01": [
-    { keyword: "seo tools", position: 7, url: "https://example.com/seo-tools" },
-    { keyword: "keyword research", position: 4, url: "https://example.com/keyword-research" }
+    { 
+      keyword: "seo tools", 
+      position: 7, 
+      url: "https://example.com/seo-tools",
+      previousPosition: 8,
+      change: 1,
+      timestamp: "2023-10-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: false,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: false,
+      serp_features: ["snippet"]
+    },
+    { 
+      keyword: "keyword research", 
+      position: 4, 
+      url: "https://example.com/keyword-research",
+      previousPosition: 5,
+      change: 1,
+      timestamp: "2023-10-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: true,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: true,
+      hasImage: true,
+      serp_features: ["featured_snippet", "people_also_ask", "video", "images"]
+    }
   ],
   "2023-11-01": [
-    { keyword: "seo tools", position: 5, url: "https://example.com/seo-tools" },
-    { keyword: "keyword research", position: 3, url: "https://example.com/keyword-research" }
+    { 
+      keyword: "seo tools", 
+      position: 5, 
+      url: "https://example.com/seo-tools",
+      previousPosition: 7,
+      change: 2,
+      timestamp: "2023-11-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: false,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: false,
+      hasImage: true,
+      serp_features: ["snippet", "people_also_ask", "images"]
+    },
+    { 
+      keyword: "keyword research", 
+      position: 3, 
+      url: "https://example.com/keyword-research",
+      previousPosition: 4,
+      change: 1,
+      timestamp: "2023-11-01T12:00:00Z",
+      hasSnippet: true,
+      hasFeaturedSnippet: true,
+      hasPaa: true,
+      hasKnowledgePanel: false,
+      hasLocalPack: false,
+      hasVideo: true,
+      hasImage: true,
+      serp_features: ["featured_snippet", "people_also_ask", "video", "images"]
+    }
   ]
 };
 

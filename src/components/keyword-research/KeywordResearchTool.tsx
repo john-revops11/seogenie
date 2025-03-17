@@ -12,13 +12,19 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { toast } from "sonner";
 import { useDataForSeoClient } from "@/hooks/useDataForSeoClient";
 
+// Define the interface to match the state and expected type structure
+interface TrendData {
+  month: string;
+  volume: number;
+}
+
 interface KeywordData {
   keyword: string;
   search_volume: number;
   cpc: number;
   competition: number;
   competition_index: number;
-  trend_data?: { month: string; volume: number }[];
+  trend_data?: TrendData[];
 }
 
 const KeywordResearchTool: React.FC = () => {
@@ -63,7 +69,8 @@ const KeywordResearchTool: React.FC = () => {
           const keywordResults = response.tasks[0].result.map((item: any) => ({
             keyword: item.keyword || "",
             search_volume: item.search_volume || 0,
-            cpc: item.cpc || 0,
+            // Ensure cpc is a number by converting it
+            cpc: typeof item.cpc === 'number' ? item.cpc : parseFloat(item.cpc) || 0,
             competition: item.competition_index || 0,
             competition_index: item.competition_index || 0,
             trend_data: generateTrendData(item.search_volume || 100)
@@ -75,7 +82,7 @@ const KeywordResearchTool: React.FC = () => {
           }
           toast.success(`Found ${keywordResults.length} keywords for ${domain}`);
         } else {
-          toast.error("No keyword data found for this domain. Try a more established domain.");
+          toast.error("No keyword data found for this domain. Try a more established domain with better organic visibility.");
           setKeywords([]);
         }
       } else {
@@ -85,35 +92,35 @@ const KeywordResearchTool: React.FC = () => {
           { 
             keyword: query, 
             search_volume: Math.floor(Math.random() * 10000) + 1000,
-            cpc: (Math.random() * 5).toFixed(2),
+            cpc: parseFloat((Math.random() * 5).toFixed(2)),
             competition: Math.random(),
             competition_index: Math.floor(Math.random() * 100)
           },
           { 
             keyword: `best ${query}`, 
             search_volume: Math.floor(Math.random() * 8000) + 500,
-            cpc: (Math.random() * 5).toFixed(2),
+            cpc: parseFloat((Math.random() * 5).toFixed(2)),
             competition: Math.random(),
             competition_index: Math.floor(Math.random() * 100)
           },
           { 
             keyword: `${query} review`, 
             search_volume: Math.floor(Math.random() * 5000) + 200,
-            cpc: (Math.random() * 5).toFixed(2),
+            cpc: parseFloat((Math.random() * 5).toFixed(2)),
             competition: Math.random(),
             competition_index: Math.floor(Math.random() * 100)
           },
           { 
             keyword: `${query} alternatives`, 
             search_volume: Math.floor(Math.random() * 3000) + 100,
-            cpc: (Math.random() * 5).toFixed(2),
+            cpc: parseFloat((Math.random() * 5).toFixed(2)),
             competition: Math.random(),
             competition_index: Math.floor(Math.random() * 100)
           },
           { 
             keyword: `how to use ${query}`, 
             search_volume: Math.floor(Math.random() * 2000) + 50,
-            cpc: (Math.random() * 5).toFixed(2),
+            cpc: parseFloat((Math.random() * 5).toFixed(2)),
             competition: Math.random(),
             competition_index: Math.floor(Math.random() * 100)
           }
