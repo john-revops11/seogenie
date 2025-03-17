@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -41,12 +40,10 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
     try {
       const outline = await generateContentOutline(title, keywords, contentType, regenerationCount);
       setSuggestedSubheadings(outline.headings);
-      // Select all by default
       setSelectedSubheadings(outline.headings);
     } catch (error) {
       console.error("Error generating subheadings:", error);
       toast.error("Failed to generate subheadings. Please try again.");
-      // Provide some fallback headings
       const fallbackHeadings = [
         "Introduction",
         "The Problem",
@@ -69,7 +66,11 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
     );
   };
 
-  const handleContinue = () => {
+  const handleContinue = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     if (selectedSubheadings.length === 0) {
       toast.error("Please select at least one subheading");
       return;
@@ -93,7 +94,6 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
     updatedHeadings[editIndex] = editedHeading;
     setSuggestedSubheadings(updatedHeadings);
 
-    // Update selected headings if this one was selected
     if (selectedSubheadings.includes(suggestedSubheadings[editIndex])) {
       setSelectedSubheadings(prev => 
         prev.map(h => h === suggestedSubheadings[editIndex] ? editedHeading : h)
@@ -196,12 +196,14 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
         <Button
           variant="outline"
           onClick={onBack}
+          type="button"
           disabled={isLoading || isRegenerating}
         >
           Back
         </Button>
         <Button
           onClick={handleContinue}
+          type="button"
           disabled={isLoading || isRegenerating || selectedSubheadings.length === 0}
         >
           Continue with Selected Subheadings

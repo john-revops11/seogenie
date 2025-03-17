@@ -53,7 +53,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     }
   }, [selectedKeywords, initialTitle]);
 
-  const handleNextStep = () => {
+  const handleNextStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     if (step === 1 && !contentType) {
       toast.error("Please select a content type");
       return;
@@ -74,7 +78,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     setStep(step + 1);
   };
 
-  const handleBackStep = () => {
+  const handleBackStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     setStep(step - 1);
   };
 
@@ -124,7 +131,11 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
     setStep(4); // Move to AI settings step
   };
 
-  const handleGenerateContent = async () => {
+  const handleGenerateContent = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     setIsGenerating(true);
     
     try {
@@ -268,7 +279,9 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
           </div>
         </div>
         
-        {renderStepContent()}
+        <form onSubmit={(e) => e.preventDefault()}>
+          {renderStepContent()}
+        </form>
       </CardContent>
     </Card>
   );

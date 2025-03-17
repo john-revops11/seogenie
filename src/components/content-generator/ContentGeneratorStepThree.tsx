@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { getApiKey } from "@/services/keywords/apiConfig";
 import { toast } from "sonner";
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { defaultAIModels, AIProvider, AIModel, getModelsForProvider, getPrimaryModelForProvider } from "@/types/aiModels";
 import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
+import { Button } from "@/components/ui/button";
 
 interface ContentGeneratorStepThreeProps {
   contentType: string;
@@ -67,7 +67,9 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
     }
   }, [aiProvider, aiModel, availableModels.length, onAIModelChange]);
 
-  const handleGenerateClick = () => {
+  const handleGenerateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
     if (!apiConfigured) {
       toast.error(`Cannot generate content: ${aiProvider === 'openai' ? 'OpenAI' : 'Gemini AI'} API key is not configured`);
       return;
@@ -80,7 +82,6 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
     return model ? model.name : modelId;
   };
 
-  // Find the selected word count option
   const selectedWordCount = WORD_COUNT_OPTIONS.find(option => option.value === wordCountOption);
 
   return (
@@ -169,22 +170,25 @@ const ContentGeneratorStepThree: React.FC<ContentGeneratorStepThreeProps> = ({
           )}
         </div>
         
-        <button
+        <Button
           onClick={handleGenerateClick}
+          type="button"
           disabled={isGenerating || !apiConfigured}
           className="w-full px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
         >
           {isGenerating ? "Generating Content..." : !apiConfigured ? "API Not Configured" : "Generate Content"}
-        </button>
+        </Button>
       </div>
       
       <div className="flex justify-between">
-        <button
+        <Button
           onClick={onBack}
+          type="button"
+          variant="ghost"
           className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
         >
           Back
-        </button>
+        </Button>
       </div>
     </div>
   );
