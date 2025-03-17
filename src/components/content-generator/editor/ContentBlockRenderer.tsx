@@ -4,7 +4,7 @@ import { ContentBlock } from "@/services/keywords/types";
 import { Badge } from "@/components/ui/badge";
 
 interface ContentBlockRendererProps {
-  block: ContentBlock;
+  block: ContentBlock & { isEditing?: boolean };
   showBadge?: boolean;
 }
 

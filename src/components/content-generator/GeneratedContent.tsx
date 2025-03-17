@@ -17,11 +17,16 @@ interface GeneratedContentProps {
   contentType: string;
 }
 
+// Extended ContentBlock interface for editing functionality
+interface EditableContentBlock extends ContentBlock {
+  isEditing: boolean;
+}
+
 const GeneratedContent: React.FC<GeneratedContentProps> = ({ 
   generatedContent, 
   contentType 
 }) => {
-  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>(() => {
+  const [contentBlocks, setContentBlocks] = useState<EditableContentBlock[]>(() => {
     return parseContentToBlocks(generatedContent.content);
   });
 
@@ -30,20 +35,21 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
     setContentBlocks(parseContentToBlocks(generatedContent.content));
   }, [generatedContent.content]);
 
-  function parseContentToBlocks(htmlContent: string): ContentBlock[] {
+  function parseContentToBlocks(htmlContent: string): EditableContentBlock[] {
     if (!htmlContent) return [];
 
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlContent;
     
-    const blocks: ContentBlock[] = [];
+    const blocks: EditableContentBlock[] = [];
     
     Array.from(tempDiv.childNodes).forEach((node, index) => {
       if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         
-        let type = 'other';
+        // Default to paragraph for unknown element types
+        let type: ContentBlock['type'] = 'paragraph';
         
         if (tagName === 'h1') type = 'heading1';
         else if (tagName === 'h2') type = 'heading2';
@@ -62,7 +68,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
       } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
         blocks.push({
           id: `block-${index}`,
-          type: 'text',
+          type: 'paragraph', // Changed from 'text' to 'paragraph' to match allowed types
           content: `<p>${node.textContent}</p>`,
           isEditing: false
         });
