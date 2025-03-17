@@ -10,24 +10,25 @@ import SubheadingRecommendations from "./SubheadingRecommendations";
 import { useContentTemplates } from "@/hooks/content-generator/contentTemplates";
 import { useContentPreferences } from "@/hooks/content-generator/contentPreferences";
 import { useContentGeneratorState } from "@/hooks/content-generator/useContentGeneratorState";
-import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
+import { GeneratedContent } from "@/services/keywords/types";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ContentGeneratorContainerProps {
   domain: string;
   selectedKeywords?: string[];
   initialTitle?: string;
+  saveToHistory: (content: GeneratedContent) => Promise<void>;
 }
 
 const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   domain,
   selectedKeywords = [],
-  initialTitle = ""
+  initialTitle = "",
+  saveToHistory
 }) => {
   const [state, dispatch, applyRestoredState] = useContentGeneratorState();
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
-  const { saveToHistory } = useContentHistory();
   
   // Load state from localStorage on initial render
   useEffect(() => {

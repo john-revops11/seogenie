@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -169,8 +170,7 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
         generationMethod: item.rag_enabled ? 'rag' : 'standard',
         aiProvider: item.ai_provider || 'openai',
         aiModel: item.ai_model || 'gpt-4',
-        topic: item.topic || '',
-        wordCountOption: 'standard'
+        topic: item.topic || undefined
       };
       
       // Save the content to localStorage

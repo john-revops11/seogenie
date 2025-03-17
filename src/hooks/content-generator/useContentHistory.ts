@@ -97,8 +97,8 @@ export function useContentHistory() {
       
       const { error } = await supabase.from("content_history").insert({
         title: content.title,
-        content_type: content.contentType,
-        keywords: content.keywords,
+        content_type: content.contentType || '',
+        keywords: content.keywords || [],
         meta_description: content.metaDescription,
         outline: content.outline,
         content: contentHtml,
@@ -106,7 +106,7 @@ export function useContentHistory() {
         ai_provider: content.aiProvider || null,
         ai_model: content.aiModel || null,
         user_id: sessionUserId,
-        topic: content.topic || content.keywords[0] || null
+        topic: content.topic || null
       });
 
       if (error) {

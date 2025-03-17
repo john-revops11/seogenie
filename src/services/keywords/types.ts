@@ -158,6 +158,7 @@ export interface GeneratedContent {
   };
   customBlocksContent?: string;
   ragInfo?: RagInfo;
+  topic?: string;
 }
 
 export interface ContentTemplate {
