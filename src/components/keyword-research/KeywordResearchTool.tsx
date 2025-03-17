@@ -10,27 +10,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import { useDataForSeoClient, DataForSeoResponse } from "@/hooks/useDataForSeoClient";
-import { KeywordData } from "@/services/keywords/types";
+import { KeywordData, TrendData } from "@/services/keywords/types";
 
-interface TrendData {
-  month: string;
-  volume: number;
+interface ExtendedKeywordData extends KeywordData {
+  trend_data: TrendData[];
+  search_volume: number;
 }
 
 const KeywordResearchTool: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [domain, setDomain] = useState<string>("");
   const [searchMode, setSearchMode] = useState<"keyword" | "domain">("keyword");
-  const [keywords, setKeywords] = useState<KeywordData[]>([]);
-  const [selectedKeyword, setSelectedKeyword] = useState<KeywordData | null>(null);
+  const [keywords, setKeywords] = useState<ExtendedKeywordData[]>([]);
+  const [selectedKeyword, setSelectedKeyword] = useState<ExtendedKeywordData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sortField, setSortField] = useState<string>("search_volume");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [savedKeywords, setSavedKeywords] = useState<KeywordData[]>([]);
+  const [savedKeywords, setSavedKeywords] = useState<ExtendedKeywordData[]>([]);
   
   const { getDomainKeywords, isLoading: apiLoading, error } = useDataForSeoClient();
 
-  const generateTrendData = (baseVolume: number) => {
+  const generateTrendData = (baseVolume: number): TrendData[] => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months.map(month => {
       const variation = Math.random() * 0.4 - 0.2; // -20% to +20%
@@ -60,7 +60,7 @@ const KeywordResearchTool: React.FC = () => {
             competition: item.competition_index || 0,
             competition_index: item.competition_index || 0,
             trend_data: generateTrendData(item.search_volume || 100)
-          }));
+          })) as ExtendedKeywordData[];
           
           setKeywords(keywordResults);
           if (keywordResults.length > 0) {
@@ -113,7 +113,7 @@ const KeywordResearchTool: React.FC = () => {
         const keywordResults = mockData.map(item => ({
           ...item,
           trend_data: generateTrendData(item.search_volume)
-        }));
+        })) as ExtendedKeywordData[];
         
         setKeywords(keywordResults);
         if (keywordResults.length > 0) {
@@ -146,14 +146,14 @@ const KeywordResearchTool: React.FC = () => {
           : b.keyword.localeCompare(a.keyword);
       }
       
-      const aValue = a[sortField as keyof KeywordData] as number;
-      const bValue = b[sortField as keyof KeywordData] as number;
+      const aValue = a[sortField as keyof ExtendedKeywordData] as number;
+      const bValue = b[sortField as keyof ExtendedKeywordData] as number;
       
       return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
     });
   }, [keywords, sortField, sortDirection]);
 
-  const saveKeyword = (keyword: KeywordData) => {
+  const saveKeyword = (keyword: ExtendedKeywordData) => {
     if (!savedKeywords.find(k => k.keyword === keyword.keyword)) {
       setSavedKeywords([...savedKeywords, keyword]);
       toast.success(`Added "${keyword.keyword}" to saved keywords`);
@@ -162,7 +162,7 @@ const KeywordResearchTool: React.FC = () => {
     }
   };
 
-  const removeSavedKeyword = (keyword: KeywordData) => {
+  const removeSavedKeyword = (keyword: ExtendedKeywordData) => {
     setSavedKeywords(savedKeywords.filter(k => k.keyword !== keyword.keyword));
     toast.success(`Removed "${keyword.keyword}" from saved keywords`);
   };
@@ -205,10 +205,12 @@ const KeywordResearchTool: React.FC = () => {
   };
 
   const getOpportunityScore = (volume: number, competition: number) => {
-    return Math.round((volume / 1000) * (1 - competition) * 10);
+    const numVolume = typeof volume === 'number' ? volume : parseFloat(String(volume)) || 0;
+    const numCompetition = typeof competition === 'number' ? competition : parseFloat(String(competition)) || 0;
+    return Math.round((numVolume / 1000) * (1 - numCompetition) * 10);
   };
 
-  const getTrendIndicator = (keyword: KeywordData) => {
+  const getTrendIndicator = (keyword: ExtendedKeywordData) => {
     if (!keyword.trend_data || keyword.trend_data.length < 2) return null;
     
     const firstHalf = keyword.trend_data.slice(0, 6);
@@ -318,7 +320,7 @@ const KeywordResearchTool: React.FC = () => {
                       </TableHeader>
                       <TableBody>
                         {sortedKeywords.map((keyword, index) => {
-                          const competition = getCompetitionLabel(keyword.competition);
+                          const competition = getCompetitionLabel(Number(keyword.competition));
                           return (
                             <TableRow key={index} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedKeyword(keyword)}>
                               <TableCell className="font-medium">
@@ -372,7 +374,7 @@ const KeywordResearchTool: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {savedKeywords.map((keyword, index) => {
-                            const competition = getCompetitionLabel(keyword.competition);
+                            const competition = getCompetitionLabel(Number(keyword.competition));
                             return (
                               <TableRow key={index} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedKeyword(keyword)}>
                                 <TableCell className="font-medium">
@@ -447,10 +449,21 @@ const KeywordResearchTool: React.FC = () => {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-500">Opportunity Score</h3>
                 <div className="flex items-center">
-                  <p className="text-2xl font-bold">{getOpportunityScore(selectedKeyword.search_volume, selectedKeyword.competition)}/10</p>
+                  <p className="text-2xl font-bold">
+                    {getOpportunityScore(
+                      Number(selectedKeyword.search_volume), 
+                      Number(selectedKeyword.competition)
+                    )}/10
+                  </p>
                   <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
-                    {getOpportunityScore(selectedKeyword.search_volume, selectedKeyword.competition) > 7 ? 'High' : 
-                     getOpportunityScore(selectedKeyword.search_volume, selectedKeyword.competition) > 4 ? 'Medium' : 'Low'} Opportunity
+                    {getOpportunityScore(
+                      Number(selectedKeyword.search_volume), 
+                      Number(selectedKeyword.competition)
+                    ) > 7 ? 'High' : 
+                     getOpportunityScore(
+                       Number(selectedKeyword.search_volume), 
+                       Number(selectedKeyword.competition)
+                     ) > 4 ? 'Medium' : 'Low'} Opportunity
                   </Badge>
                 </div>
                 <p className="text-sm text-gray-500">Based on volume and competition</p>

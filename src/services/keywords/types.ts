@@ -10,13 +10,20 @@ export interface KeywordData {
   trending?: number;
   intent?: string;
   
-  // Add the missing properties used by DataForSEO and related components
+  // Add properties used by DataForSEO and related components
   monthly_search?: number;
   competition_index?: number;
   position?: number | null;
   rankingUrl?: string | null;
   competitorRankings?: Record<string, number>;
   competitorUrls?: Record<string, string>;
+  
+  // Add properties specifically for KeywordResearchTool
+  search_volume?: number;
+  trend_data?: Array<{
+    month: string;
+    volume: number;
+  }>;
 }
 
 export interface CompetitorData {
@@ -140,4 +147,10 @@ export interface ContentOutline {
   title: string;
   headings: string[];
   faqs: Array<{question: string, answer: string}>;
+}
+
+// Add interface for trend data used in KeywordResearchTool
+export interface TrendData {
+  month: string;
+  volume: number;
 }

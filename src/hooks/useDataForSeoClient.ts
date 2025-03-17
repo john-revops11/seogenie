@@ -30,7 +30,7 @@ export function useDataForSeoClient() {
     setError(null);
     
     try {
-      const response = await fetchDomainKeywords(domain);
+      const response = await fetchDomainKeywords(domain, options);
       setIsLoading(false);
       return response as DataForSeoResponse;
     } catch (err) {
@@ -48,7 +48,7 @@ export function useDataForSeoClient() {
     setError(null);
     
     try {
-      const response = await fetchDomainAnalytics(domain);
+      const response = await fetchDomainAnalytics(domain, options);
       setIsLoading(false);
       return response as DataForSeoResponse;
     } catch (err) {
@@ -66,7 +66,7 @@ export function useDataForSeoClient() {
     setError(null);
     
     try {
-      const response = await fetchBacklinkData(domain);
+      const response = await fetchBacklinkData(domain, options);
       setIsLoading(false);
       return response as DataForSeoResponse;
     } catch (err) {

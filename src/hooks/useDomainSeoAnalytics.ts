@@ -67,7 +67,8 @@ export function useDomainSeoAnalytics(domain: string) {
       let estimatedTrafficCost = 0;
       let keywordDistribution: { position: string, count: number }[] = [];
       
-      if (overviewResponse && overviewResponse.tasks && overviewResponse.tasks[0]?.result?.[0]) {
+      if (overviewResponse && overviewResponse.tasks && overviewResponse.tasks.length > 0 && 
+          overviewResponse.tasks[0]?.result && overviewResponse.tasks[0]?.result.length > 0) {
         const result = overviewResponse.tasks[0].result[0];
         
         // Extract organic metrics
@@ -117,7 +118,9 @@ export function useDomainSeoAnalytics(domain: string) {
       
       // Process domain keywords for top keywords
       let topKeywords: any[] = [];
-      if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks[0]?.result?.[0]?.items) {
+      if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 &&
+          keywordsResponse.tasks[0]?.result && keywordsResponse.tasks[0]?.result.length > 0 &&
+          keywordsResponse.tasks[0]?.result[0]?.items) {
         topKeywords = keywordsResponse.tasks[0].result[0].items
           .slice(0, 10)
           .map((item: any) => ({
@@ -133,7 +136,8 @@ export function useDomainSeoAnalytics(domain: string) {
       let totalBacklinks = null;
       let referringDomains = null;
       
-      if (backlinkResponse && backlinkResponse.tasks && backlinkResponse.tasks[0]?.result?.[0]) {
+      if (backlinkResponse && backlinkResponse.tasks && backlinkResponse.tasks.length > 0 &&
+          backlinkResponse.tasks[0]?.result && backlinkResponse.tasks[0]?.result.length > 0) {
         const backlinksData = backlinkResponse.tasks[0].result[0];
         authorityScore = backlinksData.domain_rank || 0;
         totalBacklinks = backlinksData.backlinks_count || 0;
