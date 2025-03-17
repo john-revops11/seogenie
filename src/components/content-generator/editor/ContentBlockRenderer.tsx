@@ -11,19 +11,19 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) =>
   const getBlockClasses = () => {
     switch (block.type) {
       case 'heading1':
-        return 'text-3xl font-bold mt-6 mb-4';
+        return 'text-3xl font-bold mt-6 mb-4 border-b pb-2';
       case 'heading2':
-        return 'text-2xl font-semibold mt-5 mb-3';
+        return 'text-2xl font-semibold mt-5 mb-3 border-b pb-1';
       case 'heading3':
         return 'text-xl font-medium mt-4 mb-2';
       case 'list':
-        return 'mt-3 mb-4';
+        return 'mt-3 mb-4 pl-5';
       case 'orderedList':
-        return 'mt-3 mb-4';
+        return 'mt-3 mb-4 pl-5';
       case 'paragraph':
         return 'mt-3 mb-4 leading-relaxed';
       case 'quote':
-        return 'pl-4 border-l-4 border-gray-300 italic my-4';
+        return 'pl-4 border-l-4 border-gray-300 italic my-4 py-2 bg-gray-50';
       default:
         return 'mt-3 mb-4';
     }
@@ -54,7 +54,7 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) =>
           return (
             <div 
               className={blockClass}
-              dangerouslySetInnerHTML={{ __html: `<ul>${listItems}</ul>` }}
+              dangerouslySetInnerHTML={{ __html: `<ul class="list-disc pl-5">${listItems}</ul>` }}
             />
           );
         }
@@ -79,7 +79,7 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) =>
           return (
             <div 
               className={blockClass}
-              dangerouslySetInnerHTML={{ __html: `<ol>${listItems}</ol>` }}
+              dangerouslySetInnerHTML={{ __html: `<ol class="list-decimal pl-5">${listItems}</ol>` }}
             />
           );
         }
@@ -101,7 +101,11 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) =>
     }
   };
 
-  return renderContent();
+  return (
+    <div className="block-container">
+      {renderContent()}
+    </div>
+  );
 };
 
 export default ContentBlockRenderer;

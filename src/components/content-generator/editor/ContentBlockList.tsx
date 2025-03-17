@@ -30,7 +30,9 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
   const getBlockTypeColor = (type: string) => {
     switch (type) {
       case 'heading1':
+        return 'bg-blue-500 text-white';
       case 'heading2': 
+        return 'bg-blue-300 text-blue-900';
       case 'heading3':
         return 'bg-blue-100 text-blue-800';
       case 'paragraph':
@@ -65,15 +67,15 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
       {blocks.map((block, index) => (
         <div 
           key={block.id} 
-          className="relative group border rounded-md p-4 hover:bg-gray-50 transition-colors"
+          className="relative group border-2 rounded-md p-4 hover:bg-gray-50 transition-colors shadow-sm"
         >
           <div className="absolute top-2 left-2 z-10">
-            <Badge className={getBlockTypeColor(block.type)} variant="outline">
+            <Badge className={getBlockTypeColor(block.type)}>
               {getBlockTypeName(block.type)}
             </Badge>
           </div>
           
-          <div className="pt-6">
+          <div className="pt-8">
             {editingBlockId === block.id ? (
               <div className="space-y-2">
                 <WysiwygEditor 
@@ -83,7 +85,6 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
                 <div className="flex justify-end">
                   <Button
                     size="sm"
-                    variant="outline"
                     onClick={() => onSaveBlock(block.id, block.content)}
                   >
                     Done

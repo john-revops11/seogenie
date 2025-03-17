@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, Trash2 } from "lucide-react";
@@ -113,7 +112,9 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
   const getBlockTypeColor = (type: string) => {
     switch (type) {
       case 'heading1':
+        return 'bg-blue-500 text-white';
       case 'heading2': 
+        return 'bg-blue-300 text-blue-900';
       case 'heading3':
         return 'bg-blue-100 text-blue-800';
       case 'paragraph':
@@ -175,15 +176,15 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           <h3 className="text-lg font-semibold">Content</h3>
           <div className="space-y-4 prose max-w-none">
             {contentBlocks.map(block => (
-              <div key={block.id} className="relative group border rounded-md p-4 hover:bg-gray-50 transition-colors">
+              <div key={block.id} className="relative group border-2 rounded-md p-4 hover:bg-gray-50 transition-colors shadow-sm">
                 <div className="absolute top-2 left-2 z-10">
-                  <Badge className={getBlockTypeColor(block.type)} variant="outline">
+                  <Badge className={getBlockTypeColor(block.type)}>
                     {getBlockTypeName(block.type)}
                   </Badge>
                 </div>
                 
                 {block.isEditing ? (
-                  <div className="space-y-2 pt-6">
+                  <div className="space-y-2 pt-8">
                     <Textarea 
                       className="min-h-[100px] font-mono text-sm"
                       defaultValue={block.content}
@@ -215,12 +216,12 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                     <div 
                       dangerouslySetInnerHTML={{ __html: block.content }} 
                       className={
-                        block.type === 'heading1' ? 'text-2xl font-bold mb-2 pt-6' :
-                        block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2 pt-6' :
-                        block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2 pt-6' :
-                        block.type === 'list' || block.type === 'orderedList' ? 'pl-5 my-2 space-y-1 pt-6' :
-                        block.type === 'quote' ? 'pl-4 border-l-4 border-gray-300 italic my-4 pt-6' :
-                        'my-2 pt-6'
+                        block.type === 'heading1' ? 'text-2xl font-bold mb-2 pt-8' :
+                        block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2 pt-8' :
+                        block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2 pt-8' :
+                        block.type === 'list' || block.type === 'orderedList' ? 'pl-5 my-2 space-y-1 pt-8' :
+                        block.type === 'quote' ? 'pl-4 border-l-4 border-gray-300 italic my-4 pt-8' :
+                        'my-2 pt-8'
                       }
                     />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
