@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Star, Video, Image, Map, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { RankingData } from "@/services/keywords/api/dataForSeo/positionTracking";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface KeywordRankingsTableProps {
   rankings: RankingData[];
@@ -91,12 +92,61 @@ const KeywordRankingsTable: React.FC<KeywordRankingsTableProps> = ({ rankings })
   const renderSerpFeatures = (ranking: RankingData) => {
     return (
       <div className="flex space-x-1">
-        {ranking.hasFeaturedSnippet && <Star className="h-4 w-4 text-yellow-500" title="Featured Snippet" />}
-        {ranking.hasPaa && <MessageSquare className="h-4 w-4 text-blue-500" title="People Also Ask" />}
-        {ranking.hasKnowledgePanel && <Star className="h-4 w-4 text-purple-500" title="Knowledge Panel" />}
-        {ranking.hasLocalPack && <Map className="h-4 w-4 text-green-500" title="Local Pack" />}
-        {ranking.hasVideo && <Video className="h-4 w-4 text-red-500" title="Video" />}
-        {ranking.hasImage && <Image className="h-4 w-4 text-teal-500" title="Image" />}
+        <TooltipProvider>
+          {ranking.hasFeaturedSnippet && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Star className="h-4 w-4 text-yellow-500" />
+              </TooltipTrigger>
+              <TooltipContent>Featured Snippet</TooltipContent>
+            </Tooltip>
+          )}
+          
+          {ranking.hasPaa && (
+            <Tooltip>
+              <TooltipTrigger>
+                <MessageSquare className="h-4 w-4 text-blue-500" />
+              </TooltipTrigger>
+              <TooltipContent>People Also Ask</TooltipContent>
+            </Tooltip>
+          )}
+          
+          {ranking.hasKnowledgePanel && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Star className="h-4 w-4 text-purple-500" />
+              </TooltipTrigger>
+              <TooltipContent>Knowledge Panel</TooltipContent>
+            </Tooltip>
+          )}
+          
+          {ranking.hasLocalPack && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Map className="h-4 w-4 text-green-500" />
+              </TooltipTrigger>
+              <TooltipContent>Local Pack</TooltipContent>
+            </Tooltip>
+          )}
+          
+          {ranking.hasVideo && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Video className="h-4 w-4 text-red-500" />
+              </TooltipTrigger>
+              <TooltipContent>Video</TooltipContent>
+            </Tooltip>
+          )}
+          
+          {ranking.hasImage && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Image className="h-4 w-4 text-teal-500" />
+              </TooltipTrigger>
+              <TooltipContent>Image</TooltipContent>
+            </Tooltip>
+          )}
+        </TooltipProvider>
       </div>
     );
   };
