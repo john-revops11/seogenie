@@ -1,6 +1,7 @@
 
 // DataForSEO API client service
 import { toast } from 'sonner';
+import { DataForSeoResponse } from '@/hooks/useDataForSeoClient'; 
 
 // DataForSEO credentials
 const username = "armin@revologyanalytics.com";
@@ -55,8 +56,8 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
 };
 
 // Domain Analytics
-export const fetchDomainAnalytics = async (domain: string) => {
-  return callDataForSeoApi('/v3/dataforseo_labs/google/domain_rank_overview/live', [{ target: domain }]);
+export const fetchDomainAnalytics = async (domain: string): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_rank_overview/live', [{ target: domain }]);
 };
 
 // SERP Organic Tracking
@@ -80,9 +81,9 @@ export const fetchOnPageData = async (urlToCheck: string) => {
 };
 
 // Backlinks Analytics - Updated to use correct endpoint
-export const fetchBacklinkData = async (domain: string) => {
+export const fetchBacklinkData = async (domain: string): Promise<DataForSeoResponse | null> => {
   // Using backlinks_overview endpoint instead of the incorrect summary endpoint
-  return callDataForSeoApi('/v3/backlinks/backlinks_overview/live', [{ 
+  return callDataForSeoApi<DataForSeoResponse>('/v3/backlinks/backlinks_overview/live', [{ 
     target: domain,
     limit: 10
   }]);
@@ -93,10 +94,10 @@ export const fetchDomainIntersection = async (
   target1Domain: string, 
   target2Domain: string,
   locationCode: number = 2840
-) => {
+): Promise<DataForSeoResponse | null> => {
   console.log(`DataForSEO Intersection - Target1: ${target1Domain}, Target2: ${target2Domain}, Location: ${locationCode}`);
   
-  return callDataForSeoApi('/v3/dataforseo_labs/google/domain_intersection/live', [{ 
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_intersection/live', [{ 
     target1: target1Domain,
     target2: target2Domain,
     location_code: locationCode,
@@ -121,8 +122,8 @@ export const fetchKeywordData = async (keyword: string) => {
 };
 
 // Domain Keywords
-export const fetchDomainKeywords = async (domain: string) => {
-  return callDataForSeoApi('/v3/keywords_data/google_ads/keywords_for_site/live', [
+export const fetchDomainKeywords = async (domain: string): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/keywords_data/google_ads/keywords_for_site/live', [
     {
       target: domain,
       location_code: 2840,

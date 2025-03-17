@@ -143,12 +143,15 @@ export function useDataForSeoClient() {
         };
       }
       
+      // Properly type-cast the response before accessing properties
+      const typedResponse = response as DataForSeoResponse;
+      
       // Log more details for debugging
-      if (response.tasks && response.tasks[0] && response.tasks[0].result) {
-        console.log(`Domain intersection found ${response.tasks[0].result.length} results`);
+      if (typedResponse.tasks && typedResponse.tasks[0] && typedResponse.tasks[0].result) {
+        console.log(`Domain intersection found ${typedResponse.tasks[0].result.length} results`);
         
-        if (response.tasks[0].result.length > 0) {
-          const firstResult = response.tasks[0].result[0];
+        if (typedResponse.tasks[0].result.length > 0) {
+          const firstResult = typedResponse.tasks[0].result[0];
           console.log(`Sample result: ${JSON.stringify(firstResult).substring(0, 200)}...`);
         }
       } else {
@@ -156,7 +159,7 @@ export function useDataForSeoClient() {
       }
       
       setIsLoading(false);
-      return response as DataForSeoResponse;
+      return typedResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
