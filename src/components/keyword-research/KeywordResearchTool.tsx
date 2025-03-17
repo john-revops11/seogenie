@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,22 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
-import { useDataForSeoClient } from "@/hooks/useDataForSeoClient";
-import { fetchDomainKeywords } from "@/services/keywords/api/dataForSeo/dataForSeoClient";
+import { useDataForSeoClient, DataForSeoResponse } from "@/hooks/useDataForSeoClient";
+import { KeywordData } from "@/services/keywords/types";
 
-// Define the interface to match the state and expected type structure
 interface TrendData {
   month: string;
   volume: number;
-}
-
-interface KeywordData {
-  keyword: string;
-  search_volume: number;
-  cpc: number;
-  competition: number;
-  competition_index: number;
-  trend_data?: TrendData[];
 }
 
 const KeywordResearchTool: React.FC = () => {
@@ -41,11 +30,9 @@ const KeywordResearchTool: React.FC = () => {
   
   const { getDomainKeywords, isLoading: apiLoading, error } = useDataForSeoClient();
 
-  // Generate mock trend data for demonstration
   const generateTrendData = (baseVolume: number) => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months.map(month => {
-      // Create some random variation around the base volume
       const variation = Math.random() * 0.4 - 0.2; // -20% to +20%
       return {
         month,
@@ -63,14 +50,12 @@ const KeywordResearchTool: React.FC = () => {
     setIsLoading(true);
     try {
       if (searchMode === "domain") {
-        // Call the DataForSEO API to get keywords for this domain
         const response = await getDomainKeywords(domain);
         
-        if (response && response.tasks && response.tasks[0] && response.tasks[0].result) {
+        if (response && response.tasks && response.tasks.length > 0 && response.tasks[0].result) {
           const keywordResults = response.tasks[0].result.map((item: any) => ({
             keyword: item.keyword || "",
             search_volume: item.search_volume || 0,
-            // Ensure cpc is a number by converting it
             cpc: typeof item.cpc === 'number' ? item.cpc : parseFloat(item.cpc) || 0,
             competition: item.competition_index || 0,
             competition_index: item.competition_index || 0,
@@ -87,8 +72,6 @@ const KeywordResearchTool: React.FC = () => {
           setKeywords([]);
         }
       } else {
-        // Simulate keyword search (in a real app, we would call the keyword suggestions API)
-        // Mock data for demonstration
         const mockData = [
           { 
             keyword: query, 
@@ -127,7 +110,6 @@ const KeywordResearchTool: React.FC = () => {
           }
         ];
         
-        // Add trend data to mock data
         const keywordResults = mockData.map(item => ({
           ...item,
           trend_data: generateTrendData(item.search_volume)
@@ -149,10 +131,8 @@ const KeywordResearchTool: React.FC = () => {
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      // Toggle direction if clicking the same field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // Set new field and default to descending
       setSortField(field);
       setSortDirection("desc");
     }
@@ -190,7 +170,6 @@ const KeywordResearchTool: React.FC = () => {
   const exportKeywords = () => {
     const keywordsToExport = savedKeywords.length > 0 ? savedKeywords : keywords;
     
-    // Create CSV content
     const headers = ["Keyword", "Search Volume", "CPC", "Competition"];
     const csvRows = [headers.join(",")];
     
@@ -208,7 +187,6 @@ const KeywordResearchTool: React.FC = () => {
     const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     
-    // Create a download link and trigger it
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", "keywords_export.csv");
@@ -227,8 +205,6 @@ const KeywordResearchTool: React.FC = () => {
   };
 
   const getOpportunityScore = (volume: number, competition: number) => {
-    // Simple opportunity score calculation: volume × (1 - competition)
-    // Higher volume and lower competition = better opportunity
     return Math.round((volume / 1000) * (1 - competition) * 10);
   };
 
