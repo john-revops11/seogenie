@@ -1,3 +1,4 @@
+
 // Define DataForSEO types to avoid import error
 export interface DataForSEOTaskIdentifier {
   id: string;
@@ -102,7 +103,7 @@ export interface ContentGenerationResponse {
 
 export interface ContentBlock {
   id: string;
-  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image';
+  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image' | 'orderedList';
   content: string;
 }
 
@@ -115,6 +116,11 @@ export interface ContentOutline {
     question: string;
     answer: string;
   }>;
+}
+
+export interface RagInfo {
+  chunksRetrieved: number;
+  relevanceScore: number;
 }
 
 export interface GeneratedContent {
@@ -135,6 +141,7 @@ export interface GeneratedContent {
     target: number;
   };
   customBlocksContent?: string; // New field for custom block format
+  ragInfo?: RagInfo; // Added ragInfo property to fix type error
 }
 
 export interface ContentTemplate {

@@ -1,7 +1,7 @@
 
 import { createEmbedding, isPineconeConfigured, retrieveSimilarDocuments, testPineconeConnection } from './pineconeService';
 import { toast } from 'sonner';
-import { ContentOutline, GeneratedContent } from '../keywords/types';
+import { ContentOutline, GeneratedContent, RagInfo } from '../keywords/types';
 
 /**
  * Enhances content generation with Retrieval Augmented Generation (RAG)
@@ -61,6 +61,17 @@ export const generateContentWithRAG = async (
     // Generate placeholder blocks for initial structure
     const placeholderBlocks = [];
     
+    // Calculate average relevance score
+    const avgRelevanceScore = retrievedDocs.length > 0 ? 
+      retrievedDocs.reduce((sum, doc) => sum + doc.score, 0) / retrievedDocs.length : 
+      0;
+      
+    // Create RAG info object
+    const ragInfo: RagInfo = {
+      chunksRetrieved: retrievedDocs.length,
+      relevanceScore: avgRelevanceScore
+    };
+    
     // Generate the content using OpenAI with the enhanced context
     // This is a placeholder - the actual implementation will be in the contentGenerationService
     return {
@@ -72,12 +83,7 @@ export const generateContentWithRAG = async (
       contentType: contentType,
       generationMethod: 'rag',
       content: enhancedContext.substring(0, 100) + "... [Content will be generated with RAG]", // Add a placeholder content string
-      ragInfo: {
-        chunksRetrieved: retrievedDocs.length,
-        relevanceScore: retrievedDocs.length > 0 ? 
-          retrievedDocs.reduce((sum, doc) => sum + doc.score, 0) / retrievedDocs.length : 
-          0
-      }
+      ragInfo: ragInfo
     };
   } catch (error) {
     console.error("Error in RAG content generation:", error);

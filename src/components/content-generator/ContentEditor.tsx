@@ -86,7 +86,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     } else if (type === 'orderedList') {
       newBlock = {
         id: uuidv4(),
-        type: 'list',
+        type: 'orderedList',
         content: '<ol><li>New item</li></ol>'
       };
     } else {
@@ -106,11 +106,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 
   return (
     <div className="space-y-6">
-      <ContentMetadata
-        title={generatedContent.title}
-        metaDescription={generatedContent.metaDescription}
-        keywords={generatedContent.keywords || []}
-      />
+      <ContentMetadata generatedContent={generatedContent} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>

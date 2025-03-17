@@ -42,7 +42,7 @@ const ContentGeneratorRightPanel: React.FC<ContentGeneratorRightPanelProps> = ({
               <TabsContent value="editor">
                 <ContentEditor 
                   generatedContent={generatedContentData}
-                  onContentUpdate={onContentUpdate}
+                  onUpdateContent={onContentUpdate}
                 />
               </TabsContent>
             </Tabs>
