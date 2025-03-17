@@ -90,13 +90,15 @@ export const fetchBacklinkData = async (domain: string) => {
 
 // Domain Intersection for Keyword Gaps
 export const fetchDomainIntersection = async (
-  mainDomain: string, 
-  competitorDomain: string,
+  target1Domain: string, 
+  target2Domain: string,
   locationCode: number = 2840
 ) => {
+  console.log(`DataForSEO Intersection - Target1: ${target1Domain}, Target2: ${target2Domain}, Location: ${locationCode}`);
+  
   return callDataForSeoApi('/v3/dataforseo_labs/google/domain_intersection/live', [{ 
-    target1: mainDomain,
-    target2: competitorDomain,
+    target1: target1Domain,
+    target2: target2Domain,
     location_code: locationCode,
     language_code: "en",
     include_serp_info: true,

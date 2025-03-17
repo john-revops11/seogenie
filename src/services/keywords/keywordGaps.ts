@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { KeywordData, KeywordGap } from './types';
 import { extractDomain } from './utils/domainUtils';
@@ -30,27 +29,29 @@ export const findKeywordGapsWithDataForSEOIntersection = async (
     for (const competitorDomain of competitorDomainNames) {
       toast.info(`Analyzing gaps between ${mainDomainName} and ${competitorDomain}...`);
       
+      // Important: Set target1 as competitor and target2 as main domain to find keywords 
+      // the competitor ranks for that the main domain doesn't
       const intersectionData = await dataForSeoClient.getDomainIntersection(
-        mainDomainName,
-        competitorDomain,
+        competitorDomain,  // target1 should be the competitor (we want THEIR keywords)
+        mainDomainName,    // target2 should be the main domain
         locationCode
       );
       
       if (!intersectionData.tasks || !intersectionData.tasks[0]?.result) {
-        console.warn(`No intersection data available for ${mainDomainName} vs ${competitorDomain}`);
+        console.warn(`No intersection data available for ${competitorDomain} vs ${mainDomainName}`);
         continue;
       }
       
       const results = intersectionData.tasks[0].result;
       
       if (!results || results.length === 0) {
-        console.warn(`Empty intersection results for ${mainDomainName} vs ${competitorDomain}`);
+        console.warn(`Empty intersection results for ${competitorDomain} vs ${mainDomainName}`);
         continue;
       }
       
       // Process the intersection data to find gaps
       const keywordGaps = processIntersectionData(results, mainDomainName, competitorDomain);
-      console.log(`Found ${keywordGaps.length} gaps between ${mainDomainName} and ${competitorDomain}`);
+      console.log(`Found ${keywordGaps.length} gaps between ${competitorDomain} and ${mainDomainName}`);
       
       allGaps.push(...keywordGaps);
     }
@@ -82,11 +83,15 @@ const processIntersectionData = (
     // We're looking for keywords where the competitor ranks better than the main domain
     if (!result.keyword) continue;
     
-    const mainDomainRank = result.target1_rank || 100;
-    const competitorRank = result.target2_rank || 100;
+    // target1_rank represents the competitor's rank
+    // target2_rank represents the main domain's rank
+    const competitorRank = result.target1_rank || 0;
+    const mainDomainRank = result.target2_rank || 100;
     
-    // Only consider keywords where the competitor ranks better
-    if (competitorRank < mainDomainRank || (competitorRank < 20 && mainDomainRank > 30)) {
+    // Only consider keywords where:
+    // 1. Competitor has a ranking (not zero)
+    // 2. Either main domain doesn't rank at all (rank 100) or ranks much worse
+    if (competitorRank > 0 && (mainDomainRank === 100 || competitorRank < mainDomainRank - 10)) {
       const difficulty = calculateDifficulty(result);
       const opportunity = determineOpportunity(competitorRank, mainDomainRank, result.search_volume || 0);
       

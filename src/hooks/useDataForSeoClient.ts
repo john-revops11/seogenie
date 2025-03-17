@@ -116,18 +116,19 @@ export function useDataForSeoClient() {
   };
   
   const getDomainIntersection = async (
-    mainDomain: string, 
-    competitorDomain: string,
+    target1Domain: string, 
+    target2Domain: string,
     locationCode: number = 2840
   ): Promise<DataForSeoResponse> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchDomainIntersection(mainDomain, competitorDomain, locationCode);
+      console.log(`Fetching domain intersection for ${target1Domain} vs ${target2Domain} (location: ${locationCode})`);
+      const response = await fetchDomainIntersection(target1Domain, target2Domain, locationCode);
       
       if (!response) {
-        console.warn(`Domain intersection API not available for ${mainDomain} vs ${competitorDomain}`);
+        console.warn(`Domain intersection API not available for ${target1Domain} vs ${target2Domain}`);
         setIsLoading(false);
         return {
           status_code: 200,
@@ -140,6 +141,18 @@ export function useDataForSeoClient() {
             result: []
           }],
         };
+      }
+      
+      // Log more details for debugging
+      if (response.tasks && response.tasks[0] && response.tasks[0].result) {
+        console.log(`Domain intersection found ${response.tasks[0].result.length} results`);
+        
+        if (response.tasks[0].result.length > 0) {
+          const firstResult = response.tasks[0].result[0];
+          console.log(`Sample result: ${JSON.stringify(firstResult).substring(0, 200)}...`);
+        }
+      } else {
+        console.warn("Domain intersection API returned no results");
       }
       
       setIsLoading(false);
