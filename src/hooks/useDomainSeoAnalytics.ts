@@ -56,9 +56,23 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
       const overviewResponse = await dataForSeoClient.getDomainOverview(cleanDomain);
       console.log('Domain overview response:', overviewResponse);
       
+      // Check for API quota errors
+      if (overviewResponse && overviewResponse.tasks && overviewResponse.tasks.length > 0 && 
+          overviewResponse.tasks[0]?.status_code === 40203) {
+        const errorMsg = overviewResponse.tasks[0]?.status_message || "API quota exceeded";
+        throw new Error(errorMsg);
+      }
+      
       // Fetch domain keywords
       const keywordsResponse = await dataForSeoClient.getDomainKeywords(cleanDomain);
       console.log('Domain keywords response:', keywordsResponse);
+      
+      // Check for API quota errors in keywords response
+      if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 && 
+          keywordsResponse.tasks[0]?.status_code === 40203) {
+        const errorMsg = keywordsResponse.tasks[0]?.status_message || "API quota exceeded";
+        throw new Error(errorMsg);
+      }
       
       // Fetch backlink summary
       let backlinkResponse: DataForSeoResponse | null = null;
@@ -173,11 +187,23 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
       
     } catch (error) {
       console.error('Error fetching domain analytics:', error);
+      
+      // Extract the actual error message, including quota errors
+      let errorMessage = error instanceof Error ? error.message : 'Failed to fetch domain analytics';
+      
+      // Check for specific quota errors in the error message
+      if (errorMessage.includes('money limit') || 
+          errorMessage.includes('exceeded') ||
+          errorMessage.includes('limit per day')) {
+        errorMessage = `DataForSEO API quota exceeded: ${errorMessage}`;
+      }
+      
       setAnalytics(prev => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch domain analytics'
+        error: errorMessage
       }));
+      
       toast.error("Failed to load domain analytics");
     }
   };

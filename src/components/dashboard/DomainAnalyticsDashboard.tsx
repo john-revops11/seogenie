@@ -11,6 +11,7 @@ import { KeywordPositionChart } from "./KeywordPositionChart";
 import { TopKeywordsTable } from "./TopKeywordsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export function DomainAnalyticsDashboard() {
   const [domain, setDomain] = useState("revologyanalytics.com");
@@ -21,7 +22,25 @@ export function DomainAnalyticsDashboard() {
     e.preventDefault();
     if (searchDomain.trim()) {
       setDomain(searchDomain.trim());
+      toast.info(`Analyzing domain: ${searchDomain.trim()}`);
     }
+  };
+  
+  // Helper function to determine if we have an API quota error
+  const hasQuotaError = () => {
+    return analytics.error && 
+           (analytics.error.includes("money limit") || 
+            analytics.error.includes("exceeded") ||
+            analytics.error.includes("limit per day"));
+  };
+  
+  // Helper function to determine if we should show the limited data alert
+  const hasLimitedData = () => {
+    return !analytics.isLoading && 
+           !analytics.error && 
+           analytics.organicTraffic === 0 && 
+           analytics.organicKeywords === 0 && 
+           analytics.authorityScore === null;
   };
   
   return (
@@ -56,7 +75,17 @@ export function DomainAnalyticsDashboard() {
         )}
       </form>
       
-      {analytics.error && (
+      {hasQuotaError() && (
+        <Alert variant="destructive">
+          <AlertTitle>API Quota Exceeded</AlertTitle>
+          <AlertDescription>
+            <p>The DataForSEO API daily quota has been exceeded. This is why no data is displayed.</p>
+            <p className="mt-2 text-sm">Error details: {analytics.error}</p>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {analytics.error && !hasQuotaError() && (
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
@@ -66,10 +95,7 @@ export function DomainAnalyticsDashboard() {
       )}
       
       {/* Check if there's no data at all */}
-      {!analytics.isLoading && !analytics.error && 
-       analytics.organicTraffic === 0 && 
-       analytics.organicKeywords === 0 && 
-       analytics.authorityScore === null && (
+      {hasLimitedData() && (
         <Alert>
           <AlertTitle>Limited Data</AlertTitle>
           <AlertDescription>
