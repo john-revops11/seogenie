@@ -170,8 +170,7 @@ export default function useContentGenerator(domain: string = "", allKeywords: st
       aiProvider,
       aiModel,
       creativity,
-      wordCountOption,
-      selectedSubheadings
+      wordCountOption
     ),
     handleAddCustomTopic: (topic: string) => 
       handleAddCustomTopic(state.topics || [], keywords, contentType, topic),
