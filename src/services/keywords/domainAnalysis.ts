@@ -31,7 +31,7 @@ export const analyzeDomains = async (
     try {
       console.log(`Fetching keywords for main domain: ${formattedMainDomain}`);
       
-      // Call our DataForSEO edge function for the main domain with timeout
+      // Call our DataForSEO edge function for the main domain with improved error handling
       const { data, error } = await Promise.race([
         supabase.functions.invoke('dataforseo', {
           body: {
@@ -45,15 +45,29 @@ export const analyzeDomains = async (
           setTimeout(() => {
             resolve({
               data: null, 
-              error: new Error('Request timed out after 30 seconds')
+              error: new Error('Request timed out after 45 seconds')
             });
-          }, 30000);
+          }, 45000);
         })
       ]);
       
       if (error) {
         console.error(`Error calling DataForSEO edge function for ${formattedMainDomain}:`, error);
-        throw new Error(`Edge function error: ${error.message}`);
+        
+        // Provide more specific error message based on error type
+        let errorMessage = error.message || 'Unknown error';
+        
+        if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+          errorMessage = `Request to DataForSEO timed out. The service may be experiencing delays.`;
+          toast.error(errorMessage, { id: "dataseo-timeout" });
+        } else if (errorMessage.includes('network')) {
+          errorMessage = `Network error when connecting to DataForSEO. Please check your internet connection.`;
+          toast.error(errorMessage, { id: "dataseo-network" });
+        } else {
+          toast.error(`DataForSEO API error: ${errorMessage}`, { id: "dataseo-error" });
+        }
+        
+        throw new Error(`Edge function error: ${errorMessage}`);
       }
       
       if (!data) {
@@ -73,25 +87,34 @@ export const analyzeDomains = async (
           errorMessage = `Rate limit exceeded: Too many requests to DataForSEO API. Please try again later.`;
         } else if (errorMessage.includes('500')) {
           errorMessage = `DataForSEO server error: The service is experiencing technical difficulties. Please try again later.`;
+        } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+          errorMessage = `Request to DataForSEO timed out. The service may be experiencing delays.`;
         }
         
         throw new Error(errorMessage);
       }
       
       if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-        throw new Error(`No keywords found for ${formattedMainDomain}. This could mean the domain has no organic rankings yet or no Google Ads keyword data is available.`);
+        // Handle empty results case gracefully
+        toast.info(`No keywords found for ${formattedMainDomain}. This could mean the domain has no organic rankings yet.`);
+        mainKeywords = [];
+      } else {
+        mainKeywords = data.results;
+        console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
+        toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain}`);
       }
-      
-      mainKeywords = data.results;
-      console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
-      toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain}`);
     } catch (error) {
       console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
       toast.error(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw new Error(`Failed to fetch keywords: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
-    // Process competitor domains if main domain was successful
+    // If we have no keywords for the main domain but didn't get an error, continue with an empty array
+    if (mainKeywords.length === 0) {
+      console.warn(`No keywords found for main domain ${formattedMainDomain}, continuing with empty array`);
+    }
+    
+    // Process competitor domains if main domain was successful or returned empty results
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {

@@ -18,33 +18,66 @@ export const processCompetitorData = async (
     toast.info(`Analyzing competitor: ${normalizedDomain}`);
     console.log(`Fetching keywords for competitor: ${domain} with location code: ${locationCode}`);
     
-    // Call our DataForSEO edge function
-    const { data, error } = await supabase.functions.invoke('dataforseo', {
-      body: {
-        action: 'domain_keywords',
-        domain: domain,
-        location_code: locationCode,
-        sort_by: "relevance"
-      }
-    });
+    // Call our DataForSEO edge function with improved error handling
+    const { data, error } = await Promise.race([
+      supabase.functions.invoke('dataforseo', {
+        body: {
+          action: 'domain_keywords',
+          domain: domain,
+          location_code: locationCode,
+          sort_by: "relevance"
+        }
+      }),
+      new Promise<{data: null, error: Error}>((resolve) => {
+        setTimeout(() => {
+          resolve({
+            data: null, 
+            error: new Error('Request timed out after 45 seconds')
+          });
+        }, 45000);
+      })
+    ]);
     
     if (error) {
       console.error(`Error calling DataForSEO edge function for ${normalizedDomain}:`, error);
-      throw new Error(`Edge function error: ${error.message}`);
+      
+      // Check for common error types and provide better messages
+      if (error.message.includes('timeout') || error.message.includes('timed out')) {
+        throw new Error(`Request timed out for ${normalizedDomain}. The DataForSEO API may be experiencing delays.`);
+      } else if (error.message.includes('network')) {
+        throw new Error(`Network error when analyzing ${normalizedDomain}. Please check your connection.`);
+      } else {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
     }
     
     if (!data || !data.success) {
       const errorMessage = data?.error || 'Unknown API error';
-      throw new Error(errorMessage);
+      
+      // Provide more context for specific error cases
+      if (errorMessage.includes('404')) {
+        throw new Error(`No data found for ${normalizedDomain}. The domain may not have enough data for analysis.`);
+      } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+        throw new Error(`Rate limit exceeded when analyzing ${normalizedDomain}. Please try again later.`);
+      } else {
+        throw new Error(errorMessage);
+      }
     }
     
-    if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-      throw new Error(`No results found for domain: ${domain}`);
+    if (!data.results || !Array.isArray(data.results)) {
+      throw new Error(`Invalid response format for ${normalizedDomain}`);
     }
     
-    const keywords = data.results;
+    // Handle empty keywords gracefully
+    const keywords = data.results.length === 0 ? [] : data.results;
+    
     console.log(`Successfully fetched ${keywords.length} keywords for competitor ${normalizedDomain}`);
-    toast.success(`Found ${keywords.length} keywords for ${normalizedDomain}`);
+    
+    if (keywords.length > 0) {
+      toast.success(`Found ${keywords.length} keywords for ${normalizedDomain}`);
+    } else {
+      toast.info(`No keywords found for ${normalizedDomain}`);
+    }
     
     // Return the normalized domain name for consistent display across components
     return { domain: normalizedDomain, keywords };
@@ -52,7 +85,7 @@ export const processCompetitorData = async (
     console.error(`Error analyzing competitor ${domain}:`, error);
     toast.error(`Failed to analyze ${domain}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     
-    // Return normalized domain even in error case
+    // Return normalized domain even in error case with empty keywords
     const normalizedDomain = normalizeDomain(domain);
     return { domain: normalizedDomain, keywords: [] };
   }

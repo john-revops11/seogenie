@@ -2,7 +2,12 @@
 import { AUTH_HEADER } from "./config.ts";
 
 // Helper function to make DataForSEO API requests using fetch
-export async function makeDataForSEORequest(endpoint: string, method: string, data: any = null) {
+export async function makeDataForSEORequest(
+  endpoint: string, 
+  method: string, 
+  data: any = null,
+  timeoutMs: number = 30000 // Default 30 second timeout
+) {
   const url = `https://api.dataforseo.com${endpoint}`;
   
   const options: RequestInit = {
@@ -25,7 +30,11 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     
     // Add timeout to fetch to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => {
+      console.warn(`Request to ${endpoint} timed out after ${timeoutMs}ms`);
+      controller.abort();
+    }, timeoutMs);
+    
     options.signal = controller.signal;
     
     const response = await fetch(url, options);
@@ -66,6 +75,16 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
         }));
       }
       
+      if (response.status === 429) {
+        throw new Error(JSON.stringify({
+          message: `DataForSEO rate limit exceeded. Too many requests at once.`,
+          details: {
+            ...errorDetails,
+            recommendation: "Wait a few moments and try again, or reduce the number of concurrent requests."
+          }
+        }));
+      }
+      
       throw new Error(JSON.stringify({
         message: errorMessage,
         details: errorDetails
@@ -102,6 +121,12 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
     }
   } catch (error) {
     console.error(`Error making DataForSEO request to ${endpoint}:`, error);
+    
+    // Check if this is an abort/timeout error
+    if (error.name === 'AbortError') {
+      throw new Error(`Request to DataForSEO API timed out after ${timeoutMs}ms. The service may be experiencing delays.`);
+    }
+    
     throw error;
   }
 }

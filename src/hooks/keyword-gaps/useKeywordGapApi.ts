@@ -49,47 +49,74 @@ export function useKeywordGapApi() {
         return [];
       }
       
-      // Use the DataForSEO domain intersection API if specified
-      // This is the most efficient way to get keyword gaps
-      let gaps: KeywordGap[] = [];
+      // Add loading toast
+      toast.loading("Analyzing keyword gaps...", { id: "keyword-gaps-loading" });
       
-      if (apiSource === 'dataforseo-intersection') {
-        toast.info(`Using DataForSEO Domain Intersection API for gap analysis`);
-        gaps = await findKeywordGapsWithDataForSEOIntersection(
-          normalizedDomain, 
-          validCompetitors,
-          dataForSeoClient,
-          locationCode
-        );
-      } else {
-        // Use the standard gap analysis method
-        gaps = await findKeywordGaps(
-          normalizedDomain, 
-          validCompetitors, 
-          keywords, 
-          100, 
-          apiSource, 
-          locationCode
-        );
-      }
-      
-      if (gaps && gaps.length > 0) {
-        console.log(`Found ${gaps.length} keyword gaps`);
+      try {
+        // Use the DataForSEO domain intersection API if specified
+        // This is the most efficient way to get keyword gaps
+        let gaps: KeywordGap[] = [];
         
-        // Update cache
-        keywordGapsCache.data = gaps;
-        keywordGapsCache.domain = normalizedDomain;
-        keywordGapsCache.competitorDomains = normalizeDomainList(validCompetitors);
-        keywordGapsCache.keywordsLength = keywords.length;
-        keywordGapsCache.locationCode = locationCode;
-        keywordGapsCache.apiSource = apiSource;
+        if (apiSource === 'dataforseo-intersection') {
+          toast.info(`Using DataForSEO Domain Intersection API for gap analysis`);
+          
+          try {
+            gaps = await findKeywordGapsWithDataForSEOIntersection(
+              normalizedDomain, 
+              validCompetitors,
+              dataForSeoClient,
+              locationCode
+            );
+          } catch (intersectionError) {
+            console.error("Error with DataForSEO intersection API:", intersectionError);
+            toast.error(`DataForSEO intersection API error: ${intersectionError instanceof Error ? intersectionError.message : 'Unknown error'}`);
+            
+            // If the intersection API fails, try the standard method as fallback
+            toast.info("Falling back to standard gap analysis method");
+            gaps = await findKeywordGaps(
+              normalizedDomain, 
+              validCompetitors, 
+              keywords, 
+              100, 
+              'sample', // Fallback to sample data if intersection API fails
+              locationCode
+            );
+          }
+        } else {
+          // Use the standard gap analysis method
+          gaps = await findKeywordGaps(
+            normalizedDomain, 
+            validCompetitors, 
+            keywords, 
+            100, 
+            apiSource, 
+            locationCode
+          );
+        }
         
-        toast.success(`Found ${gaps.length} keyword gaps for analysis`);
-        return gaps;
-      } else {
-        console.warn("No keyword gaps found or service returned empty array");
-        toast.warning("No keyword gaps found between your domain and competitors");
-        return [];
+        toast.dismiss("keyword-gaps-loading");
+        
+        if (gaps && gaps.length > 0) {
+          console.log(`Found ${gaps.length} keyword gaps`);
+          
+          // Update cache
+          keywordGapsCache.data = gaps;
+          keywordGapsCache.domain = normalizedDomain;
+          keywordGapsCache.competitorDomains = normalizeDomainList(validCompetitors);
+          keywordGapsCache.keywordsLength = keywords.length;
+          keywordGapsCache.locationCode = locationCode;
+          keywordGapsCache.apiSource = apiSource;
+          
+          toast.success(`Found ${gaps.length} keyword gaps for analysis`);
+          return gaps;
+        } else {
+          console.warn("No keyword gaps found or service returned empty array");
+          toast.warning("No keyword gaps found between your domain and competitors");
+          return [];
+        }
+      } catch (error) {
+        toast.dismiss("keyword-gaps-loading");
+        throw error;
       }
     } catch (error) {
       console.error("Error fetching keyword gaps:", error);
