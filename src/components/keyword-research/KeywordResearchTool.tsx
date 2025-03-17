@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import { useDataForSeoClient } from "@/hooks/useDataForSeoClient";
+import { fetchDomainKeywords } from "@/services/keywords/api/dataForSeo/dataForSeoClient";
 
 // Define the interface to match the state and expected type structure
 interface TrendData {
