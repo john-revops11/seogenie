@@ -54,37 +54,6 @@ export async function makeDataForSEORequest(
         responseText: errorText.substring(0, 200),
       };
       
-      // Check for specific status codes to provide better error messages
-      if (response.status === 404) {
-        throw new Error(JSON.stringify({
-          message: `DataForSEO API endpoint not found or no data available for this domain. Domain may not have enough data for analysis.`,
-          details: {
-            ...errorDetails,
-            recommendation: "Try using a more established domain or check if you're using the correct endpoint."
-          }
-        }));
-      }
-      
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(JSON.stringify({
-          message: `DataForSEO API authentication failed. Please check your API credentials.`,
-          details: {
-            ...errorDetails,
-            recommendation: "Verify your DataForSEO API credentials in the settings."
-          }
-        }));
-      }
-      
-      if (response.status === 429) {
-        throw new Error(JSON.stringify({
-          message: `DataForSEO rate limit exceeded. Too many requests at once.`,
-          details: {
-            ...errorDetails,
-            recommendation: "Wait a few moments and try again, or reduce the number of concurrent requests."
-          }
-        }));
-      }
-      
       throw new Error(JSON.stringify({
         message: errorMessage,
         details: errorDetails

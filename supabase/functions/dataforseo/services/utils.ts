@@ -13,9 +13,17 @@ export function cleanDomain(domain: string): string {
  */
 export function formatErrorResponse(domain: string, error: Error): any {
   console.error(`Error processing request for ${domain}:`, error);
+  
+  // Check if error is a timeout or network error
+  const isTimeoutError = error.message.includes('timeout') || 
+                         error.name === 'AbortError' || 
+                         error.message.includes('aborted');
+  
   return {
     success: false,
     error: error.message,
+    errorType: isTimeoutError ? 'timeout' : 'api',
+    domain: domain
   };
 }
 
@@ -23,8 +31,19 @@ export function formatErrorResponse(domain: string, error: Error): any {
  * Extract items from API response with error handling
  */
 export function extractItems(result: any, errorMessage: string): any[] {
-  if (!result || !result.tasks || result.tasks.length === 0 || !result.tasks[0].result) {
+  if (!result) {
+    console.error("Null or undefined API result");
     throw new Error(errorMessage);
+  }
+  
+  if (!result.tasks || result.tasks.length === 0) {
+    console.error("No tasks in API result");
+    throw new Error(errorMessage);
+  }
+  
+  if (!result.tasks[0].result) {
+    console.warn("No result in task");
+    return [];
   }
   
   return result.tasks[0].result?.[0]?.items || [];

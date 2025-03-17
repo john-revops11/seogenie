@@ -22,7 +22,7 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
       '/v3/keywords_data/google_ads/keywords_for_site/live', 
       'POST', 
       data, 
-      45000 // 45 second timeout specifically for keywords endpoint
+      60000 // 60 second timeout specifically for keywords endpoint
     );
     
     // Extract keywords from response with better error handling
@@ -62,7 +62,7 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
         : `Error fetching keywords for ${domain}: ${errorMessage}`
     );
     
-    enhancedError.name = isTimeoutError ? 'TimeoutError' : 'APIError';
+    // Ensure we throw the enhanced error with more descriptive message
     throw enhancedError;
   }
 }

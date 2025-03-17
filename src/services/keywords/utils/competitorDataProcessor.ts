@@ -18,7 +18,7 @@ export const processCompetitorData = async (
     toast.info(`Analyzing competitor: ${normalizedDomain}`);
     console.log(`Fetching keywords for competitor: ${domain} with location code: ${locationCode}`);
     
-    // Call our DataForSEO edge function with improved error handling
+    // Call our DataForSEO edge function with improved error handling and longer timeout
     const { data, error } = await Promise.race([
       supabase.functions.invoke('dataforseo', {
         body: {
@@ -32,9 +32,9 @@ export const processCompetitorData = async (
         setTimeout(() => {
           resolve({
             data: null, 
-            error: new Error('Request timed out after 45 seconds')
+            error: new Error('Request timed out after 90 seconds')
           });
-        }, 45000);
+        }, 90000); // 90 second client-side timeout
       })
     ]);
     
@@ -43,9 +43,9 @@ export const processCompetitorData = async (
       
       // Check for common error types and provide better messages
       if (error.message.includes('timeout') || error.message.includes('timed out')) {
-        throw new Error(`Request timed out for ${normalizedDomain}. The DataForSEO API may be experiencing delays.`);
-      } else if (error.message.includes('network')) {
-        throw new Error(`Network error when analyzing ${normalizedDomain}. Please check your connection.`);
+        throw new Error(`Request timed out for ${normalizedDomain}. The DataForSEO API may be experiencing delays. Please try again later.`);
+      } else if (error.message.includes('network') || error.message.includes('failed to send')) {
+        throw new Error(`Network error when analyzing ${normalizedDomain}. Please check your connection and try again.`);
       } else {
         throw new Error(`Edge function error: ${error.message}`);
       }
@@ -53,18 +53,27 @@ export const processCompetitorData = async (
     
     if (!data || !data.success) {
       const errorMessage = data?.error || 'Unknown API error';
+      console.error(`API error for ${normalizedDomain}:`, errorMessage);
       
       // Provide more context for specific error cases
       if (errorMessage.includes('404')) {
         throw new Error(`No data found for ${normalizedDomain}. The domain may not have enough data for analysis.`);
       } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
         throw new Error(`Rate limit exceeded when analyzing ${normalizedDomain}. Please try again later.`);
+      } else if (errorMessage.includes('timeout')) {
+        throw new Error(`Request timed out for ${normalizedDomain}. Please try again later.`);
       } else {
         throw new Error(errorMessage);
       }
     }
     
-    if (!data.results || !Array.isArray(data.results)) {
+    if (!data.results) {
+      console.warn(`No results returned for ${normalizedDomain}`);
+      return { domain: normalizedDomain, keywords: [] };
+    }
+    
+    if (!Array.isArray(data.results)) {
+      console.error(`Invalid response format for ${normalizedDomain}:`, data.results);
       throw new Error(`Invalid response format for ${normalizedDomain}`);
     }
     

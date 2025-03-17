@@ -26,7 +26,7 @@ serve(async (req) => {
   try {
     // Add request timeout handling
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
     
     try {
       const { action, ...params } = await req.json();
@@ -52,6 +52,7 @@ serve(async (req) => {
             console.log(`Successfully fetched keywords for ${params.domain}`);
           } catch (error) {
             console.error(`Error in domain_keywords for ${params.domain}:`, error);
+            clearTimeout(timeoutId);
             return new Response(JSON.stringify({
               success: false,
               error: `Error fetching keywords: ${error.message || 'Unknown error'}`
