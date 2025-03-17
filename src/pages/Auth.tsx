@@ -15,6 +15,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const [creatingTestUsers, setCreatingTestUsers] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -34,6 +35,38 @@ export default function Auth() {
         navigate('/');
       }
     });
+
+    // Create test users when the page loads
+    const createTestUsers = async () => {
+      setCreatingTestUsers(true);
+      try {
+        const response = await fetch(`${supabase.supabaseUrl}/functions/v1/create-test-users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Error creating test users:", errorData);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log("Test users created:", data);
+        
+        // Show a toast message about the test users
+        toast.success("Test users are ready to use");
+      } catch (error) {
+        console.error("Error invoking Edge Function:", error);
+      } finally {
+        setCreatingTestUsers(false);
+      }
+    };
+
+    createTestUsers();
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -154,6 +187,12 @@ export default function Auth() {
               <p><strong>Email:</strong> armin@revologyanalytics.com | <strong>Password:</strong> armin5</p>
               <p><strong>Email:</strong> monica@revologyanalytics.com | <strong>Password:</strong> monica6</p>
               <p><strong>Email:</strong> john@revologyanalytics.com | <strong>Password:</strong> john4</p>
+              {creatingTestUsers && (
+                <p className="flex items-center text-yellow-500">
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Setting up test users...
+                </p>
+              )}
             </div>
           </div>
         </div>
