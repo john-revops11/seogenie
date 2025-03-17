@@ -33,15 +33,18 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
   const [editedHeading, setEditedHeading] = useState("");
   const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [regenerationCount, setRegenerationCount] = useState(0);
 
   useEffect(() => {
     fetchSubheadings();
   }, [title, keywords, contentType]);
 
+  // Modified to use the regeneration count to force variety
   const fetchSubheadings = async () => {
     setIsLoading(true);
     try {
-      const outline = await generateContentOutline(title, keywords, contentType);
+      // Pass regenerationCount to ensure different results on regeneration
+      const outline = await generateContentOutline(title, keywords, contentType, regenerationCount);
       setSuggestedSubheadings(outline.headings);
       // Select all by default
       setSelectedSubheadings(outline.headings);
@@ -112,15 +115,21 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
     setEditedHeading("");
   };
 
+  // Improved regenerate function that ensures new variations
   const handleRegenerate = async () => {
     setIsRegenerating(true);
     try {
-      await fetchSubheadings();
-      toast.success("Subheadings regenerated successfully");
+      // Increment the regeneration counter to force variation
+      setRegenerationCount(prev => prev + 1);
+      // Wait a brief moment to ensure state update
+      setTimeout(async () => {
+        await fetchSubheadings();
+        toast.success("Subheadings regenerated with new variations");
+        setIsRegenerating(false);
+      }, 100);
     } catch (error) {
       console.error("Error regenerating subheadings:", error);
       toast.error("Failed to regenerate subheadings");
-    } finally {
       setIsRegenerating(false);
     }
   };
@@ -135,13 +144,22 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
     setIsPromptDialogOpen(false);
     
     try {
-      // Here we would use the AI service to generate subheadings from the custom prompt
-      // For now, we'll reuse the standard generator but in a real implementation,
-      // you'd send the custom prompt to the AI service
-      const outline = await generateContentOutline(title, keywords, contentType);
+      // Create a more detailed implementation to use the custom prompt
+      const processedPrompt = `Using the Revology Analytics content framework (Problem, Process, Payoff, Proposition) and focusing on ${title}, please generate subheadings for a ${contentType} that incorporates these keywords: ${keywords.join(', ')}. Custom instructions: ${customPrompt}`;
       
-      // In a full implementation, you would pass the customPrompt to the AI service
-      toast.success("Generated subheadings from your prompt");
+      console.log("Using custom prompt:", processedPrompt);
+      toast.info("Generating subheadings from your custom prompt...");
+      
+      // We'll pass a special flag to the generate function to use the custom prompt
+      const outline = await generateContentOutline(
+        title, 
+        keywords, 
+        contentType, 
+        regenerationCount, 
+        processedPrompt
+      );
+      
+      toast.success("Generated subheadings from your custom prompt");
       
       setSuggestedSubheadings(outline.headings);
       setSelectedSubheadings(outline.headings);
@@ -256,7 +274,7 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
           <DialogHeader>
             <DialogTitle>Generate Custom Subheadings</DialogTitle>
             <DialogDescription>
-              Enter a prompt to generate specific subheadings for your content.
+              Enter a prompt to generate specific subheadings for your content based on Revology Analytics' content framework.
             </DialogDescription>
           </DialogHeader>
           
@@ -267,18 +285,25 @@ const SubheadingRecommendations: React.FC<SubheadingRecommendationsProps> = ({
                 id="prompt"
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="e.g., Generate subheadings for a technical guide on machine learning focused on beginners"
+                placeholder="e.g., Create subheadings focusing on data-driven insights and ROI metrics for manufacturing analytics"
                 className="min-h-[100px]"
               />
             </div>
             
-            <div className="text-sm text-muted-foreground">
-              <p>Content Information:</p>
-              <ul className="list-disc list-inside">
-                <li>Title: {title}</li>
-                <li>Content Type: {contentType}</li>
-                <li>Keywords: {keywords.join(", ")}</li>
+            <div className="bg-muted/50 p-3 rounded-md text-sm">
+              <h4 className="font-medium mb-2">Content Framework Information:</h4>
+              <p className="mb-2">Your subheadings will follow the Revology Analytics framework:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><span className="font-medium">Problem:</span> Identify industry challenges</li>
+                <li><span className="font-medium">Process:</span> Outline Revology's approach</li>
+                <li><span className="font-medium">Payoff:</span> Highlight benefits and results</li>
+                <li><span className="font-medium">Proposition:</span> Call to action</li>
               </ul>
+              <div className="mt-2 pt-2 border-t border-muted">
+                <p>Title: {title}</p>
+                <p>Content Type: {contentType}</p>
+                <p>Keywords: {keywords.join(", ")}</p>
+              </div>
             </div>
           </div>
 
