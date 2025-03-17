@@ -1,11 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Redo, Save } from "lucide-react";
+import { ArrowLeft, Code, FileEdit, Redo, Save } from "lucide-react";
 import { GeneratedContent } from "@/services/keywords/types";
-import WysiwygEditor from "./WysiwygEditor";
-import ContentBlockList from "./editor/ContentBlockList";
 
 interface ContentPreviewProps {
   content: string;
@@ -26,16 +24,14 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = React.useState("preview");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   
   const handleSaveAsDraft = async () => {
     if (!generatedContent) return;
     
     try {
       setIsSaving(true);
-      await saveToHistory({
-        ...generatedContent,
-        isDraft: true
-      });
+      await saveToHistory(generatedContent);
       setIsSaving(false);
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -83,24 +79,52 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
       >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="blocks">Content Blocks</TabsTrigger>
+          <TabsTrigger value="blocks">
+            <span className="flex items-center gap-1">
+              <Code className="h-4 w-4" /> Content Blocks
+            </span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="preview" className="mt-4">
           {content ? (
             <div className="bg-white rounded-md p-6 border">
-              <WysiwygEditor content={content} />
+              <div dangerouslySetInnerHTML={{ __html: content }} />
             </div>
           ) : (
             <div className="flex items-center justify-center h-40 border rounded-md bg-muted">
               <p className="text-muted-foreground">No content to preview</p>
             </div>
           )}
+          
+          {isEditing && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+                className="flex items-center gap-1"
+              >
+                <FileEdit className="h-3.5 w-3.5" /> Edit
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="blocks" className="mt-4">
           {generatedContent && generatedContent.blocks ? (
-            <ContentBlockList blocks={generatedContent.blocks} />
+            <div className="bg-white rounded-md p-6 border">
+              {generatedContent.blocks.map((block, index) => (
+                <div key={index} className="mb-4">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {block.type}
+                  </p>
+                  <div className="border p-2 rounded">
+                    {block.content}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="flex items-center justify-center h-40 border rounded-md bg-muted">
               <p className="text-muted-foreground">No content blocks available</p>
@@ -127,7 +151,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Keywords</p>
-              <p className="text-sm">{generatedContent.keywords.join(", ")}</p>
+              <p className="text-sm">{generatedContent.keywords?.join(", ")}</p>
             </div>
           </div>
         </div>
