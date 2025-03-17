@@ -18,10 +18,16 @@ export interface ContentGeneratorState {
   isGenerating: boolean;
   generatedContent: GeneratedContent | null;
   contentHtml: string;
+  contentData?: any;
   aiProvider: AIProvider;
   aiModel: string;
   wordCountOption: string;
   selectedSubheadings: string[];
+  isLoadingTopics?: boolean;
+  topics?: string[];
+  titleSuggestions?: { [topic: string]: string[] };
+  selectedTopic?: string;
+  contentPreferences?: string[];
 }
 
 // Action types
@@ -36,10 +42,16 @@ type ContentGeneratorAction =
   | { type: 'SET_IS_GENERATING'; payload: boolean }
   | { type: 'SET_GENERATED_CONTENT'; payload: GeneratedContent | null }
   | { type: 'SET_CONTENT_HTML'; payload: string }
+  | { type: 'SET_CONTENT_DATA'; payload: any }
   | { type: 'SET_AI_PROVIDER'; payload: AIProvider }
   | { type: 'SET_AI_MODEL'; payload: string }
   | { type: 'SET_WORD_COUNT_OPTION'; payload: string }
-  | { type: 'SET_SUBHEADINGS'; payload: string[] };
+  | { type: 'SET_SUBHEADINGS'; payload: string[] }
+  | { type: 'SET_IS_LOADING_TOPICS'; payload: boolean }
+  | { type: 'SET_TOPICS'; payload: string[] }
+  | { type: 'SET_TITLE_SUGGESTIONS'; payload: { [topic: string]: string[] } }
+  | { type: 'SET_SELECTED_TOPIC'; payload: string }
+  | { type: 'SET_CONTENT_PREFERENCES'; payload: string[] };
 
 // Reducer function
 const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGeneratorAction): ContentGeneratorState => {
@@ -64,6 +76,8 @@ const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGe
       return { ...state, generatedContent: action.payload };
     case 'SET_CONTENT_HTML':
       return { ...state, contentHtml: action.payload };
+    case 'SET_CONTENT_DATA':
+      return { ...state, contentData: action.payload };
     case 'SET_AI_PROVIDER':
       return { ...state, aiProvider: action.payload };
     case 'SET_AI_MODEL':
@@ -72,6 +86,16 @@ const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGe
       return { ...state, wordCountOption: action.payload };
     case 'SET_SUBHEADINGS':
       return { ...state, selectedSubheadings: action.payload };
+    case 'SET_IS_LOADING_TOPICS':
+      return { ...state, isLoadingTopics: action.payload };
+    case 'SET_TOPICS':
+      return { ...state, topics: action.payload };
+    case 'SET_TITLE_SUGGESTIONS':
+      return { ...state, titleSuggestions: action.payload };
+    case 'SET_SELECTED_TOPIC':
+      return { ...state, selectedTopic: action.payload };
+    case 'SET_CONTENT_PREFERENCES':
+      return { ...state, contentPreferences: action.payload };
     default:
       return state;
   }
@@ -96,7 +120,12 @@ export function useContentGeneratorState() {
     aiProvider: "openai",
     aiModel: primaryModel?.id || "gpt-4o-1",
     wordCountOption: "standard",
-    selectedSubheadings: []
+    selectedSubheadings: [],
+    isLoadingTopics: false,
+    topics: [],
+    titleSuggestions: {},
+    selectedTopic: "",
+    contentPreferences: []
   };
   
   // Create reducer
