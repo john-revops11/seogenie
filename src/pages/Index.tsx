@@ -14,15 +14,12 @@ import { Header } from "@/components/page/Header";
 import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
 import { DomainAnalyticsDashboard } from "@/components/dashboard/DomainAnalyticsDashboard";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   
-  // Domain Analysis State from custom hook
   const {
     mainDomain, setMainDomain,
     competitorDomains, 
@@ -41,7 +38,6 @@ const Index = () => {
     removeCompetitorFromAnalysis
   } = useDomainAnalysis();
 
-  // API Management state from custom hook
   const {
     showApiForm,
     newApiName,
@@ -52,7 +48,6 @@ const Index = () => {
     handleAddNewApi
   } = useApiManagement();
 
-  // Content generation state
   const [contentType, setContentType] = useState("blog");
   const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
@@ -78,7 +73,6 @@ const Index = () => {
   }, [mainDomain, setAnalysisError]);
 
   useEffect(() => {
-    // Get current user on initial load
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
@@ -86,7 +80,6 @@ const Index = () => {
     
     fetchUser();
     
-    // Subscribe to auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
     });
@@ -96,21 +89,9 @@ const Index = () => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success("Logged out successfully");
-      navigate('/auth');
-    } catch (error) {
-      console.error("Error logging out:", error);
-      toast.error("Failed to log out");
-    }
-  };
-
   const goToAnalysisTab = () => {
     const tabsElement = document.getElementById('main-tabs');
     if (tabsElement) {
-      // Find the domain-analysis tab trigger and click it
       const domainAnalysisTrigger = tabsElement.querySelector('[data-value="domain-analysis"]');
       if (domainAnalysisTrigger && domainAnalysisTrigger instanceof HTMLElement) {
         domainAnalysisTrigger.click();
@@ -122,32 +103,6 @@ const Index = () => {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex justify-between items-center mb-4">
         <ApiHealthCard />
-        
-        {user ? (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-md text-sm">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span>{user.email}</span>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleLogout} 
-              className="flex items-center gap-1"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
-        ) : (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/auth')}
-          >
-            Login
-          </Button>
-        )}
       </div>
       
       <Header analysisComplete={analysisComplete} onReset={handleReset} />

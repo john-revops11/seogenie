@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ export function DomainAnalyticsDashboard() {
         
         <div className="flex items-center gap-3">
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-md text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span>{user.email}</span>
@@ -131,7 +132,7 @@ export function DomainAnalyticsDashboard() {
           )}
           
           {domain && apiCallsMade && (
-            <Badge variant="outline" className="flex items-center gap-1">
+            <Badge variant="outline" className="flex items-center gap-1 ml-2">
               <Globe className="h-3.5 w-3.5" />
               {domain}
             </Badge>
