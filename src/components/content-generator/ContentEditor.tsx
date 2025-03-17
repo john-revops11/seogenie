@@ -1,180 +1,172 @@
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileUp } from "lucide-react";
-import { toast } from "sonner";
-import { ContentBlock, GeneratedContent } from "@/services/keywords/types";
-import ContentBlockList from "./editor/ContentBlockList";
+import React, { useEffect, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Code } from "lucide-react";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import ContentEditorToolbar from "./editor/ContentEditorToolbar";
 import ContentMetadata from "./editor/ContentMetadata";
+import ContentBlockList from "./editor/ContentBlockList";
+import { v4 as uuidv4 } from "uuid";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ContentEditorProps {
   generatedContent: GeneratedContent;
-  onContentUpdate?: (updatedContent: GeneratedContent) => void;
+  onUpdateContent: (updatedContent: GeneratedContent) => void;
 }
 
-const ContentEditor: React.FC<ContentEditorProps> = ({ 
+const ContentEditor: React.FC<ContentEditorProps> = ({
   generatedContent,
-  onContentUpdate = () => {} 
+  onUpdateContent
 }) => {
-  const [blocks, setBlocks] = useState<ContentBlock[]>(generatedContent.blocks);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<ContentBlock[]>(generatedContent.blocks || []);
+  const [activeTab, setActiveTab] = useState<string>("blocks"); // "blocks" or "customBlocks"
+
+  // Update blocks when generatedContent changes
+  useEffect(() => {
+    if (generatedContent.blocks) {
+      setBlocks(generatedContent.blocks);
+    }
+  }, [generatedContent]);
+
+  // Update content when blocks change
+  useEffect(() => {
+    const updatedContent = blocks.map(block => block.content).join('\n');
+    onUpdateContent({
+      ...generatedContent,
+      blocks,
+      content: updatedContent
+    });
+  }, [blocks]);
 
   const handleEditBlock = (blockId: string) => {
     setEditingBlockId(blockId);
   };
 
-  const handleSaveBlock = (blockId: string, editedContent: string) => {
+  const handleSaveBlock = (blockId: string, content: string) => {
     const updatedBlocks = blocks.map(block => 
-      block.id === blockId 
-        ? { ...block, content: editedContent } 
-        : block
+      block.id === blockId ? { ...block, content } : block
     );
-    
     setBlocks(updatedBlocks);
     setEditingBlockId(null);
-    
-    // Call parent update function
-    onContentUpdate({
-      ...generatedContent,
-      blocks: updatedBlocks
-    });
-    
-    toast.success("Content block updated");
   };
 
   const handleDeleteBlock = (blockId: string) => {
     const updatedBlocks = blocks.filter(block => block.id !== blockId);
     setBlocks(updatedBlocks);
-    
-    // Call parent update function
-    onContentUpdate({
-      ...generatedContent,
-      blocks: updatedBlocks
-    });
-    
-    toast.success("Content block removed");
   };
 
   const handleMoveBlock = (blockId: string, direction: 'up' | 'down') => {
     const blockIndex = blocks.findIndex(block => block.id === blockId);
-    if (
-      (direction === 'up' && blockIndex === 0) || 
-      (direction === 'down' && blockIndex === blocks.length - 1)
-    ) {
-      return;
+    if (blockIndex === -1) return;
+    
+    const newBlocks = [...blocks];
+    
+    if (direction === 'up' && blockIndex > 0) {
+      [newBlocks[blockIndex - 1], newBlocks[blockIndex]] = [newBlocks[blockIndex], newBlocks[blockIndex - 1]];
+    } else if (direction === 'down' && blockIndex < blocks.length - 1) {
+      [newBlocks[blockIndex], newBlocks[blockIndex + 1]] = [newBlocks[blockIndex + 1], newBlocks[blockIndex]];
     }
     
-    const updatedBlocks = [...blocks];
-    const targetIndex = direction === 'up' ? blockIndex - 1 : blockIndex + 1;
-    
-    // Swap blocks
-    [updatedBlocks[blockIndex], updatedBlocks[targetIndex]] = 
-      [updatedBlocks[targetIndex], updatedBlocks[blockIndex]];
-    
-    setBlocks(updatedBlocks);
-    
-    // Call parent update function
-    onContentUpdate({
-      ...generatedContent,
-      blocks: updatedBlocks
-    });
-    
-    toast.success(`Moved block ${direction}`);
+    setBlocks(newBlocks);
   };
 
   const handleAddBlockAfter = (blockId: string, type: ContentBlock['type'] | 'list' | 'orderedList') => {
     const blockIndex = blocks.findIndex(block => block.id === blockId);
+    if (blockIndex === -1) return;
     
-    let newBlockContent = '';
-    let blockType: ContentBlock['type'] = 'paragraph';
+    let newBlock: ContentBlock;
     
-    // Create appropriate content based on block type
     if (type === 'list') {
-      newBlockContent = '<ul><li>New bullet point item</li><li>Add more items here</li></ul>';
-      blockType = 'list';
+      newBlock = {
+        id: uuidv4(),
+        type: 'list',
+        content: '<ul><li>New item</li></ul>'
+      };
     } else if (type === 'orderedList') {
-      newBlockContent = '<ol><li>First step</li><li>Second step</li><li>Third step</li></ol>';
-      blockType = 'list';
-    } else if (type.startsWith('heading')) {
-      newBlockContent = `<${type.replace('heading', 'h')}>New Heading</${type.replace('heading', 'h')}>`;
-      blockType = type as ContentBlock['type'];
+      newBlock = {
+        id: uuidv4(),
+        type: 'list',
+        content: '<ol><li>New item</li></ol>'
+      };
     } else {
-      newBlockContent = '<p>New paragraph content</p>';
-      blockType = 'paragraph';
+      newBlock = {
+        id: uuidv4(),
+        type,
+        content: type.startsWith('heading') 
+          ? `<${type.replace('heading', 'h')}>New Heading</${type.replace('heading', 'h')}>`
+          : '<p>New paragraph</p>'
+      };
     }
     
-    const newBlock: ContentBlock = {
-      id: `block-${blockType}-${Date.now()}`,
-      type: blockType,
-      content: newBlockContent
-    };
-    
-    const updatedBlocks = [
-      ...blocks.slice(0, blockIndex + 1),
-      newBlock,
-      ...blocks.slice(blockIndex + 1)
-    ];
-    
-    setBlocks(updatedBlocks);
-    
-    // Call parent update function
-    onContentUpdate({
-      ...generatedContent,
-      blocks: updatedBlocks
-    });
-    
-    // Set the new block to editing mode
-    handleEditBlock(newBlock.id);
-    
-    toast.success(`Added new ${type} block`);
-  };
-
-  const handleExportContent = () => {
-    const contentHtml = blocks.map(block => block.content).join('\n');
-    navigator.clipboard.writeText(contentHtml);
-    toast.success("Content copied to clipboard");
+    const newBlocks = [...blocks];
+    newBlocks.splice(blockIndex + 1, 0, newBlock);
+    setBlocks(newBlocks);
   };
 
   return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle>{generatedContent.title}</CardTitle>
-        <CardDescription>{generatedContent.metaDescription}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <ContentMetadata generatedContent={generatedContent} />
+    <div className="space-y-6">
+      <ContentMetadata
+        title={generatedContent.title}
+        metaDescription={generatedContent.metaDescription}
+        keywords={generatedContent.keywords || []}
+      />
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList>
+          <TabsTrigger value="blocks">Editor</TabsTrigger>
+          <TabsTrigger value="customBlocks">
+            <div className="flex items-center gap-1">
+              <Code className="h-4 w-4" />
+              Custom Blocks
+            </div>
+          </TabsTrigger>
+        </TabsList>
         
-        <ContentBlockList 
-          blocks={blocks}
-          editingBlockId={editingBlockId}
-          onEditBlock={handleEditBlock}
-          onSaveBlock={handleSaveBlock}
-          onDeleteBlock={handleDeleteBlock}
-          onMoveBlock={handleMoveBlock}
-          onAddBlockAfter={handleAddBlockAfter}
-        />
-        
-        <div className="flex flex-wrap justify-between items-center mt-6 pt-4 border-t">
+        <TabsContent value="blocks" className="mt-4">
           <ContentEditorToolbar 
-            onAddBlock={(blockType) => {
-              if (blocks.length > 0) {
-                handleAddBlockAfter(blocks[blocks.length - 1].id, blockType);
+            onAddBlock={(type) => {
+              const lastBlockId = blocks.length > 0 ? blocks[blocks.length - 1].id : null;
+              if (lastBlockId) {
+                handleAddBlockAfter(lastBlockId, type);
+              } else {
+                // If no blocks yet, create first one
+                const newBlock: ContentBlock = {
+                  id: uuidv4(),
+                  type,
+                  content: type.startsWith('heading') 
+                    ? `<${type.replace('heading', 'h')}>New Heading</${type.replace('heading', 'h')}>`
+                    : '<p>New paragraph</p>'
+                };
+                setBlocks([newBlock]);
               }
-            }} 
+            }}
           />
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExportContent}
-          >
-            <FileUp className="w-4 h-4 mr-1" /> Export HTML
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="mt-4">
+            <ContentBlockList
+              blocks={blocks}
+              editingBlockId={editingBlockId}
+              onEditBlock={handleEditBlock}
+              onSaveBlock={handleSaveBlock}
+              onDeleteBlock={handleDeleteBlock}
+              onMoveBlock={handleMoveBlock}
+              onAddBlockAfter={handleAddBlockAfter}
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="customBlocks" className="mt-4">
+          <div className="border rounded-md p-4 bg-white">
+            <ScrollArea className="h-[500px]">
+              <pre className="font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+                {generatedContent.customBlocksContent || "No custom block format available. Please regenerate the content."}
+              </pre>
+            </ScrollArea>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

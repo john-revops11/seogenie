@@ -6,6 +6,7 @@ import { generateContentOutline } from "@/services/vector/ragService";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { isAIProviderConfigured } from "./aiModels";
 import { WORD_COUNT_OPTIONS } from "@/components/content-generator/WordCountSelector";
+import { convertToCustomBlocks } from "@/services/keywords/generation/contentBlockService";
 
 /**
  * Generates content based on provided parameters
@@ -127,13 +128,16 @@ export const generateContent = async ({
 
     // Convert blocks to content string
     const contentString = contentBlocks.map(block => block.content).join('\n');
+    
+    // Generate custom blocks format
+    const customBlocksContent = convertToCustomBlocks(contentBlocks);
 
     // Create a properly typed GeneratedContent object
     const generatedContent: GeneratedContent = {
       title,
       metaDescription,
       outline: outline.headings,
-      content: contentString, // Add the required content property
+      content: contentString,
       blocks: contentBlocks,
       keywords: selectedKeywords,
       contentType: contentType,
@@ -141,6 +145,7 @@ export const generateContent = async ({
       aiProvider,
       aiModel: modelToUse,
       wordCountOption,
+      customBlocksContent,
       wordCount: {
         min: minWordCount,
         max: maxWordCount,

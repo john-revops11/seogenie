@@ -5,6 +5,61 @@ import { generateParagraphContent } from './openAiService';
 import { enhanceWithRAG } from '../../vector/ragService';
 
 /**
+ * Converts content blocks to custom block format
+ */
+export const convertToCustomBlocks = (blocks: ContentBlock[]): string => {
+  let customBlockContent = '';
+  
+  blocks.forEach((block) => {
+    switch (block.type) {
+      case 'heading1':
+        const h1Content = block.content.replace(/<h1>(.*?)<\/h1>/g, '$1');
+        customBlockContent += `<!-- custom-block:heading {"level":1} -->\n# ${h1Content}\n<!-- /custom-block:heading -->\n\n`;
+        break;
+      case 'heading2':
+        const h2Content = block.content.replace(/<h2>(.*?)<\/h2>/g, '$1');
+        customBlockContent += `<!-- custom-block:heading {"level":2} -->\n## ${h2Content}\n<!-- /custom-block:heading -->\n\n`;
+        break;
+      case 'heading3':
+        const h3Content = block.content.replace(/<h3>(.*?)<\/h3>/g, '$1');
+        customBlockContent += `<!-- custom-block:heading {"level":3} -->\n### ${h3Content}\n<!-- /custom-block:heading -->\n\n`;
+        break;
+      case 'paragraph':
+        const pContent = block.content.replace(/<p>(.*?)<\/p>/gs, '$1')
+          .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+          .replace(/<em>(.*?)<\/em>/g, '*$1*')
+          .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+        customBlockContent += `<!-- custom-block:paragraph -->\n${pContent}\n<!-- /custom-block:paragraph -->\n\n`;
+        break;
+      case 'list':
+        let listContent = block.content;
+        if (listContent.includes('<ul>')) {
+          listContent = listContent.replace(/<ul>(.*?)<\/ul>/gs, '$1')
+            .replace(/<li>(.*?)<\/li>/gs, '- $1\n')
+            .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+          customBlockContent += `<!-- custom-block:list {"type":"bullet"} -->\n${listContent}<!-- /custom-block:list -->\n\n`;
+        } else if (listContent.includes('<ol>')) {
+          const listItems = listContent.match(/<li>(.*?)<\/li>/gs);
+          let numberedList = '';
+          if (listItems) {
+            listItems.forEach((item, index) => {
+              const content = item.replace(/<li>(.*?)<\/li>/s, '$1');
+              numberedList += `${index + 1}. ${content}\n`;
+            });
+          }
+          customBlockContent += `<!-- custom-block:list {"type":"numbered"} -->\n${numberedList}<!-- /custom-block:list -->\n\n`;
+        }
+        break;
+      default:
+        // Handle any other block types as raw content
+        customBlockContent += `<!-- custom-block:raw -->\n${block.content}\n<!-- /custom-block:raw -->\n\n`;
+    }
+  });
+  
+  return customBlockContent;
+};
+
+/**
  * Fills in content blocks with AI-generated content
  */
 export const fillContentBlocks = async (
@@ -180,10 +235,14 @@ export const fillContentBlocks = async (
       }
     }
     
-    // Update the content with the filled blocks
+    // Create the custom block format content
+    const customBlocksContent = convertToCustomBlocks(updatedBlocks);
+    
+    // Update the content with the filled blocks and custom block format
     return {
       ...content,
-      blocks: updatedBlocks
+      blocks: updatedBlocks,
+      customBlocksContent
     };
   } catch (error) {
     console.error("Error filling content blocks:", error);

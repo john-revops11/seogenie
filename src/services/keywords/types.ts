@@ -1,4 +1,3 @@
-
 // Define DataForSEO types to avoid import error
 export interface DataForSEOTaskIdentifier {
   id: string;
@@ -119,28 +118,23 @@ export interface ContentOutline {
 }
 
 export interface GeneratedContent {
-  id?: string;
   title: string;
   metaDescription: string;
   outline: string[];
-  content: string; // This field is required
+  content: string;
   blocks: ContentBlock[];
-  contentType: string;
-  generationMethod: 'standard' | 'rag';
-  ragInfo?: {
-    chunksRetrieved: number;
-    relevanceScore: number;
-  };
-  createdAt?: string;
   keywords?: string[];
-  aiProvider?: string;  // Added to match code usage
-  aiModel?: string;     // Added to match code usage
-  wordCountOption?: string; // Added to match code usage
+  contentType?: string;
+  generationMethod?: 'standard' | 'rag';
+  aiProvider?: string;
+  aiModel?: string;
+  wordCountOption?: string;
   wordCount?: {
     min: number;
     max: number;
     target: number;
   };
+  customBlocksContent?: string; // New field for custom block format
 }
 
 export interface ContentTemplate {

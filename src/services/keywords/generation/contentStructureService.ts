@@ -1,5 +1,6 @@
 
 import { ContentBlock, ContentOutline, GeneratedContent } from '../types';
+import { convertToCustomBlocks } from './contentBlockService';
 
 /**
  * Generates standard content using just OpenAI (no RAG)
@@ -149,6 +150,9 @@ export const generateStandardContent = async (
   // Generate initial content string from blocks
   const initialContent = initialBlocks.map(block => block.content).join('\n');
   
+  // Generate custom blocks format
+  const customBlocksContent = convertToCustomBlocks(initialBlocks);
+  
   const content: GeneratedContent = {
     title: title,
     metaDescription: metaDescription,
@@ -157,7 +161,8 @@ export const generateStandardContent = async (
     keywords: keywords,
     contentType: contentType,
     generationMethod: 'standard',
-    content: initialContent // Add the content property
+    content: initialContent, // Add the content property
+    customBlocksContent // Add the custom blocks format
   };
   
   // Fill in the content blocks with AI-generated content
