@@ -8,7 +8,6 @@ import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
 import { KeywordPositionChart } from "./KeywordPositionChart";
 import { TopKeywordsTable } from "./TopKeywordsTable";
-import { CompetitorsTable } from "./CompetitorsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -19,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DomainIntersectionCard } from "../domain-intersection";
 
 export function DomainAnalyticsDashboard() {
   const [domain, setDomain] = useState("revologyanalytics.com");
@@ -174,7 +174,7 @@ export function DomainAnalyticsDashboard() {
         </>
       )}
       
-      <CompetitorsTable 
+      <DomainIntersectionCard 
         domain={domain} 
         onMetricsLoaded={handleMetricsLoaded}
       />

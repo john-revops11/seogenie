@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,9 +55,6 @@ export function useDomainIntersection() {
               target1: cleanTarget1,
               target2: cleanTarget2,
               location_code: 2840
-            },
-            options: {
-              timeout: 60000 // 60 second timeout
             }
           });
           return response;
