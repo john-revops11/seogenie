@@ -25,12 +25,12 @@ export function useDataForSeoClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getDomainKeywords = async (domain: string, options?: DataForSeoOptions): Promise<DataForSeoResponse> => {
+  const getDomainKeywords = async (domain: string): Promise<DataForSeoResponse> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchDomainKeywords(domain, options);
+      const response = await fetchDomainKeywords(domain);
       setIsLoading(false);
       return response as DataForSeoResponse;
     } catch (err) {
@@ -43,12 +43,12 @@ export function useDataForSeoClient() {
     }
   };
   
-  const getDomainOverview = async (domain: string, options?: DataForSeoOptions): Promise<DataForSeoResponse> => {
+  const getDomainOverview = async (domain: string): Promise<DataForSeoResponse> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchDomainAnalytics(domain, options);
+      const response = await fetchDomainAnalytics(domain);
       setIsLoading(false);
       return response as DataForSeoResponse;
     } catch (err) {
@@ -61,12 +61,12 @@ export function useDataForSeoClient() {
     }
   };
   
-  const getBacklinkSummary = async (domain: string, options?: DataForSeoOptions): Promise<DataForSeoResponse> => {
+  const getBacklinkSummary = async (domain: string): Promise<DataForSeoResponse> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchBacklinkData(domain, options);
+      const response = await fetchBacklinkData(domain);
       setIsLoading(false);
       return response as DataForSeoResponse;
     } catch (err) {
