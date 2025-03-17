@@ -24,13 +24,46 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request JSON with error handling
+    let action, params;
+    try {
+      const body = await req.json();
+      action = body.action;
+      params = { ...body };
+      delete params.action;
+    } catch (jsonError) {
+      console.error("Error parsing request JSON:", jsonError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Invalid request format: ${jsonError.message}`,
+      }), {
+        status: 400,
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      });
+    }
+    
+    // Validate required parameters
+    if (!action) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Missing required 'action' parameter",
+      }), {
+        status: 400,
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      });
+    }
+    
     // Add request timeout handling
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
     
     try {
-      const { action, ...params } = await req.json();
-      
       let result;
       console.log(`Processing ${action} request with params:`, params);
       
@@ -44,6 +77,10 @@ serve(async (req) => {
           break;
         case "domain_keywords":
           try {
+            if (!params.domain) {
+              throw new Error("Missing required 'domain' parameter");
+            }
+            
             result = await getDomainKeywords(
               params.domain,
               params.location_code,
@@ -53,11 +90,24 @@ serve(async (req) => {
           } catch (error) {
             console.error(`Error in domain_keywords for ${params.domain}:`, error);
             clearTimeout(timeoutId);
+            
+            // Determine if this is a timeout error for better client-side handling
+            const isTimeoutError = 
+              error.name === 'TimeoutError' || 
+              error.name === 'AbortError' || 
+              (error.message && (
+                error.message.includes('timeout') || 
+                error.message.includes('timed out') || 
+                error.message.includes('aborted')
+              ));
+            
             return new Response(JSON.stringify({
               success: false,
-              error: `Error fetching keywords: ${error.message || 'Unknown error'}`
+              error: `${error.message || 'Unknown error'}`,
+              errorType: isTimeoutError ? 'timeout' : 'api',
+              domain: params.domain
             }), {
-              status: 500,
+              status: isTimeoutError ? 504 : 500,
               headers: { 
                 "Content-Type": "application/json",
                 ...corsHeaders
@@ -96,39 +146,35 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({
         success: true,
-        results: result.tasks?.[0]?.result?.[0]?.items || result.tasks?.[0]?.result || [],
+        results: result?.tasks?.[0]?.result?.[0]?.items || result?.tasks?.[0]?.result || [],
       }), {
         headers: { 
           "Content-Type": "application/json",
           ...corsHeaders
         },
       });
-    } catch (jsonError) {
+    } catch (actionError) {
       clearTimeout(timeoutId);
-      console.error("Error parsing request:", jsonError);
-      
-      return new Response(JSON.stringify({
-        success: false,
-        error: `Invalid request format: ${jsonError.message}`,
-      }), {
-        status: 400,
-        headers: { 
-          "Content-Type": "application/json",
-          ...corsHeaders
-        },
-      });
+      throw actionError; // Let the outer catch handle this
     }
   } catch (error) {
     console.error("Error processing request:", error);
     
     // Determine if the error is a timeout error
-    const isTimeoutError = error.name === 'AbortError' || error.message.includes('timeout');
+    const isTimeoutError = 
+      error.name === 'AbortError' || 
+      error.name === 'TimeoutError' || 
+      (error.message && (
+        error.message.includes('timeout') || 
+        error.message.includes('timed out') || 
+        error.message.includes('aborted')
+      ));
     
     return new Response(JSON.stringify({
       success: false,
       error: isTimeoutError 
         ? "Request timed out. The DataForSEO API may be experiencing delays." 
-        : error.message,
+        : error.message || "Unknown error",
       errorType: isTimeoutError ? "timeout" : "general"
     }), {
       status: isTimeoutError ? 504 : 500,

@@ -32,9 +32,9 @@ export const processCompetitorData = async (
         setTimeout(() => {
           resolve({
             data: null, 
-            error: new Error('Request timed out after 90 seconds')
+            error: new Error('Request timed out after 120 seconds')
           });
-        }, 90000); // 90 second client-side timeout
+        }, 120000); // 120 second client-side timeout
       })
     ]);
     
@@ -42,13 +42,15 @@ export const processCompetitorData = async (
       console.error(`Error calling DataForSEO edge function for ${normalizedDomain}:`, error);
       
       // Check for common error types and provide better messages
-      if (error.message.includes('timeout') || error.message.includes('timed out')) {
-        throw new Error(`Request timed out for ${normalizedDomain}. The DataForSEO API may be experiencing delays. Please try again later.`);
-      } else if (error.message.includes('network') || error.message.includes('failed to send')) {
-        throw new Error(`Network error when analyzing ${normalizedDomain}. Please check your connection and try again.`);
-      } else {
-        throw new Error(`Edge function error: ${error.message}`);
+      let errorMessage = error.message || 'Unknown error';
+      
+      if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+        errorMessage = `Request timed out for ${normalizedDomain}. The DataForSEO API may be experiencing delays. Please try again later.`;
+      } else if (errorMessage.includes('network') || errorMessage.includes('failed to send')) {
+        errorMessage = `Network error when analyzing ${normalizedDomain}. Please check your connection and try again.`;
       }
+      
+      throw new Error(errorMessage);
     }
     
     if (!data || !data.success) {
@@ -56,15 +58,17 @@ export const processCompetitorData = async (
       console.error(`API error for ${normalizedDomain}:`, errorMessage);
       
       // Provide more context for specific error cases
+      let enhancedErrorMessage = errorMessage;
+      
       if (errorMessage.includes('404')) {
-        throw new Error(`No data found for ${normalizedDomain}. The domain may not have enough data for analysis.`);
+        enhancedErrorMessage = `No data found for ${normalizedDomain}. The domain may not have enough data for analysis.`;
       } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-        throw new Error(`Rate limit exceeded when analyzing ${normalizedDomain}. Please try again later.`);
+        enhancedErrorMessage = `Rate limit exceeded when analyzing ${normalizedDomain}. Please try again later.`;
       } else if (errorMessage.includes('timeout')) {
-        throw new Error(`Request timed out for ${normalizedDomain}. Please try again later.`);
-      } else {
-        throw new Error(errorMessage);
+        enhancedErrorMessage = `Request timed out for ${normalizedDomain}. Please try again later.`;
       }
+      
+      throw new Error(enhancedErrorMessage);
     }
     
     if (!data.results) {

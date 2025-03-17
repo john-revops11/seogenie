@@ -6,6 +6,11 @@ import { cleanDomain, formatErrorResponse, extractItems } from "./utils.ts";
  * Get domain keywords data
  */
 export async function getDomainKeywords(domain: string, location_code = 2840, sort_by = "relevance") {
+  if (!domain) {
+    console.error("getDomainKeywords called with empty domain");
+    throw new Error("Domain is required");
+  }
+  
   const cleanedDomain = cleanDomain(domain);
   console.log(`Getting keywords for domain: ${cleanedDomain}, location: ${location_code}`);
   
@@ -17,16 +22,30 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
   }];
   
   try {
-    // Set a shorter timeout for this specific endpoint
+    // Set a longer timeout for this specific endpoint
     const result = await makeDataForSEORequest(
       '/v3/keywords_data/google_ads/keywords_for_site/live', 
       'POST', 
       data, 
-      60000 // 60 second timeout specifically for keywords endpoint
+      90000 // Increased to 90 second timeout specifically for keywords endpoint
     );
     
     // Extract keywords from response with better error handling
-    const keywords = extractItems(result, `No keyword data found for domain: ${domain}`);
+    let keywords = [];
+    
+    try {
+      keywords = extractItems(result, `No keyword data found for domain: ${domain}`);
+    } catch (extractError) {
+      console.warn(`Error extracting keyword data: ${extractError.message}`);
+      // Return empty array instead of throwing for extraction errors
+      return {
+        tasks: [{
+          result: [{
+            items: []
+          }]
+        }]
+      };
+    }
     
     if (!keywords || keywords.length === 0) {
       console.warn(`No keywords found for domain: ${cleanedDomain}`);
@@ -56,11 +75,17 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
     const errorMessage = error.message || "Unknown error";
     const isTimeoutError = errorMessage.includes('timeout') || errorMessage.includes('aborted');
     
+    // Create a more descriptive error that will be easier to handle in the frontend
     const enhancedError = new Error(
       isTimeoutError 
         ? `Request timed out while fetching keywords for ${domain}. The API may be experiencing delays.`
         : `Error fetching keywords for ${domain}: ${errorMessage}`
     );
+    
+    // Ensure the error type is preserved for better handling on the frontend
+    if (isTimeoutError) {
+      enhancedError.name = 'TimeoutError';
+    }
     
     // Ensure we throw the enhanced error with more descriptive message
     throw enhancedError;

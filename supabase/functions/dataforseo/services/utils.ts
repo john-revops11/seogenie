@@ -5,6 +5,7 @@
  * Clean a domain by removing protocol and www prefix
  */
 export function cleanDomain(domain: string): string {
+  if (!domain) return "";
   return domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
 }
 
@@ -15,13 +16,18 @@ export function formatErrorResponse(domain: string, error: Error): any {
   console.error(`Error processing request for ${domain}:`, error);
   
   // Check if error is a timeout or network error
-  const isTimeoutError = error.message.includes('timeout') || 
-                         error.name === 'AbortError' || 
-                         error.message.includes('aborted');
+  const isTimeoutError = 
+    error.name === 'TimeoutError' || 
+    error.name === 'AbortError' || 
+    (error.message && (
+      error.message.includes('timeout') || 
+      error.message.includes('timed out') || 
+      error.message.includes('aborted')
+    ));
   
   return {
     success: false,
-    error: error.message,
+    error: error.message || "Unknown error",
     errorType: isTimeoutError ? 'timeout' : 'api',
     domain: domain
   };
@@ -47,4 +53,26 @@ export function extractItems(result: any, errorMessage: string): any[] {
   }
   
   return result.tasks[0].result?.[0]?.items || [];
+}
+
+/**
+ * Safely access nested properties in API response
+ */
+export function safeGet(obj: any, path: string, defaultValue: any = null): any {
+  try {
+    const parts = path.split('.');
+    let current = obj;
+    
+    for (const part of parts) {
+      if (current === null || current === undefined) {
+        return defaultValue;
+      }
+      current = current[part];
+    }
+    
+    return current === undefined ? defaultValue : current;
+  } catch (error) {
+    console.warn(`Error accessing path ${path}:`, error);
+    return defaultValue;
+  }
 }
