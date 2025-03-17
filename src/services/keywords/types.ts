@@ -1,15 +1,23 @@
 
-import { DataForSEOTaskIdentifier, DataForSEOTaskStatus } from '../typesDataForSEO';
+// Define DataForSEO types to avoid import error
+export interface DataForSEOTaskIdentifier {
+  id: string;
+  type: string;
+  status: string;
+}
+
+export type DataForSEOTaskStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface KeywordData {
   keyword: string;
   monthly_search: number;
-  competition: number;
+  competition: number | string;
   competition_index: number;
   cpc: number;
   position: number | null;
   rankingUrl?: string | null;
   competitorRankings?: Record<string, number | null>;
+  competitorUrls?: Record<string, string | null>;
 }
 
 export interface KeywordGap {
@@ -90,3 +98,66 @@ export interface ContentGenerationResponse {
   metaDescription?: string;
   keywords: string[];
 }
+
+// New types required by various components
+
+export interface ContentBlock {
+  id: string;
+  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image';
+  content: string;
+}
+
+export interface ContentOutline {
+  title: string;
+  metaDescription: string;
+  outline: string[];
+}
+
+export interface GeneratedContent {
+  id?: string;
+  title: string;
+  metaDescription: string;
+  outline: string[];
+  content: string;
+  blocks: ContentBlock[];
+  contentType: string;
+  generationMethod: 'standard' | 'rag';
+  ragInfo?: {
+    chunksRetrieved: number;
+    relevanceScore: number;
+  };
+  createdAt?: string;
+  keywords?: string[];
+}
+
+export interface ContentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  contentType: string;
+  headings: string[];
+  promptTemplate: string;
+  outline: string[];
+  sampleContent?: string;
+}
+
+export interface SeoRecommendation {
+  type?: string;
+  category?: string;
+  title?: string;
+  recommendation?: string;
+  details?: string;
+  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  difficulty?: 'easy' | 'medium' | 'hard';
+  implementationDifficulty?: 'easy' | 'medium' | 'hard';
+  impact?: 'high' | 'medium' | 'low';
+  timeToImplement?: string;
+}
+
+export interface TrendData {
+  date: string;
+  value: number;
+  change?: number;
+}
+
