@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDomainIntersection } from "@/hooks/useDomainIntersection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
@@ -37,12 +37,10 @@ interface CompetitorsTableProps {
 }
 
 export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTableProps) {
-  // State for the domains
   const [targetDomain, setTargetDomain] = useState(domain);
   const [competitorDomain, setCompetitorDomain] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   
-  // Get domain intersection data
   const {
     intersectionData,
     totalKeywords,
@@ -54,7 +52,6 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
     resetData
   } = useDomainIntersection();
 
-  // Sort state
   const [sortConfig, setSortConfig] = useState<{
     key: keyof typeof intersectionData[0];
     direction: 'asc' | 'desc';
@@ -99,7 +96,6 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
     setOpenDialog(false);
   };
 
-  // Sort the intersection data
   const sortedData = [...intersectionData].sort((a, b) => {
     if (a[sortConfig.key] < b[sortConfig.key]) {
       return sortConfig.direction === 'asc' ? -1 : 1;
@@ -110,13 +106,11 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
     return 0;
   });
 
-  // Get position difference
   const getPositionDifference = (pos1: number, pos2: number) => {
-    if (pos1 === 0 || pos2 === 0) return null; // One of the positions is missing
+    if (pos1 === 0 || pos2 === 0) return null;
     return pos1 - pos2;
   };
 
-  // Competition level color
   const getCompetitionLevelColor = (level: string) => {
     switch (level.toUpperCase()) {
       case 'HIGH': return "bg-red-100 text-red-800";
@@ -134,7 +128,7 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
     }
     return <ArrowUpDown className="ml-1 h-4 w-4" />;
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -161,7 +155,6 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Domain input fields */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-grow space-y-2">
               <label className="text-sm font-medium">Your Domain</label>
@@ -355,7 +348,7 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
                           </TableCell>
                           <TableCell className="text-right">
                             {positionDiff !== null ? (
-                              <Badge variant={isWinning ? "success" : isLosing ? "destructive" : "outline"}>
+                              <Badge variant={isWinning ? "secondary" : isLosing ? "destructive" : "outline"}>
                                 {isWinning ? "+" : ""}{Math.abs(positionDiff)}
                               </Badge>
                             ) : "-"}
