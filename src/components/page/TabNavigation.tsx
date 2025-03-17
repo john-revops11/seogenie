@@ -4,7 +4,7 @@ import { BarChart2, FileText, Settings, History, Globe, LayoutDashboard } from "
 
 export const TabNavigation = () => {
   return (
-    <TabsList className="grid grid-cols-6 w-full max-w-md">
+    <TabsList className="grid grid-cols-6 w-full">
       <TabsTrigger value="dashboard" className="flex items-center gap-2">
         <LayoutDashboard className="w-4 h-4" /> Dashboard
       </TabsTrigger>
