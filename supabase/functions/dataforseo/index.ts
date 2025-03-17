@@ -27,6 +27,7 @@ serve(async (req) => {
     const { action, ...params } = await req.json();
     
     let result;
+    console.log(`Processing ${action} request with params:`, params);
     
     switch (action) {
       case "competitors_domain":
@@ -37,11 +38,26 @@ serve(async (req) => {
         );
         break;
       case "domain_keywords":
-        result = await getDomainKeywords(
-          params.domain,
-          params.location_code,
-          params.sort_by
-        );
+        try {
+          result = await getDomainKeywords(
+            params.domain,
+            params.location_code,
+            params.sort_by
+          );
+          console.log(`Successfully fetched keywords for ${params.domain}`);
+        } catch (error) {
+          console.error(`Error in domain_keywords for ${params.domain}:`, error);
+          return new Response(JSON.stringify({
+            success: false,
+            error: `Error fetching keywords: ${error.message || 'Unknown error'}`
+          }), {
+            status: 500,
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            },
+          });
+        }
         break;
       case "domain_intersection":
         result = await getDomainIntersection(
@@ -85,7 +101,7 @@ serve(async (req) => {
       success: false,
       error: error.message,
     }), {
-      status: 400,
+      status: 500,
       headers: { 
         "Content-Type": "application/json",
         ...corsHeaders

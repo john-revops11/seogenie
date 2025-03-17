@@ -23,7 +23,13 @@ export async function makeDataForSEORequest(endpoint: string, method: string, da
       console.log(`Request data: ${JSON.stringify(data).substring(0, 500)}...`);
     }
     
+    // Add timeout to fetch to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    options.signal = controller.signal;
+    
     const response = await fetch(url, options);
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       const errorText = await response.text();

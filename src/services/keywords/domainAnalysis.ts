@@ -31,15 +31,25 @@ export const analyzeDomains = async (
     try {
       console.log(`Fetching keywords for main domain: ${formattedMainDomain}`);
       
-      // Call our DataForSEO edge function for the main domain
-      const { data, error } = await supabase.functions.invoke('dataforseo', {
-        body: {
-          action: 'domain_keywords',
-          domain: formattedMainDomain,
-          location_code: locationCode,
-          sort_by: "relevance"
-        }
-      });
+      // Call our DataForSEO edge function for the main domain with timeout
+      const { data, error } = await Promise.race([
+        supabase.functions.invoke('dataforseo', {
+          body: {
+            action: 'domain_keywords',
+            domain: formattedMainDomain,
+            location_code: locationCode,
+            sort_by: "relevance"
+          }
+        }),
+        new Promise<{data: null, error: Error}>((resolve) => {
+          setTimeout(() => {
+            resolve({
+              data: null, 
+              error: new Error('Request timed out after 30 seconds')
+            });
+          }, 30000);
+        })
+      ]);
       
       if (error) {
         console.error(`Error calling DataForSEO edge function for ${formattedMainDomain}:`, error);
