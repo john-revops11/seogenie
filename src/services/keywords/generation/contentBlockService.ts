@@ -55,6 +55,70 @@ export function parseContentToBlocks(htmlContent: string): ContentBlock[] {
 }
 
 /**
+ * Converts content blocks to a custom block format for specialized output
+ */
+export function convertToCustomBlocks(blocks: ContentBlock[]): string {
+  let customBlockContent = '';
+  
+  blocks.forEach((block) => {
+    switch (block.type) {
+      case 'heading1':
+        const h1Content = block.content.replace(/<h1>(.*?)<\/h1>/gs, '$1');
+        customBlockContent += `<!-- custom-block:heading {"level":1} -->\n# ${h1Content}\n<!-- /custom-block:heading -->\n\n`;
+        break;
+      case 'heading2':
+        const h2Content = block.content.replace(/<h2>(.*?)<\/h2>/gs, '$1');
+        customBlockContent += `<!-- custom-block:heading {"level":2} -->\n## ${h2Content}\n<!-- /custom-block:heading -->\n\n`;
+        break;
+      case 'heading3':
+        const h3Content = block.content.replace(/<h3>(.*?)<\/h3>/gs, '$1');
+        customBlockContent += `<!-- custom-block:heading {"level":3} -->\n### ${h3Content}\n<!-- /custom-block:heading -->\n\n`;
+        break;
+      case 'paragraph':
+        const pContent = block.content.replace(/<p>(.*?)<\/p>/gs, '$1')
+          .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+          .replace(/<em>(.*?)<\/em>/g, '*$1*')
+          .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+        customBlockContent += `<!-- custom-block:paragraph -->\n${pContent}\n<!-- /custom-block:paragraph -->\n\n`;
+        break;
+      case 'list':
+        let listContent = block.content;
+        if (listContent.includes('<ul>')) {
+          listContent = listContent.replace(/<ul>(.*?)<\/ul>/gs, '$1')
+            .replace(/<li>(.*?)<\/li>/gs, '- $1\n')
+            .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+          customBlockContent += `<!-- custom-block:list {"type":"bullet"} -->\n${listContent}<!-- /custom-block:list -->\n\n`;
+        }
+        break;
+      case 'orderedList':
+        let orderedListContent = block.content;
+        if (orderedListContent.includes('<ol>')) {
+          const listItems = orderedListContent.match(/<li>(.*?)<\/li>/gs);
+          let numberedList = '';
+          if (listItems) {
+            listItems.forEach((item, index) => {
+              const content = item.replace(/<li>(.*?)<\/li>/s, '$1');
+              numberedList += `${index + 1}. ${content}\n`;
+            });
+          }
+          customBlockContent += `<!-- custom-block:list {"type":"numbered"} -->\n${numberedList}<!-- /custom-block:list -->\n\n`;
+        }
+        break;
+      case 'quote':
+        const quoteContent = block.content.replace(/<blockquote>(.*?)<\/blockquote>/gs, '$1')
+          .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+        customBlockContent += `<!-- custom-block:quote -->\n${quoteContent}\n<!-- /custom-block:quote -->\n\n`;
+        break;
+      default:
+        // Handle any other block types as raw content
+        customBlockContent += `<!-- custom-block:raw -->\n${block.content}\n<!-- /custom-block:raw -->\n\n`;
+    }
+  });
+  
+  return customBlockContent;
+}
+
+/**
  * Converts HTML content string to structured content blocks
  */
 export function convertHtmlToContentBlocks(
