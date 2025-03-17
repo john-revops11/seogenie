@@ -21,10 +21,11 @@ export const useKeywordGaps = () => {
   };
   
   const clearKeywordGapsCache = () => {
-    keywordGapsCache.data = null;
+    keywordGapsCache.data = [];
     keywordGapsCache.domain = "";
     keywordGapsCache.competitorDomains = [];
     keywordGapsCache.keywordsLength = 0;
+    keywordGapsCache.currentPage = 1;
     keywordGapsCache.page = 1;
     // Keep the locationCode and selectedKeywords
   };
@@ -40,7 +41,7 @@ export const useKeywordGaps = () => {
     
     // Check if all competitors are the same
     return !newCompetitors.every(comp => 
-      keywordGapsCache.competitorDomains.includes(comp)
+      keywordGapsCache.competitorDomains?.includes(comp)
     );
   };
   

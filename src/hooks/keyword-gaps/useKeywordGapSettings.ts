@@ -4,7 +4,9 @@ import { keywordGapsCache } from '@/components/keyword-gaps/KeywordGapUtils';
 import { ApiSource } from '@/services/keywords/keywordGaps';
 
 export function useKeywordGapSettings() {
-  const [apiSource, setApiSource] = useState<ApiSource>(keywordGapsCache.apiSource || 'dataforseo-intersection');
+  // Ensure initial value conforms to the ApiSource type
+  const defaultApiSource: ApiSource = (keywordGapsCache.apiSource as ApiSource) || 'dataforseo-intersection';
+  const [apiSource, setApiSource] = useState<ApiSource>(defaultApiSource);
   const [locationCode, setLocationCode] = useState<number>(keywordGapsCache.locationCode || 2840);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { KeywordGap } from "@/services/keywordService";
 import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 
 export function useKeywordGapPagination(keywordGaps: KeywordGap[] | null) {
-  const [currentPage, setCurrentPage] = useState(keywordGapsCache.page || 1);
+  const [currentPage, setCurrentPage] = useState(keywordGapsCache.currentPage || 1);
   const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 15);
   const [displayedKeywords, setDisplayedKeywords] = useState<KeywordGap[]>([]);
   const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
@@ -33,7 +33,9 @@ export function useKeywordGapPagination(keywordGaps: KeywordGap[] | null) {
     
     setDisplayedKeywords(filteredKeywords.slice(startIndex, endIndex));
     
-    keywordGapsCache.page = validCurrentPage;
+    // Use currentPage consistently everywhere
+    keywordGapsCache.currentPage = validCurrentPage;
+    keywordGapsCache.page = validCurrentPage; // For backward compatibility
     keywordGapsCache.itemsPerPage = itemsPerPage;
   }, [keywordGaps, currentPage, itemsPerPage, filterCompetitor]);
 

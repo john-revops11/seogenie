@@ -12,6 +12,8 @@ export const keywordGapsCache: {
   filterCompetitor: string;
   locationCode: number;
   apiSource: string;
+  selectedKeywords: string[];
+  page: number;
 } = {
   data: [],
   domain: "",
@@ -21,7 +23,9 @@ export const keywordGapsCache: {
   itemsPerPage: 10,
   filterCompetitor: "all",
   locationCode: 2840,
-  apiSource: "sample"
+  apiSource: "sample",
+  selectedKeywords: [],
+  page: 1
 };
 
 /**
@@ -72,6 +76,38 @@ export const getLocationNameByCode = (locationCode: number): string => {
   };
   
   return locations[locationCode] || `Location (${locationCode})`;
+};
+
+/**
+ * Get a list of common locations for keyword research
+ */
+export const commonLocations = [
+  { code: 2840, name: "United States" },
+  { code: 2826, name: "United Kingdom" },
+  { code: 2124, name: "Canada" },
+  { code: 2036, name: "Australia" },
+  { code: 2276, name: "Germany" },
+  { code: 2250, name: "France" },
+  { code: 2724, name: "Spain" },
+  { code: 2380, name: "Italy" },
+  { code: 2356, name: "India" },
+  { code: 2392, name: "Japan" }
+];
+
+/**
+ * Extract unique competitors from a list of keyword gaps
+ */
+export const getUniqueCompetitors = (keywordGaps: KeywordGap[]): string[] => {
+  if (!keywordGaps || keywordGaps.length === 0) return [];
+  
+  const competitors = new Set<string>();
+  keywordGaps.forEach(gap => {
+    if (gap.competitor) {
+      competitors.add(gap.competitor);
+    }
+  });
+  
+  return Array.from(competitors);
 };
 
 /**
