@@ -17,6 +17,15 @@ export function useCompetitorAnalysis(domain: string) {
     direction: 'desc'
   });
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [domainMetrics, setDomainMetrics] = useState<{
+    organicTraffic: number;
+    organicKeywords: number;
+    trafficValue: number;
+  }>({
+    organicTraffic: 0,
+    organicKeywords: 0,
+    trafficValue: 0
+  });
 
   // Sort the competitors based on the sort configuration
   const sortedCompetitors = [...competitors].sort((a, b) => {
@@ -67,6 +76,16 @@ export function useCompetitorAnalysis(domain: string) {
         throw new Error(`API Error: ${apiResponse.status_message}`);
       }
       
+      // Extract the domain metrics from the response (target domain data)
+      if (apiResponse.tasks?.[0]?.result?.[0]?.target_metrics?.organic) {
+        const targetMetrics = apiResponse.tasks[0].result[0].target_metrics.organic;
+        setDomainMetrics({
+          organicTraffic: targetMetrics.etv || 0,
+          organicKeywords: targetMetrics.count || 0,
+          trafficValue: targetMetrics.estimated_paid_traffic_cost || 0
+        });
+      }
+      
       const processedData = processCompetitorData(apiResponse);
       
       if (processedData.length === 0) {
@@ -90,10 +109,16 @@ export function useCompetitorAnalysis(domain: string) {
     setCompetitors([]);
     setError(null);
     setLastUpdated(null);
+    setDomainMetrics({
+      organicTraffic: 0,
+      organicKeywords: 0,
+      trafficValue: 0
+    });
   };
 
   return {
     competitors: sortedCompetitors,
+    domainMetrics,
     isLoading,
     error,
     lastUpdated,

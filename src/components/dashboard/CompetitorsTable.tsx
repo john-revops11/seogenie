@@ -1,223 +1,175 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExternalLink, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, ExternalLink, RefreshCw, Search } from "lucide-react";
-import { CompetitorData } from "@/services/keywords/api/dataForSeo/competitorsDomain";
-import { useCompetitorAnalysis, SortConfig } from "@/hooks/useCompetitorAnalysis";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useCompetitorAnalysis } from "@/hooks/useCompetitorAnalysis";
+import { Button } from "@/components/ui/button";
 
 interface CompetitorsTableProps {
   domain: string;
+  onMetricsLoaded?: (metrics: {
+    organicTraffic: number;
+    organicKeywords: number;
+    trafficValue: number;
+  }) => void;
 }
 
-export function CompetitorsTable({ domain: initialDomain }: CompetitorsTableProps) {
-  const [domain, setDomain] = useState(initialDomain || "");
+export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTableProps) {
   const {
     competitors,
+    domainMetrics,
     isLoading,
     error,
-    lastUpdated,
     sortConfig,
     handleSort,
     fetchCompetitorData
   } = useCompetitorAnalysis(domain);
 
-  const onAnalyze = () => {
-    fetchCompetitorData(domain);
-  };
-
-  // Format number with commas and decimals
-  const formatNumber = (num: number, decimals: number = 0) => {
-    return num.toLocaleString(undefined, { 
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
-  };
-
-  // Get the appropriate sort icon
-  const getSortIcon = (key: keyof CompetitorData) => {
-    if (sortConfig.key === key) {
-      return (
-        <span className={`ml-1 inline-block transition-transform ${sortConfig.direction === 'asc' ? 'rotate-180' : ''}`}>
-          ↓
-        </span>
-      );
+  useEffect(() => {
+    if (domain) {
+      fetchCompetitorData(domain);
     }
-    return null;
-  };
+  }, [domain]);
 
-  // Determine if a competitor row should be highlighted (best performer)
-  const shouldHighlight = (competitor: CompetitorData, index: number): boolean => {
-    if (index === 0 && sortConfig.key === 'intersection_etv' && sortConfig.direction === 'desc') {
-      return true;
+  useEffect(() => {
+    if (onMetricsLoaded && domainMetrics) {
+      onMetricsLoaded(domainMetrics);
     }
-    if (index === 0 && sortConfig.key === 'avg_position' && sortConfig.direction === 'asc') {
-      return true;
-    }
-    return false;
-  };
+  }, [domainMetrics, onMetricsLoaded]);
 
+  const renderSortIcon = (column: string) => {
+    if (sortConfig.key === column) {
+      return sortConfig.direction === 'asc' ? 
+        <TrendingUp className="ml-1 h-4 w-4" /> : 
+        <TrendingDown className="ml-1 h-4 w-4" />;
+    }
+    return <ArrowUpDown className="ml-1 h-4 w-4" />;
+  };
+  
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-xl flex items-center">
-          Competitor Analysis
-          {lastUpdated && (
+        <CardTitle className="flex items-center justify-between">
+          <span>Competitor Analysis</span>
+          {!isLoading && competitors.length > 0 && (
             <Badge variant="outline" className="ml-2 text-xs">
-              Last updated: {lastUpdated}
+              {competitors.length} competitors
             </Badge>
           )}
         </CardTitle>
-        <CardDescription>
-          Analyze competitors that share keywords with your domain
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter domain to analyze (e.g., example.com)"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="max-w-md"
-            />
-            <Button
-              onClick={onAnalyze}
-              disabled={isLoading || !domain.trim()}
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Analyze Competitors
-                </>
-              )}
-            </Button>
+        {error ? (
+          <div className="p-4 text-sm text-red-600 bg-red-50 rounded-md">
+            {error}
           </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : competitors.length > 0 ? (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">
-                      <Button 
-                        variant="ghost" 
-                        className="p-0 font-medium"
-                        onClick={() => handleSort('domain')}
-                      >
-                        Competitor Domain
-                        {getSortIcon('domain')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="p-0 font-medium"
-                        onClick={() => handleSort('intersections')}
-                      >
-                        Shared Keywords
-                        {getSortIcon('intersections')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="p-0 font-medium"
-                        onClick={() => handleSort('avg_position')}
-                      >
-                        Avg Position
-                        {getSortIcon('avg_position')}
-                        <ArrowUpDown className="ml-1 h-3 w-3 inline" />
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="p-0 font-medium"
-                        onClick={() => handleSort('intersection_etv')}
-                      >
-                        Shared ETV ($)
-                        {getSortIcon('intersection_etv')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="p-0 font-medium"
-                        onClick={() => handleSort('overall_etv')}
-                      >
-                        Overall ETV ($)
-                        {getSortIcon('overall_etv')}
-                      </Button>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {competitors.map((competitor, index) => (
-                    <TableRow 
-                      key={competitor.domain} 
-                      className={shouldHighlight(competitor, index) 
-                        ? "bg-green-50 hover:bg-green-100" 
-                        : undefined
-                      }
+        ) : (
+          <div className="overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Competitor Domain</TableHead>
+                  <TableHead className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="h-8 px-2 text-xs font-medium"
+                      onClick={() => handleSort('intersections')}
                     >
-                      <TableCell>
-                        <div className="flex items-center">
-                          <span className="font-medium">{competitor.domain}</span>
-                          <a 
-                            href={`https://${competitor.domain}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="ml-2 text-gray-400 hover:text-gray-600"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{formatNumber(competitor.intersections)}</TableCell>
-                      <TableCell className="text-right">{competitor.avg_position}</TableCell>
-                      <TableCell className="text-right">${formatNumber(competitor.intersection_etv, 2)}</TableCell>
-                      <TableCell className="text-right">${formatNumber(competitor.overall_etv, 2)}</TableCell>
+                      Shared Keywords
+                      {renderSortIcon('intersections')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="h-8 px-2 text-xs font-medium"
+                      onClick={() => handleSort('avg_position')}
+                    >
+                      Avg. Position
+                      {renderSortIcon('avg_position')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="h-8 px-2 text-xs font-medium"
+                      onClick={() => handleSort('intersection_etv')}
+                    >
+                      Intersection ETV
+                      {renderSortIcon('intersection_etv')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="h-8 px-2 text-xs font-medium"
+                      onClick={() => handleSort('overall_etv')}
+                    >
+                      Overall ETV
+                      {renderSortIcon('overall_etv')}
+                    </Button>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : lastUpdated ? (
-            <div className="text-center py-6 text-gray-500">
-              No competitor data found for this domain.
-            </div>
-          ) : (
-            <div className="text-center py-6 text-gray-500">
-              Enter a domain and click "Analyze Competitors" to view competitor data.
-            </div>
-          )}
-        </div>
+                  ))
+                ) : competitors.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No competitor data available
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  competitors.map((competitor, index) => {
+                    // Check if this competitor is one of the top 3 by ETV or position
+                    const isTopEtv = index < 3 && sortConfig.key === 'intersection_etv';
+                    const isTopPosition = index < 3 && sortConfig.key === 'avg_position' && sortConfig.direction === 'asc';
+                    const isHighlighted = isTopEtv || isTopPosition;
+                    
+                    return (
+                      <TableRow key={competitor.domain} className={isHighlighted ? "bg-gray-50" : ""}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            {isHighlighted && (
+                              <Badge className="mr-2 bg-green-100 text-green-800 hover:bg-green-200 hover:text-green-900">
+                                {index + 1}
+                              </Badge>
+                            )}
+                            <a 
+                              href={`https://${competitor.domain}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center text-blue-600 hover:underline"
+                            >
+                              {competitor.domain}
+                              <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">{competitor.intersections.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{competitor.avg_position}</TableCell>
+                        <TableCell className="text-right">${competitor.intersection_etv.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">${competitor.overall_etv.toLocaleString()}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

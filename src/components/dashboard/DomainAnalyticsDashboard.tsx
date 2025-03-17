@@ -17,6 +17,11 @@ import { toast } from "sonner";
 export function DomainAnalyticsDashboard() {
   const [domain, setDomain] = useState("revologyanalytics.com");
   const [searchDomain, setSearchDomain] = useState(domain);
+  const [metricsFromCompetitors, setMetricsFromCompetitors] = useState({
+    organicTraffic: 0,
+    organicKeywords: 0,
+    trafficValue: 0
+  });
   const analytics = useDomainSeoAnalytics(domain);
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,9 +44,18 @@ export function DomainAnalyticsDashboard() {
   const hasLimitedData = () => {
     return !analytics.isLoading && 
            !analytics.error && 
-           analytics.organicTraffic === 0 && 
-           analytics.organicKeywords === 0 && 
+           metricsFromCompetitors.organicTraffic === 0 && 
+           metricsFromCompetitors.organicKeywords === 0 && 
            analytics.authorityScore === null;
+  };
+
+  // Handle metrics loaded from competitor API
+  const handleMetricsLoaded = (metrics: {
+    organicTraffic: number;
+    organicKeywords: number;
+    trafficValue: number;
+  }) => {
+    setMetricsFromCompetitors(metrics);
   };
   
   return (
@@ -106,11 +120,11 @@ export function DomainAnalyticsDashboard() {
       )}
       
       <DomainMetricsCards
-        organicTraffic={analytics.organicTraffic}
-        organicKeywords={analytics.organicKeywords}
+        organicTraffic={metricsFromCompetitors.organicTraffic}
+        organicKeywords={metricsFromCompetitors.organicKeywords}
         referringDomains={analytics.referringDomains}
         authorityScore={analytics.authorityScore}
-        estimatedTrafficCost={analytics.estimatedTrafficCost}
+        estimatedTrafficCost={metricsFromCompetitors.trafficValue}
         isLoading={analytics.isLoading}
       />
       
@@ -126,8 +140,11 @@ export function DomainAnalyticsDashboard() {
         />
       </div>
       
-      {/* Add the new Competitors Table component */}
-      <CompetitorsTable domain={domain} />
+      {/* Add the new Competitors Table component with onMetricsLoaded callback */}
+      <CompetitorsTable 
+        domain={domain} 
+        onMetricsLoaded={handleMetricsLoaded}
+      />
     </div>
   );
 }
