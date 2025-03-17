@@ -9,7 +9,8 @@ import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
 import { KeywordPositionChart } from "./KeywordPositionChart";
 import { TopKeywordsTable } from "./TopKeywordsTable";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DomainAnalyticsDashboard() {
   const [domain, setDomain] = useState("revologyanalytics.com");
@@ -39,21 +40,40 @@ export function DomainAnalyticsDashboard() {
           value={searchDomain}
           onChange={(e) => setSearchDomain(e.target.value)}
         />
-        <Button type="submit">
+        <Button type="submit" disabled={analytics.isLoading}>
           <Search className="h-4 w-4 mr-2" />
           Analyze
         </Button>
         {domain && (
-          <Button type="button" variant="outline" onClick={() => analytics.refetch()}>
-            <RefreshCw className="h-4 w-4" />
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => analytics.refetch()}
+            disabled={analytics.isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 ${analytics.isLoading ? 'animate-spin' : ''}`} />
           </Button>
         )}
       </form>
       
       {analytics.error && (
         <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
           <AlertDescription>
             {analytics.error}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Check if there's no data at all */}
+      {!analytics.isLoading && !analytics.error && 
+       analytics.organicTraffic === 0 && 
+       analytics.organicKeywords === 0 && 
+       analytics.authorityScore === null && (
+        <Alert>
+          <AlertTitle>Limited Data</AlertTitle>
+          <AlertDescription>
+            No data available for this domain. Try another domain or check your DataForSEO API configuration.
           </AlertDescription>
         </Alert>
       )}

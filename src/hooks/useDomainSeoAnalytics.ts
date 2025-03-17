@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDataForSeoClient, DataForSeoResponse } from './useDataForSeoClient';
+import { toast } from 'sonner';
 
 export interface DomainAnalytics {
   organicTraffic: number;
@@ -23,10 +24,11 @@ export interface DomainAnalytics {
   }[];
   isLoading: boolean;
   error: string | null;
+  refetch: () => void;
 }
 
-export function useDomainSeoAnalytics(domain: string) {
-  const [analytics, setAnalytics] = useState<DomainAnalytics>({
+export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
+  const [analytics, setAnalytics] = useState<Omit<DomainAnalytics, 'refetch'>>({
     organicTraffic: 0,
     paidTraffic: 0,
     organicKeywords: 0,
@@ -52,14 +54,17 @@ export function useDomainSeoAnalytics(domain: string) {
     try {
       // Fetch domain overview
       const overviewResponse = await dataForSeoClient.getDomainOverview(cleanDomain);
+      console.log('Domain overview response:', overviewResponse);
       
       // Fetch domain keywords
       const keywordsResponse = await dataForSeoClient.getDomainKeywords(cleanDomain);
+      console.log('Domain keywords response:', keywordsResponse);
       
       // Fetch backlink summary
       let backlinkResponse: DataForSeoResponse | null = null;
       try {
         backlinkResponse = await dataForSeoClient.getBacklinkSummary(cleanDomain);
+        console.log('Backlink response:', backlinkResponse);
       } catch (backlinksError) {
         console.warn('Failed to fetch backlink data:', backlinksError);
         // Continue with other data even if backlinks fail
@@ -77,64 +82,50 @@ export function useDomainSeoAnalytics(domain: string) {
           overviewResponse.tasks[0]?.result && overviewResponse.tasks[0]?.result.length > 0) {
         const result = overviewResponse.tasks[0].result[0];
         
-        // Extract organic metrics
-        if (result.organic) {
-          organicTraffic = result.organic.etv || 0;
-          organicKeywords = result.organic.pos_1 + 
-                           result.organic.pos_2_3 + 
-                           result.organic.pos_4_10 + 
-                           result.organic.pos_11_20 + 
-                           result.organic.pos_21_30 + 
-                           result.organic.pos_31_40 + 
-                           result.organic.pos_41_50 + 
-                           result.organic.pos_51_60 + 
-                           result.organic.pos_61_70 + 
-                           result.organic.pos_71_80 + 
-                           result.organic.pos_81_90 + 
-                           result.organic.pos_91_100 || 0;
+        // Check if we have metrics data and handle potential deeply nested structure
+        if (result) {
+          // Check if metrics are nested under 'items' or directly in result
+          const metricsData = result.items?.[0]?.metrics || result.metrics || result;
           
-          // Create keyword distribution
-          keywordDistribution = [
-            { position: "1", count: result.organic.pos_1 || 0 },
-            { position: "2-3", count: result.organic.pos_2_3 || 0 },
-            { position: "4-10", count: result.organic.pos_4_10 || 0 },
-            { position: "11-20", count: result.organic.pos_11_20 || 0 },
-            { position: "21-50", count: (result.organic.pos_21_30 || 0) + 
-                                        (result.organic.pos_31_40 || 0) + 
-                                        (result.organic.pos_41_50 || 0) },
-            { position: "51-100", count: (result.organic.pos_51_60 || 0) + 
-                                         (result.organic.pos_61_70 || 0) +
-                                         (result.organic.pos_71_80 || 0) +
-                                         (result.organic.pos_81_90 || 0) +
-                                         (result.organic.pos_91_100 || 0) }
-          ];
+          // Extract organic metrics
+          if (metricsData.organic) {
+            organicTraffic = metricsData.organic.etv || 0;
+            organicKeywords = calculateTotalKeywords(metricsData.organic);
+            estimatedTrafficCost = metricsData.organic.estimated_paid_traffic_cost || 0;
+            
+            // Create keyword distribution
+            keywordDistribution = createKeywordDistribution(metricsData.organic);
+          }
           
-          estimatedTrafficCost = result.organic.estimated_paid_traffic_cost || 0;
-        }
-        
-        // Extract paid metrics
-        if (result.paid) {
-          paidTraffic = result.paid.etv || 0;
-          paidKeywords = result.paid.pos_1 + 
-                        result.paid.pos_2_3 + 
-                        result.paid.pos_4_10 + 
-                        result.paid.pos_11_20 || 0;
+          // Extract paid metrics
+          if (metricsData.paid) {
+            paidTraffic = metricsData.paid.etv || 0;
+            paidKeywords = calculateTotalKeywords(metricsData.paid);
+          }
         }
       }
       
       // Process domain keywords for top keywords
       let topKeywords: any[] = [];
       if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 &&
-          keywordsResponse.tasks[0]?.result && keywordsResponse.tasks[0]?.result.length > 0 &&
-          keywordsResponse.tasks[0]?.result[0]?.items) {
-        topKeywords = keywordsResponse.tasks[0].result[0].items
-          .slice(0, 10)
-          .map((item: any) => ({
-            keyword: item.keyword,
-            position: item.serp_info?.position || 0,
-            search_volume: item.keyword_info?.search_volume || 0,
-            cpc: item.keyword_info?.cpc || 0
-          }));
+          keywordsResponse.tasks[0]?.result && keywordsResponse.tasks[0]?.result.length > 0) {
+        
+        // Handle potentially nested items structure
+        const keywordItems = keywordsResponse.tasks[0].result[0]?.items || 
+                            keywordsResponse.tasks[0].result[0] || 
+                            [];
+                            
+        if (Array.isArray(keywordItems)) {
+          topKeywords = keywordItems
+            .slice(0, 10)
+            .map((item: any) => ({
+              keyword: item.keyword || '',
+              position: item.serp_info?.position || item.position || 0,
+              search_volume: item.keyword_info?.search_volume || item.search_volume || 0,
+              cpc: item.keyword_info?.cpc || item.cpc || 0
+            }))
+            .filter((item: any) => item.keyword); // Only include items with keywords
+        }
       }
       
       // Process backlink data with fallbacks
@@ -149,12 +140,13 @@ export function useDomainSeoAnalytics(domain: string) {
         // Handle different data formats from backlinks_overview endpoint
         if (backlinksData.domain_info) {
           // New endpoint format
-          authorityScore = backlinksData.domain_info.rank || 0;
-          totalBacklinks = backlinksData.backlinks_summary?.total_count || 0;
-          referringDomains = backlinksData.backlinks_summary?.referring_domains_count || 0;
+          authorityScore = backlinksData.domain_info.rank || backlinksData.domain_info.trust_score || 0;
+          totalBacklinks = backlinksData.backlinks_summary?.total_count || backlinksData.total_count || 0;
+          referringDomains = backlinksData.backlinks_summary?.referring_domains_count || 
+                            backlinksData.referring_domains_count || 0;
         } else {
           // Old/fallback format
-          authorityScore = backlinksData.domain_rank || 0;
+          authorityScore = backlinksData.domain_rank || backlinksData.trust_score || 0;
           totalBacklinks = backlinksData.backlinks_count || 0;
           referringDomains = backlinksData.referring_domains_count || 0;
         }
@@ -175,6 +167,10 @@ export function useDomainSeoAnalytics(domain: string) {
         error: null
       });
       
+      if (organicTraffic === 0 && organicKeywords === 0 && authorityScore === null) {
+        toast.warning("Limited data available for this domain. Some metrics may not display.");
+      }
+      
     } catch (error) {
       console.error('Error fetching domain analytics:', error);
       setAnalytics(prev => ({
@@ -182,7 +178,54 @@ export function useDomainSeoAnalytics(domain: string) {
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch domain analytics'
       }));
+      toast.error("Failed to load domain analytics");
     }
+  };
+  
+  // Helper function to calculate total keywords from position data
+  const calculateTotalKeywords = (data: any): number => {
+    if (!data) return 0;
+    
+    let total = 0;
+    // Try to account for different API response formats
+    const positionFields = [
+      'pos_1', 'pos_2_3', 'pos_4_10', 'pos_11_20', 'pos_21_30', 
+      'pos_31_40', 'pos_41_50', 'pos_51_60', 'pos_61_70', 
+      'pos_71_80', 'pos_81_90', 'pos_91_100'
+    ];
+    
+    positionFields.forEach(field => {
+      if (data[field] !== undefined) {
+        total += data[field];
+      }
+    });
+    
+    // If we couldn't find position data, try to use keywords_count if available
+    if (total === 0 && data.keywords_count !== undefined) {
+      total = data.keywords_count;
+    }
+    
+    return total;
+  };
+  
+  // Helper function to create keyword distribution
+  const createKeywordDistribution = (data: any): { position: string, count: number }[] => {
+    if (!data) return [];
+    
+    return [
+      { position: "1", count: data.pos_1 || 0 },
+      { position: "2-3", count: data.pos_2_3 || 0 },
+      { position: "4-10", count: data.pos_4_10 || 0 },
+      { position: "11-20", count: data.pos_11_20 || 0 },
+      { position: "21-50", count: (data.pos_21_30 || 0) + 
+                                 (data.pos_31_40 || 0) + 
+                                 (data.pos_41_50 || 0) },
+      { position: "51-100", count: (data.pos_51_60 || 0) + 
+                                  (data.pos_61_70 || 0) +
+                                  (data.pos_71_80 || 0) +
+                                  (data.pos_81_90 || 0) +
+                                  (data.pos_91_100 || 0) }
+    ];
   };
   
   useEffect(() => {
