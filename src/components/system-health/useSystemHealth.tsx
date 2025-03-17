@@ -23,7 +23,9 @@ export const useSystemHealth = () => {
       { id: "gemini-pro", name: "Gemini Pro", provider: "gemini", capabilities: ["text"] },
       { id: "gemini-pro-vision", name: "Gemini Pro Vision", provider: "gemini", capabilities: ["text", "vision"] }
     ] },
-    dataForSeo: { status: "idle" }
+    dataForSeo: { status: "idle" },
+    googleAds: { status: "idle" },
+    rapidApi: { status: "idle" }
   });
   
   const [expanded, setExpanded] = useState(false);

@@ -4,21 +4,25 @@ import { Activity, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SystemHealthHeaderProps {
-  healthStatus: "good" | "warning" | "critical";
+  systemHealth: "good" | "warning" | "critical";
   expanded: boolean;
-  onToggleExpand: () => void;
+  setExpanded: (expanded: boolean) => void;
 }
 
 export const SystemHealthHeader = ({ 
-  healthStatus, 
+  systemHealth, 
   expanded, 
-  onToggleExpand 
+  setExpanded 
 }: SystemHealthHeaderProps) => {
   const healthColor = {
     good: "text-green-500",
     warning: "text-amber-500",
     critical: "text-red-500"
-  }[healthStatus];
+  }[systemHealth];
+
+  const handleToggle = () => {
+    setExpanded(!expanded);
+  };
 
   return (
     <div className="flex items-center justify-between mb-4">
@@ -30,7 +34,7 @@ export const SystemHealthHeader = ({
         variant="ghost" 
         size="sm" 
         className="h-7 w-7 p-0" 
-        onClick={onToggleExpand}
+        onClick={handleToggle}
       >
         {expanded ? <X className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
       </Button>

@@ -72,3 +72,9 @@ export interface ModelTestDialogProps {
   testModelStatus: ApiStatus;
   testResponse: string;
 }
+
+export interface RagInfo {
+  chunksRetrieved: number;
+  relevanceScore: number;
+  topicsFound?: string[];
+}

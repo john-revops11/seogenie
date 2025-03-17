@@ -1,9 +1,10 @@
 
 import { enhanceWithRAG } from './contentEnhancer';
 import { enhanceContentWithRAG, indexContentForRAG } from '@/utils/rag/contentRag';
-import { GeneratedContent, ContentOutline } from '@/services/keywords/types';
+import { GeneratedContent, ContentOutline, ContentBlock } from '@/services/keywords/types';
 import { isPineconeConfigured, testPineconeConnection } from './pineconeService';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Generates content using RAG-enhanced approach
@@ -29,14 +30,17 @@ export const generateContentWithRAG = async (
     }
     
     // Generate placeholder structure for the content
-    const placeholderBlocks = outline.headings.map(heading => ({
-      type: 'heading',
+    const placeholderBlocks: ContentBlock[] = outline.headings.map(heading => ({
+      id: uuidv4(),
+      type: 'heading2',
       content: `<h2>${heading}</h2>`,
       metadata: { heading }
     }));
     
     // Create RAG info object
     const ragInfo = {
+      chunksRetrieved: 0,
+      relevanceScore: 0,
       enabled: true,
       usedOpenAIEmbeddings: true,
       model: 'text-embedding-3-small'
@@ -175,24 +179,30 @@ const generateFAQs = (
   title: string, 
   keywords: string[], 
   relatedTopics: string[]
-): string[] => {
+): Array<{ question: string; answer: string }> => {
   const basicQuestions = [
-    `What is ${title}?`,
-    `Why is ${title} important?`,
-    `How to implement ${title}?`,
-    `What are the benefits of ${title}?`
+    { question: `What is ${title}?`, answer: "" },
+    { question: `Why is ${title} important?`, answer: "" },
+    { question: `How to implement ${title}?`, answer: "" },
+    { question: `What are the benefits of ${title}?`, answer: "" }
   ];
   
   // Generate additional questions from keywords
   const keywordQuestions = keywords
     .filter(keyword => keyword !== title && keyword.length > 3)
-    .map(keyword => `How does ${title} relate to ${keyword}?`)
+    .map(keyword => ({ 
+      question: `How does ${title} relate to ${keyword}?`, 
+      answer: "" 
+    }))
     .slice(0, 2);
   
   // Generate questions from related topics
   const topicQuestions = relatedTopics
     .filter(topic => topic !== title && topic.length > 5 && topic.length < 50)
-    .map(topic => `What is the connection between ${title} and ${topic}?`)
+    .map(topic => ({
+      question: `What is the connection between ${title} and ${topic}?`,
+      answer: ""
+    }))
     .slice(0, 2);
   
   return [...basicQuestions, ...keywordQuestions, ...topicQuestions].slice(0, 6);

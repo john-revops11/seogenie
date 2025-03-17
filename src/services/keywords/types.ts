@@ -1,4 +1,3 @@
-
 // Define DataForSEO types to avoid import error
 export interface DataForSEOTaskIdentifier {
   id: string;
@@ -104,6 +103,12 @@ export interface ContentBlock {
   id: string;
   type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image' | 'orderedList';
   content: string;
+  metadata?: {
+    level?: number;
+    section?: string;
+    heading?: string;
+    [key: string]: any;
+  };
 }
 
 // Editable content block extends ContentBlock
@@ -112,10 +117,13 @@ export interface EditableContentBlock extends ContentBlock {
 }
 
 export interface ContentOutline {
-  title: string;
+  title?: string;
   metaDescription?: string;
   headings: string[];
   outline?: string[];
+  wordCountTarget?: number;
+  keywordDensity?: number;
+  structureNotes?: string[];
   faqs?: Array<{
     question: string;
     answer: string;
@@ -125,6 +133,10 @@ export interface ContentOutline {
 export interface RagInfo {
   chunksRetrieved: number;
   relevanceScore: number;
+  topicsFound?: string[];
+  enabled?: boolean;
+  usedOpenAIEmbeddings?: boolean;
+  model?: string;
 }
 
 export interface GeneratedContent {

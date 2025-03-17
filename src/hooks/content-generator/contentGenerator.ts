@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { ContentOutline, GeneratedContent } from "@/services/keywords/types";
+import { ContentOutline, GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { 
   parseContentToBlocks, 
   formatBlocksToHtml 
@@ -10,6 +10,7 @@ import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { enhanceWithRAG } from "@/services/vector/ragService";
 import { generateContentOutline } from "@/services/vector/ragService";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import { v4 as uuidv4 } from 'uuid';
 
 interface GenerateContentParams {
   domain: string;
@@ -90,9 +91,10 @@ export const generateContent = async (params: GenerateContentParams): Promise<{
     
     // Create the content structure
     let html = `<h1>${title}</h1>\n\n`;
-    const contentBlocks = [
+    const contentBlocks: ContentBlock[] = [
       {
-        type: 'title',
+        id: uuidv4(),
+        type: 'heading1',
         content: `<h1>${title}</h1>`,
         metadata: { level: 1 }
       }
@@ -127,6 +129,7 @@ Keep it under 150 words and make it compelling.
     const introContent = await generateWithAI(aiProvider, aiModel, introPrompt, creativity);
     html += `<p>${introContent}</p>\n\n`;
     contentBlocks.push({
+      id: uuidv4(),
       type: 'paragraph',
       content: `<p>${introContent}</p>`,
       metadata: { section: 'introduction' }
@@ -136,7 +139,8 @@ Keep it under 150 words and make it compelling.
     for (const heading of outline.headings) {
       html += `<h2>${heading}</h2>\n\n`;
       contentBlocks.push({
-        type: 'heading',
+        id: uuidv4(),
+        type: 'heading2',
         content: `<h2>${heading}</h2>`,
         metadata: { level: 2 }
       });
@@ -165,7 +169,11 @@ Keep it between 200-300 words.
       html += `${sectionContent}\n\n`;
       
       // Parse the section content into blocks
-      const sectionBlocks = parseContentToBlocks(sectionContent);
+      const sectionBlocks = parseContentToBlocks(sectionContent).map(block => ({
+        ...block,
+        id: uuidv4()
+      }));
+      
       contentBlocks.push(...sectionBlocks);
     }
     
