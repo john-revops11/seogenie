@@ -34,9 +34,12 @@ const KeywordResearchTool: React.FC = () => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months.map(month => {
       const variation = Math.random() * 0.4 - 0.2; // -20% to +20%
+      const volume = Math.round(baseVolume * (1 + variation));
       return {
         month,
-        volume: Math.round(baseVolume * (1 + variation))
+        volume,
+        date: `2023-${months.indexOf(month) + 1}`, // Add a date property
+        value: volume // Make volume also available as value
       };
     });
   };
@@ -216,8 +219,8 @@ const KeywordResearchTool: React.FC = () => {
     const firstHalf = keyword.trend_data.slice(0, 6);
     const secondHalf = keyword.trend_data.slice(6);
     
-    const firstHalfAvg = firstHalf.reduce((sum, item) => sum + item.volume, 0) / firstHalf.length;
-    const secondHalfAvg = secondHalf.reduce((sum, item) => sum + item.volume, 0) / secondHalf.length;
+    const firstHalfAvg = firstHalf.reduce((sum, item) => sum + (item.volume || item.value), 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, item) => sum + (item.volume || item.value), 0) / secondHalf.length;
     
     const percentChange = ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100;
     

@@ -58,6 +58,9 @@ export const generateContentWithRAG = async (
       relevantChunks.reduce((sum, chunk) => sum + chunk.score, 0) / relevantChunks.length
     }`);
     
+    // Generate placeholder blocks for initial structure
+    const placeholderBlocks = [];
+    
     // Generate the content using OpenAI with the enhanced context
     // This is a placeholder - the actual implementation will be in the contentGenerationService
     return {
@@ -68,6 +71,7 @@ export const generateContentWithRAG = async (
       keywords: keywords,
       contentType: contentType,
       generationMethod: 'rag',
+      content: enhancedContext.substring(0, 100) + "... [Content will be generated with RAG]", // Add a placeholder content string
       ragInfo: {
         chunksRetrieved: retrievedDocs.length,
         relevanceScore: retrievedDocs.length > 0 ? 

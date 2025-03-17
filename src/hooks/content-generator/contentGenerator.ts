@@ -124,11 +124,15 @@ export const generateContent = async ({
   const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
   const metaDescription = await generateWithAI(aiProvider, modelToUse, metaPrompt, 30);
 
+  // Convert blocks to content string
+  const contentString = contentBlocks.map(block => block.content).join('\n');
+
   // Create a properly typed GeneratedContent object
   const generatedContent: GeneratedContent = {
     title,
     metaDescription,
     outline: outline.headings,
+    content: contentString, // Add the required content property
     blocks: contentBlocks,
     keywords: selectedKeywords,
     contentType: contentType,
@@ -143,9 +147,6 @@ export const generateContent = async ({
     }
   };
   
-  // Convert blocks to content string
-  const contentString = contentBlocks.map(block => block.content).join('\n');
-
   return {
     content: contentString,
     generatedContent

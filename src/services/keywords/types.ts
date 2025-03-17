@@ -123,7 +123,7 @@ export interface GeneratedContent {
   title: string;
   metaDescription: string;
   outline: string[];
-  content: string;
+  content: string; // This field is required
   blocks: ContentBlock[];
   contentType: string;
   generationMethod: 'standard' | 'rag';
