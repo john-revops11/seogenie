@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import ContentBlockRenderer from "./editor/ContentBlockRenderer";
+import { ContentBlock } from "@/services/keywords/types";
 
 interface GeneratedContentProps {
   generatedContent: {
@@ -14,13 +15,6 @@ interface GeneratedContentProps {
     content: string;
   };
   contentType: string;
-}
-
-interface ContentBlock {
-  id: string;
-  type: string;
-  content: string;
-  isEditing: boolean;
 }
 
 const GeneratedContent: React.FC<GeneratedContentProps> = ({ 
@@ -108,42 +102,6 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
     toast.success("Content block updated");
   };
 
-  // Helper function to get badge color based on block type
-  const getBlockTypeColor = (type: string) => {
-    switch (type) {
-      case 'heading1':
-        return 'bg-blue-500 text-white';
-      case 'heading2': 
-        return 'bg-blue-300 text-blue-900';
-      case 'heading3':
-        return 'bg-blue-100 text-blue-800';
-      case 'paragraph':
-        return 'bg-gray-100 text-gray-800';
-      case 'list':
-        return 'bg-green-100 text-green-800';
-      case 'orderedList':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'quote':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Helper function to get human-readable block type name
-  const getBlockTypeName = (type: string) => {
-    switch (type) {
-      case 'heading1': return 'H1';
-      case 'heading2': return 'H2';
-      case 'heading3': return 'H3';
-      case 'paragraph': return 'Paragraph';
-      case 'list': return 'Bullet List';
-      case 'orderedList': return 'Numbered List';
-      case 'quote': return 'Quote';
-      default: return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-  };
-
   const renderContent = () => {
     if (!generatedContent) return null;
     
@@ -176,15 +134,9 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           <h3 className="text-lg font-semibold">Content</h3>
           <div className="space-y-4 prose max-w-none">
             {contentBlocks.map(block => (
-              <div key={block.id} className="relative group border-2 rounded-md p-4 hover:bg-gray-50 transition-colors shadow-sm">
-                <div className="absolute top-2 left-2 z-10">
-                  <Badge className={getBlockTypeColor(block.type)}>
-                    {getBlockTypeName(block.type)}
-                  </Badge>
-                </div>
-                
+              <div key={block.id} className="relative group">
                 {block.isEditing ? (
-                  <div className="space-y-2 pt-8">
+                  <div className="space-y-2 border-2 rounded-lg p-5 mb-4 shadow-sm">
                     <Textarea 
                       className="min-h-[100px] font-mono text-sm"
                       defaultValue={block.content}
@@ -213,17 +165,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                   </div>
                 ) : (
                   <>
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: block.content }} 
-                      className={
-                        block.type === 'heading1' ? 'text-2xl font-bold mb-2 pt-8' :
-                        block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2 pt-8' :
-                        block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2 pt-8' :
-                        block.type === 'list' || block.type === 'orderedList' ? 'pl-5 my-2 space-y-1 pt-8' :
-                        block.type === 'quote' ? 'pl-4 border-l-4 border-gray-300 italic my-4 pt-8' :
-                        'my-2 pt-8'
-                      }
-                    />
+                    <ContentBlockRenderer block={block} showBadge={true} />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       <Button size="icon" variant="ghost" onClick={() => handleEditBlock(block.id)}>
                         <Edit2 className="w-4 h-4" />

@@ -5,7 +5,6 @@ import { Edit2, ArrowUpRight, ArrowDownRight, Plus, Trash2 } from "lucide-react"
 import { ContentBlock } from "@/services/keywords/types";
 import ContentBlockRenderer from "./ContentBlockRenderer";
 import WysiwygEditor from "../WysiwygEditor";
-import { Badge } from "@/components/ui/badge";
 
 interface ContentBlockListProps {
   blocks: ContentBlock[];
@@ -26,55 +25,13 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
   onMoveBlock,
   onAddBlockAfter
 }) => {
-  // Helper function to get badge color based on block type
-  const getBlockTypeColor = (type: string) => {
-    switch (type) {
-      case 'heading1':
-        return 'bg-blue-500 text-white';
-      case 'heading2': 
-        return 'bg-blue-300 text-blue-900';
-      case 'heading3':
-        return 'bg-blue-100 text-blue-800';
-      case 'paragraph':
-        return 'bg-gray-100 text-gray-800';
-      case 'list':
-        return 'bg-green-100 text-green-800';
-      case 'orderedList':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'quote':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Helper function to get human-readable block type name
-  const getBlockTypeName = (type: string) => {
-    switch (type) {
-      case 'heading1': return 'H1';
-      case 'heading2': return 'H2';
-      case 'heading3': return 'H3';
-      case 'paragraph': return 'Paragraph';
-      case 'list': return 'Bullet List';
-      case 'orderedList': return 'Numbered List';
-      case 'quote': return 'Quote';
-      default: return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {blocks.map((block, index) => (
         <div 
           key={block.id} 
-          className="relative group border-2 rounded-md p-4 hover:bg-gray-50 transition-colors shadow-sm"
+          className="relative group"
         >
-          <div className="absolute top-2 left-2 z-10">
-            <Badge className={getBlockTypeColor(block.type)}>
-              {getBlockTypeName(block.type)}
-            </Badge>
-          </div>
-          
           <div className="pt-8">
             {editingBlockId === block.id ? (
               <div className="space-y-2">
@@ -92,7 +49,7 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
                 </div>
               </div>
             ) : (
-              <ContentBlockRenderer block={block} />
+              <ContentBlockRenderer block={block} showBadge={true} />
             )}
           </div>
           
