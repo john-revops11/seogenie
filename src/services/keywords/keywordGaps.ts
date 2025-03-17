@@ -4,9 +4,178 @@ import { KeywordData, KeywordGap } from './types';
 import { extractDomain } from './utils/domainUtils';
 import { analyzeKeywordsWithAI } from './utils/aiKeywordAnalysis';
 import { findDirectKeywordGaps, prioritizeKeywordGaps } from './utils/directGapAnalysis';
+import { useDataForSeoClient } from "@/hooks/useDataForSeoClient";
 
 // Define API source options
-export type ApiSource = 'sample' | 'semrush' | 'dataforseo-live' | 'dataforseo-task';
+export type ApiSource = 'sample' | 'semrush' | 'dataforseo-live' | 'dataforseo-task' | 'dataforseo-intersection';
+
+/**
+ * Finds keyword gaps between a main domain and competitor domains using DataForSEO's domain intersection API
+ */
+export const findKeywordGapsWithDataForSEOIntersection = async (
+  mainDomain: string,
+  competitorDomains: string[],
+  dataForSeoClient: ReturnType<typeof useDataForSeoClient>,
+  locationCode: number = 2840
+): Promise<KeywordGap[]> => {
+  try {
+    const mainDomainName = extractDomain(mainDomain);
+    const competitorDomainNames = competitorDomains.map(extractDomain);
+    
+    console.log(`Finding keyword gaps using DataForSEO intersection for ${mainDomainName} vs ${competitorDomainNames.join(', ')}`);
+    
+    const allGaps: KeywordGap[] = [];
+    
+    // Process each competitor one by one
+    for (const competitorDomain of competitorDomainNames) {
+      toast.info(`Analyzing gaps between ${mainDomainName} and ${competitorDomain}...`);
+      
+      const intersectionData = await dataForSeoClient.getDomainIntersection(
+        mainDomainName,
+        competitorDomain,
+        locationCode
+      );
+      
+      if (!intersectionData.tasks || !intersectionData.tasks[0]?.result) {
+        console.warn(`No intersection data available for ${mainDomainName} vs ${competitorDomain}`);
+        continue;
+      }
+      
+      const results = intersectionData.tasks[0].result;
+      
+      if (!results || results.length === 0) {
+        console.warn(`Empty intersection results for ${mainDomainName} vs ${competitorDomain}`);
+        continue;
+      }
+      
+      // Process the intersection data to find gaps
+      const keywordGaps = processIntersectionData(results, mainDomainName, competitorDomain);
+      console.log(`Found ${keywordGaps.length} gaps between ${mainDomainName} and ${competitorDomain}`);
+      
+      allGaps.push(...keywordGaps);
+    }
+    
+    if (allGaps.length === 0) {
+      console.warn("No keyword gaps found with DataForSEO intersection API");
+      return [];
+    }
+    
+    // Prioritize the gaps and mark top opportunities
+    return prioritizeKeywordGaps(allGaps);
+  } catch (error) {
+    console.error("Error finding keyword gaps with DataForSEO intersection:", error);
+    throw error;
+  }
+};
+
+/**
+ * Process the intersection data from DataForSEO to extract keyword gaps
+ */
+const processIntersectionData = (
+  results: any[],
+  mainDomain: string,
+  competitorDomain: string
+): KeywordGap[] => {
+  const gaps: KeywordGap[] = [];
+  
+  for (const result of results) {
+    // We're looking for keywords where the competitor ranks better than the main domain
+    if (!result.keyword) continue;
+    
+    const mainDomainRank = result.target1_rank || 100;
+    const competitorRank = result.target2_rank || 100;
+    
+    // Only consider keywords where the competitor ranks better
+    if (competitorRank < mainDomainRank || (competitorRank < 20 && mainDomainRank > 30)) {
+      const difficulty = calculateDifficulty(result);
+      const opportunity = determineOpportunity(competitorRank, mainDomainRank, result.search_volume || 0);
+      
+      gaps.push({
+        keyword: result.keyword,
+        competitor: competitorDomain,
+        rank: competitorRank,
+        volume: result.search_volume || 0,
+        difficulty,
+        relevance: calculateRelevance(result, mainDomainRank),
+        competitiveAdvantage: calculateCompetitiveAdvantage(mainDomainRank, competitorRank, difficulty),
+        isTopOpportunity: false, // Will be determined in prioritizeKeywordGaps
+        opportunity
+      });
+    }
+  }
+  
+  return gaps;
+};
+
+/**
+ * Calculate keyword difficulty based on available metrics
+ */
+const calculateDifficulty = (result: any): number => {
+  if (result.keyword_difficulty !== undefined) {
+    return result.keyword_difficulty;
+  }
+  
+  // Fallback calculation based on search volume and competition
+  const searchVolume = result.search_volume || 0;
+  const competition = result.competition_index || 50;
+  
+  // Higher volume and competition means higher difficulty
+  return Math.min(Math.round((searchVolume / 1000 + competition) / 2), 100);
+};
+
+/**
+ * Calculate keyword relevance to the main domain
+ */
+const calculateRelevance = (result: any, mainDomainRank: number): number => {
+  // If the main domain ranks for the keyword at all, it's likely relevant
+  const hasMainDomainRanking = mainDomainRank < 100;
+  const relevanceBase = hasMainDomainRanking ? 70 : 50;
+  
+  // Higher search volume implies more relevance to the industry
+  const volumeBonus = Math.min(Math.log(result.search_volume || 1) * 5, 20);
+  
+  return Math.min(relevanceBase + volumeBonus, 100);
+};
+
+/**
+ * Calculate competitive advantage based on ranking positions
+ */
+const calculateCompetitiveAdvantage = (
+  mainDomainRank: number, 
+  competitorRank: number, 
+  difficulty: number
+): number => {
+  // The closer the ranks, the higher the advantage (easier to outrank)
+  const rankDifference = mainDomainRank - competitorRank;
+  const rankFactor = Math.max(100 - rankDifference * 5, 30);
+  
+  // Lower difficulty means higher advantage
+  const difficultyFactor = Math.max(100 - difficulty, 20);
+  
+  return Math.round((rankFactor + difficultyFactor) / 2);
+};
+
+/**
+ * Determine opportunity level based on rankings and search volume
+ */
+const determineOpportunity = (
+  competitorRank: number, 
+  mainDomainRank: number, 
+  searchVolume: number
+): 'high' | 'medium' | 'low' => {
+  // High opportunity if competitor ranks well, main domain doesn't, and good volume
+  if (competitorRank <= 5 && mainDomainRank > 20 && searchVolume > 500) {
+    return 'high';
+  }
+  
+  // Low opportunity if poor volume or both domains rank poorly
+  if (searchVolume < 100 || (competitorRank > 20 && mainDomainRank > 50)) {
+    return 'low';
+  }
+  
+  // Medium for everything else
+  return 'medium';
+};
 
 /**
  * Finds keyword gaps between a main domain and competitor domains
@@ -16,7 +185,7 @@ export type ApiSource = 'sample' | 'semrush' | 'dataforseo-live' | 'dataforseo-t
  * @param keywords - Keyword data including rankings
  * @param targetGapCount - Maximum number of gaps to find per competitor (default: 100)
  * @param apiSource - Source API for keyword data (default: 'sample')
- * @param locationCode - Location code for the analysis (default: 2840 for US)
+ * @param locationCode - Location code for the analysis (default: 2840)
  * @returns Array of keyword gaps with opportunity analysis
  */
 export const findKeywordGaps = async (
@@ -68,8 +237,21 @@ export const findKeywordGaps = async (
       return prioritizedGaps;
     }
     
-    // Fallback to API-specific methods if direct analysis didn't find any gaps
-    if (apiSource === 'dataforseo-live') {
+    // If direct analysis didn't find any gaps, use the specified API source
+    if (apiSource === 'dataforseo-intersection') {
+      // We'll need to create a dataForSeoClient instance for this fallback path
+      // This is not ideal but necessary for the static method to work
+      const { useDataForSeoClient } = await import("@/hooks/useDataForSeoClient");
+      // Create a temporary client
+      const tempClient = useDataForSeoClient();
+      
+      return findKeywordGapsWithDataForSEOIntersection(
+        mainDomainName,
+        competitorDomainNames,
+        tempClient,
+        locationCode
+      );
+    } else if (apiSource === 'dataforseo-live') {
       try {
         toast.info(`Using DataForSEO Live API for gap analysis`);
         

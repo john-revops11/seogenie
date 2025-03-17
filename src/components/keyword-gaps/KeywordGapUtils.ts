@@ -1,4 +1,3 @@
-
 import { KeywordGap } from "@/services/keywordService";
 import { ApiSource } from "@/services/keywords/keywordGaps";
 
@@ -26,7 +25,7 @@ export const keywordGapsCache: {
   itemsPerPage: number;
   selectedKeywords: string[];
   locationCode: number;
-  apiSource?: ApiSource; // Add the apiSource property
+  apiSource?: ApiSource; 
 } = {
   data: null,
   domain: "",
@@ -36,7 +35,7 @@ export const keywordGapsCache: {
   itemsPerPage: 15,
   selectedKeywords: [],
   locationCode: 2840, // Default to US
-  apiSource: 'sample' // Default to sample data
+  apiSource: 'dataforseo-intersection' // Default to domain intersection API
 };
 
 // Extract unique competitor names from keyword gaps

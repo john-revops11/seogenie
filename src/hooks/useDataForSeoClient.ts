@@ -1,7 +1,12 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { fetchDomainKeywords, fetchDomainAnalytics, fetchBacklinkData } from "@/services/keywords/api/dataForSeo/dataForSeoClient";
+import { 
+  fetchDomainKeywords, 
+  fetchDomainAnalytics, 
+  fetchBacklinkData,
+  fetchDomainIntersection
+} from "@/services/keywords/api/dataForSeo/dataForSeoClient";
 
 export interface DataForSeoOptions {
   location_name?: string;
@@ -110,11 +115,51 @@ export function useDataForSeoClient() {
     }
   };
   
+  const getDomainIntersection = async (
+    mainDomain: string, 
+    competitorDomain: string,
+    locationCode: number = 2840
+  ): Promise<DataForSeoResponse> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetchDomainIntersection(mainDomain, competitorDomain, locationCode);
+      
+      if (!response) {
+        console.warn(`Domain intersection API not available for ${mainDomain} vs ${competitorDomain}`);
+        setIsLoading(false);
+        return {
+          status_code: 200,
+          status_message: "No intersection data available",
+          tasks: [{
+            id: "fallback",
+            status_code: 200,
+            status_message: "No data",
+            time: new Date().toISOString(),
+            result: []
+          }],
+        };
+      }
+      
+      setIsLoading(false);
+      return response as DataForSeoResponse;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(errorMessage);
+      setIsLoading(false);
+      toast.error(`API Error: ${errorMessage}`);
+      console.error('DataForSEO Domain Intersection API error:', err);
+      return { ...DEFAULT_ERROR_RESPONSE, status_message: errorMessage, error: errorMessage };
+    }
+  };
+  
   return {
     isLoading,
     error,
     getDomainKeywords,
     getDomainOverview,
-    getBacklinkSummary
+    getBacklinkSummary,
+    getDomainIntersection
   };
 }

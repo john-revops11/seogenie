@@ -14,7 +14,8 @@ export type DataForSEOEndpoint =
   | '/v3/keywords_data/google_ads/live/regular'
   | '/v3/competitors_domain/google/organic/live/regular'
   | '/v3/keywords_data/google_ads/keywords_for_site/live'
-  | '/v3/keywords_data/google/search_volume/live';
+  | '/v3/keywords_data/google/search_volume/live'
+  | '/v3/dataforseo_labs/google/domain_intersection/live'; // Added domain intersection endpoint
 
 export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: any): Promise<T | null> => {
   const credentials = btoa(`${username}:${password}`);
@@ -84,6 +85,25 @@ export const fetchBacklinkData = async (domain: string) => {
   return callDataForSeoApi('/v3/backlinks/backlinks_overview/live', [{ 
     target: domain,
     limit: 10
+  }]);
+};
+
+// Domain Intersection for Keyword Gaps
+export const fetchDomainIntersection = async (
+  mainDomain: string, 
+  competitorDomain: string,
+  locationCode: number = 2840
+) => {
+  return callDataForSeoApi('/v3/dataforseo_labs/google/domain_intersection/live', [{ 
+    target1: mainDomain,
+    target2: competitorDomain,
+    location_code: locationCode,
+    language_code: "en",
+    include_serp_info: true,
+    include_clickstream_data: true,
+    intersections: false,
+    item_types: ["organic", "featured_snippet"],
+    limit: 100
   }]);
 };
 

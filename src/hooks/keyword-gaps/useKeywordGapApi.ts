@@ -1,14 +1,17 @@
 
 import { toast } from "sonner";
 import { KeywordGap } from "@/services/keywordService";
-import { findKeywordGaps, ApiSource } from "@/services/keywords/keywordGaps";
+import { findKeywordGaps, ApiSource, findKeywordGapsWithDataForSEOIntersection } from "@/services/keywords/keywordGaps";
 import { 
   keywordGapsCache, 
   getLocationNameByCode,
   normalizeDomainList
 } from "@/components/keyword-gaps/KeywordGapUtils";
+import { useDataForSeoClient } from "@/hooks/useDataForSeoClient";
 
 export function useKeywordGapApi() {
+  const dataForSeoClient = useDataForSeoClient();
+  
   // Function to fetch keyword gaps from the API
   const fetchKeywordGaps = async (
     domain: string,
@@ -33,7 +36,28 @@ export function useKeywordGapApi() {
         return [];
       }
       
-      const gaps = await findKeywordGaps(domain, validCompetitors, keywords, 100, apiSource, locationCode);
+      // Use the DataForSEO domain intersection API if specified
+      let gaps: KeywordGap[] = [];
+      
+      if (apiSource === 'dataforseo-intersection') {
+        toast.info(`Using DataForSEO Domain Intersection API for gap analysis`);
+        gaps = await findKeywordGapsWithDataForSEOIntersection(
+          normalizedDomain, 
+          validCompetitors,
+          dataForSeoClient,
+          locationCode
+        );
+      } else {
+        // Use the standard gap analysis method
+        gaps = await findKeywordGaps(
+          normalizedDomain, 
+          validCompetitors, 
+          keywords, 
+          100, 
+          apiSource, 
+          locationCode
+        );
+      }
       
       if (gaps && gaps.length > 0) {
         console.log(`Found ${gaps.length} keyword gaps`);
@@ -57,6 +81,7 @@ export function useKeywordGapApi() {
         keywordGapsCache.competitorDomains = normalizeDomainList(validCompetitors);
         keywordGapsCache.keywordsLength = keywords.length;
         keywordGapsCache.locationCode = locationCode;
+        keywordGapsCache.apiSource = apiSource;
         
         toast.success(`Found ${gaps.length} keyword gaps for analysis`);
         return gaps;
@@ -73,6 +98,7 @@ export function useKeywordGapApi() {
   };
 
   return {
-    fetchKeywordGaps
+    fetchKeywordGaps,
+    dataForSeoClient
   };
 }
