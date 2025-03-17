@@ -30,6 +30,11 @@ export function useKeywordGapApi() {
       // Generate a cache key based on the inputs
       const cacheKey = `${normalizedDomain}_${validCompetitors.join('_')}_${apiSource}_${locationCode}`;
       
+      // Initialize keywordGapsCache.data as an empty array if it doesn't exist
+      if (!keywordGapsCache.data) {
+        keywordGapsCache.data = [];
+      }
+      
       // Check if we already have cached results
       if (keywordGapsCache.data.length > 0 && 
           keywordGapsCache.domain === normalizedDomain &&
