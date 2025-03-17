@@ -57,7 +57,13 @@ export function useDomainSeoAnalytics(domain: string) {
       const keywordsResponse = await dataForSeoClient.getDomainKeywords(cleanDomain);
       
       // Fetch backlink summary
-      const backlinkResponse = await dataForSeoClient.getBacklinkSummary(cleanDomain);
+      let backlinkResponse: DataForSeoResponse | null = null;
+      try {
+        backlinkResponse = await dataForSeoClient.getBacklinkSummary(cleanDomain);
+      } catch (backlinksError) {
+        console.warn('Failed to fetch backlink data:', backlinksError);
+        // Continue with other data even if backlinks fail
+      }
       
       // Process domain overview data
       let organicTraffic = 0;
@@ -131,7 +137,7 @@ export function useDomainSeoAnalytics(domain: string) {
           }));
       }
       
-      // Process backlink data
+      // Process backlink data with fallbacks
       let authorityScore = null;
       let totalBacklinks = null;
       let referringDomains = null;

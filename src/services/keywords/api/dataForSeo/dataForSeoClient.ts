@@ -10,7 +10,7 @@ export type DataForSEOEndpoint =
   | '/v3/dataforseo_labs/google/domain_rank_overview/live'
   | '/v3/serp/google/organic/live/regular'
   | '/v3/on_page/tasks_post'
-  | '/v3/backlinks/live/links'
+  | '/v3/backlinks/summary'  // Changed from '/v3/backlinks/live/links' to the correct endpoint
   | '/v3/keywords_data/google_ads/live/regular'
   | '/v3/competitors_domain/google/organic/live/regular'
   | '/v3/keywords_data/google_ads/keywords_for_site/live'
@@ -34,6 +34,7 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`DataForSEO API ${endpoint} responded with ${response.status}: ${errorText}`);
       throw new Error(`API error (${response.status}): ${errorText}`);
     }
 
@@ -77,9 +78,13 @@ export const fetchOnPageData = async (urlToCheck: string) => {
   ]);
 };
 
-// Backlinks Analytics
+// Backlinks Analytics - Updated to use correct endpoint and parameters
 export const fetchBacklinkData = async (domain: string) => {
-  return callDataForSeoApi('/v3/backlinks/live/links', [{ target: domain }]);
+  // Using backlinks summary endpoint instead of links endpoint
+  return callDataForSeoApi('/v3/backlinks/summary', [{ 
+    target: domain,
+    limit: 10
+  }]);
 };
 
 // Keywords Data (Google Ads)
