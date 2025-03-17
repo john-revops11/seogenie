@@ -64,17 +64,27 @@ export const SystemHealthCard = () => {
         />
         
         <div className="px-4 pb-4 space-y-2">
-          {Object.entries(filteredApiStates).map(([key, state]) => (
-            <ApiCardDetail
-              key={key}
-              api={key as keyof ApiStates}
-              state={state}
-              expanded={expanded}
-              onRetry={() => retryApiConnection(key as keyof ApiStates)}
-              onTestModels={key === activeProvider ? handleTestModels : undefined}
-              onOpenDocs={() => openDocsForApi(key as keyof ApiStates)}
-            />
-          ))}
+          {Object.entries(filteredApiStates).map(([key, state]) => {
+            const apiKey = key as keyof ApiStates;
+            let testModelsHandler = undefined;
+            
+            // Only provide the test models handler for the appropriate providers
+            if (apiKey === 'openai' || apiKey === 'gemini') {
+              testModelsHandler = () => handleTestModels(apiKey as "openai" | "gemini");
+            }
+            
+            return (
+              <ApiCardDetail
+                key={key}
+                api={apiKey}
+                state={state}
+                expanded={expanded}
+                onRetry={() => retryApiConnection(apiKey)}
+                onTestModels={testModelsHandler}
+                onOpenDocs={() => openDocsForApi(apiKey)}
+              />
+            );
+          })}
         </div>
         
         <ModelTestDialog
