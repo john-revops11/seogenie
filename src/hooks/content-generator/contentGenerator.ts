@@ -58,7 +58,15 @@ export const generateContent = async ({
 
     // Ensure we have a valid model, fallback to primary if needed
     const primaryModel = getPrimaryModelForProvider(aiProvider);
-    const modelToUse = aiModel || (primaryModel?.id || (aiProvider === 'openai' ? 'gpt-4o' : 'gemini-1.5-pro'));
+    // Use gpt-4o instead of gpt-4o-1 (which doesn't exist)
+    let modelToUse = aiModel || (primaryModel?.id || (aiProvider === 'openai' ? 'gpt-4o' : 'gemini-1.5-pro'));
+    
+    // Fix any model name issues
+    if (modelToUse === 'gpt-4o-1') {
+      modelToUse = 'gpt-4o';
+    } else if (modelToUse === 'gpt-4.5-turbo') {
+      modelToUse = 'gpt-4-turbo';
+    }
 
     // If custom subheadings provided, use them; otherwise generate an outline
     let outline;
@@ -111,20 +119,36 @@ export const generateContent = async ({
         prompt += `Follow these style preferences: ${contentPreferences.join(", ")}. `;
       }
       
-      // Generate content for this section
-      const blockContent = await generateWithAI(aiProvider, modelToUse, prompt, creativity);
-      
-      // Add paragraph block
-      contentBlocks.push({
-        id: `block-p-${Date.now()}-${heading}`,
-        type: 'paragraph',
-        content: `<p>${blockContent}</p>`
-      });
+      try {
+        // Generate content for this section
+        const blockContent = await generateWithAI(aiProvider, modelToUse, prompt, creativity);
+        
+        // Add paragraph block
+        contentBlocks.push({
+          id: `block-p-${Date.now()}-${heading}`,
+          type: 'paragraph',
+          content: `<p>${blockContent}</p>`
+        });
+      } catch (error) {
+        console.error(`Error generating content for heading "${heading}":`, error);
+        // Add a placeholder paragraph if content generation fails
+        contentBlocks.push({
+          id: `block-p-${Date.now()}-${heading}`,
+          type: 'paragraph',
+          content: `<p>Content could not be generated for this section. Please try again or edit manually.</p>`
+        });
+      }
     }
 
     // Generate meta description
-    const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
-    const metaDescription = await generateWithAI(aiProvider, modelToUse, metaPrompt, 30);
+    let metaDescription = "";
+    try {
+      const metaPrompt = `Write a compelling meta description (150 characters max) for an article titled "${title}" about ${selectedKeywords.join(", ")}.`;
+      metaDescription = await generateWithAI(aiProvider, modelToUse, metaPrompt, 30);
+    } catch (error) {
+      console.error("Error generating meta description:", error);
+      metaDescription = `${title} - Article about ${selectedKeywords.join(", ")}`;
+    }
 
     // Convert blocks to content string
     const contentString = contentBlocks.map(block => block.content).join('\n');

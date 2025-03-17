@@ -143,7 +143,7 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
   };
 
   return (
-    <div className="block-container relative border-2 rounded-lg p-5 mb-4 shadow-sm hover:shadow-md transition-all bg-white">
+    <div className="block-container relative border-2 border-gray-200 rounded-lg p-5 mb-4 shadow-sm hover:shadow-md transition-all bg-white">
       {showBadge && (
         <div className="absolute top-2 right-2">
           <Badge className={getBlockTypeColor(block.type)}>

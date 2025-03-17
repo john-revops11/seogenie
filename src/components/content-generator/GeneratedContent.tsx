@@ -172,7 +172,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                 ) : (
                   <>
                     <ContentBlockRenderer block={block} showBadge={true} />
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <div className="absolute top-2 right-16 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       <Button size="icon" variant="ghost" onClick={() => handleEditBlock(block.id)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>

@@ -49,7 +49,7 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
                 </div>
               </div>
             ) : (
-              <ContentBlockRenderer block={block} showBadge={true} />
+              <ContentBlockRenderer block={{...block, isEditing: false}} showBadge={true} />
             )}
           </div>
           
