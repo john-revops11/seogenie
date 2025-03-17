@@ -2,23 +2,15 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
-  Plus, 
-  List, 
-  ListOrdered, 
   Heading1, 
   Heading2, 
   Heading3, 
-  Type, 
-  Quote
+  AlignLeft, 
+  List, 
+  ListOrdered, 
+  Quote 
 } from "lucide-react";
 import { ContentBlock } from "@/services/keywords/types";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 
 interface ContentEditorToolbarProps {
   onAddBlock: (type: ContentBlock['type'] | 'list' | 'orderedList') => void;
@@ -26,61 +18,82 @@ interface ContentEditorToolbarProps {
 
 const ContentEditorToolbar: React.FC<ContentEditorToolbarProps> = ({ onAddBlock }) => {
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Heading2 className="w-4 h-4 mr-1" /> Add Heading
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-48">
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => onAddBlock('heading1')}>
-              <Heading1 className="w-4 h-4 mr-2" />
-              <span>H1 Heading</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAddBlock('heading2')}>
-              <Heading2 className="w-4 h-4 mr-2" />
-              <span>H2 Heading</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAddBlock('heading3')}>
-              <Heading3 className="w-4 h-4 mr-2" />
-              <span>H3 Heading</span>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className="flex flex-wrap gap-2 bg-gray-50 p-2 rounded-md">
+      <Button 
+        type="button" 
+        size="sm" 
+        variant="outline" 
+        onClick={() => onAddBlock('heading1')}
+        className="flex items-center gap-1"
+      >
+        <Heading1 className="h-4 w-4" />
+        <span>H1</span>
+      </Button>
       
       <Button 
+        type="button" 
+        size="sm" 
         variant="outline" 
-        size="sm"
+        onClick={() => onAddBlock('heading2')}
+        className="flex items-center gap-1"
+      >
+        <Heading2 className="h-4 w-4" />
+        <span>H2</span>
+      </Button>
+      
+      <Button 
+        type="button" 
+        size="sm" 
+        variant="outline" 
+        onClick={() => onAddBlock('heading3')}
+        className="flex items-center gap-1"
+      >
+        <Heading3 className="h-4 w-4" />
+        <span>H3</span>
+      </Button>
+      
+      <Button 
+        type="button" 
+        size="sm" 
+        variant="outline" 
         onClick={() => onAddBlock('paragraph')}
+        className="flex items-center gap-1"
       >
-        <Type className="w-4 h-4 mr-1" /> Paragraph
+        <AlignLeft className="h-4 w-4" />
+        <span>Paragraph</span>
       </Button>
       
       <Button 
+        type="button" 
+        size="sm" 
         variant="outline" 
-        size="sm"
         onClick={() => onAddBlock('list')}
+        className="flex items-center gap-1"
       >
-        <List className="w-4 h-4 mr-1" /> Bullet List
+        <List className="h-4 w-4" />
+        <span>Bullet List</span>
       </Button>
       
       <Button 
+        type="button" 
+        size="sm" 
         variant="outline" 
-        size="sm"
         onClick={() => onAddBlock('orderedList')}
+        className="flex items-center gap-1"
       >
-        <ListOrdered className="w-4 h-4 mr-1" /> Numbered List
+        <ListOrdered className="h-4 w-4" />
+        <span>Numbered List</span>
       </Button>
       
       <Button 
+        type="button" 
+        size="sm" 
         variant="outline" 
-        size="sm"
         onClick={() => onAddBlock('quote')}
+        className="flex items-center gap-1"
       >
-        <Quote className="w-4 h-4 mr-1" /> Quote
+        <Quote className="h-4 w-4" />
+        <span>Quote</span>
       </Button>
     </div>
   );

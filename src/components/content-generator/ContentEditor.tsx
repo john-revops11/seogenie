@@ -24,7 +24,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
 
   // Update blocks when generatedContent changes
   useEffect(() => {
-    if (generatedContent.blocks) {
+    if (generatedContent.blocks && generatedContent.blocks.length > 0) {
       setBlocks(generatedContent.blocks);
     }
   }, [generatedContent]);

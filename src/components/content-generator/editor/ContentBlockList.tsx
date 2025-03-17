@@ -34,7 +34,7 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
         >
           <div className="pt-8">
             {editingBlockId === block.id ? (
-              <div className="space-y-2">
+              <div className="space-y-2 border-2 rounded-lg p-5 mb-4 shadow-sm bg-white">
                 <WysiwygEditor 
                   initialContent={block.content}
                   onUpdate={(html) => onSaveBlock(block.id, html)}
@@ -49,7 +49,7 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
                 </div>
               </div>
             ) : (
-              <ContentBlockRenderer block={{...block, isEditing: false}} showBadge={true} />
+              <ContentBlockRenderer block={block} showBadge={true} />
             )}
           </div>
           

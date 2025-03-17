@@ -1,10 +1,10 @@
 
 import React from "react";
-import { ContentBlock } from "@/services/keywords/types";
+import { ContentBlock, EditableContentBlock } from "@/services/keywords/types";
 import { Badge } from "@/components/ui/badge";
 
 interface ContentBlockRendererProps {
-  block: ContentBlock & { isEditing?: boolean };
+  block: ContentBlock | EditableContentBlock;
   showBadge?: boolean;
 }
 

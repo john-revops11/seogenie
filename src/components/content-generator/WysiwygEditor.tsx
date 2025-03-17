@@ -1,205 +1,117 @@
 
-import React, { useEffect } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Heading from '@tiptap/extension-heading';
-import Link from '@tiptap/extension-link';
-import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
-import ListItem from '@tiptap/extension-list-item';
-import Bold from '@tiptap/extension-bold';
-import { Button } from '@/components/ui/button';
-import { 
-  Bold as BoldIcon, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Link as LinkIcon,
-  Heading1,
-  Heading2,
-  Heading3,
-  Quote,
-  Undo,
-  Redo,
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Bold, Italic, List, ListOrdered, Quote, Heading1, Heading2, Heading3 } from "lucide-react";
 
 interface WysiwygEditorProps {
   initialContent: string;
-  onUpdate: (html: string) => void;
+  onUpdate: (content: string) => void;
 }
 
 const WysiwygEditor: React.FC<WysiwygEditorProps> = ({ initialContent, onUpdate }) => {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false, // Disable StarterKit heading to avoid duplicates
-        bulletList: false, // Disable StarterKit bulletList to avoid duplicates
-        orderedList: false, // Disable StarterKit orderedList to avoid duplicates
-        listItem: false, // Disable StarterKit listItem to avoid duplicates
-        bold: false, // Disable StarterKit bold to avoid duplicates
-      }),
-      Heading.configure({ levels: [1, 2, 3] }),
-      Link.configure({
-        openOnClick: false,
-      }),
-      BulletList,
-      OrderedList,
-      ListItem,
-      Bold,
-    ],
-    content: initialContent,
-    onUpdate: ({ editor }) => {
-      onUpdate(editor.getHTML());
-    },
-    // Add editor configuration to improve formatting
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg focus:outline-none',
-      },
-    },
-  });
-
-  // Clean up Markdown artifacts before setting content
-  const cleanContent = (content: string): string => {
-    if (!content) return '';
-    
-    // Replace markdown headings (## Heading) with proper HTML
-    let cleaned = content.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
-    cleaned = cleaned.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-    
-    // Ensure proper paragraph spacing
-    cleaned = cleaned.replace(/\n{2,}/g, '</p><p>');
-    
-    // Wrap plain text in paragraphs if not already wrapped
-    if (!cleaned.includes('<p>') && !cleaned.includes('<h')) {
-      cleaned = `<p>${cleaned}</p>`;
-    }
-    
-    return cleaned;
-  };
+  const [content, setContent] = useState(initialContent);
 
   useEffect(() => {
-    if (editor && initialContent !== editor.getHTML()) {
-      const cleanedContent = cleanContent(initialContent);
-      editor.commands.setContent(cleanedContent);
-    }
-  }, [initialContent, editor]);
+    setContent(initialContent);
+  }, [initialContent]);
 
-  if (!editor) {
-    return null;
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+    onUpdate(e.target.value);
+  };
+
+  const applyFormatting = (format: string) => {
+    const textarea = document.getElementById('wysiwyg-editor') as HTMLTextAreaElement;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    
+    let formattedText = '';
+    let cursorPosition = end;
+    
+    switch (format) {
+      case 'bold':
+        formattedText = `<strong>${selectedText}</strong>`;
+        break;
+      case 'italic':
+        formattedText = `<em>${selectedText}</em>`;
+        break;
+      case 'h1':
+        formattedText = `<h1>${selectedText}</h1>`;
+        break;
+      case 'h2':
+        formattedText = `<h2>${selectedText}</h2>`;
+        break;
+      case 'h3':
+        formattedText = `<h3>${selectedText}</h3>`;
+        break;
+      case 'ul':
+        formattedText = `<ul>\n  <li>${selectedText}</li>\n</ul>`;
+        break;
+      case 'ol':
+        formattedText = `<ol>\n  <li>${selectedText}</li>\n</ol>`;
+        break;
+      case 'quote':
+        formattedText = `<blockquote>${selectedText}</blockquote>`;
+        break;
+      default:
+        return;
+    }
+    
+    const newContent = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    setContent(newContent);
+    onUpdate(newContent);
+    
+    // Set cursor position after the newly inserted text
+    cursorPosition = start + formattedText.length;
+    
+    // setTimeout to ensure the DOM has updated
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = cursorPosition;
+      textarea.selectionEnd = cursorPosition;
+    }, 0);
+  };
 
   return (
-    <div className="border rounded-md overflow-hidden">
-      <div className="bg-gray-50 p-2 border-b flex flex-wrap gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive('bold') ? 'bg-gray-200' : ''}
-          title="Bold"
-        >
-          <BoldIcon className="h-4 w-4" />
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1 mb-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('bold')}>
+          <Bold className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive('italic') ? 'bg-gray-200' : ''}
-          title="Italic"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('italic')}>
           <Italic className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor.isActive('heading', { level: 1 }) ? 'bg-gray-200' : ''}
-          title="Heading 1"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('h1')}>
           <Heading1 className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''}
-          title="Heading 2"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('h2')}>
           <Heading2 className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={editor.isActive('heading', { level: 3 }) ? 'bg-gray-200' : ''}
-          title="Heading 3"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('h3')}>
           <Heading3 className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={editor.isActive('bulletList') ? 'bg-gray-200' : ''}
-          title="Bullet List"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('ul')}>
           <List className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={editor.isActive('orderedList') ? 'bg-gray-200' : ''}
-          title="Ordered List"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('ol')}>
           <ListOrdered className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => {
-            const url = window.prompt('URL');
-            if (url) {
-              editor.chain().focus().setLink({ href: url }).run();
-            }
-          }}
-          className={editor.isActive('link') ? 'bg-gray-200' : ''}
-          title="Link"
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={editor.isActive('blockquote') ? 'bg-gray-200' : ''}
-          title="Quote"
-        >
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('quote')}>
           <Quote className="h-4 w-4" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-          title="Undo"
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-          title="Redo"
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
       </div>
-      <div className="p-4 min-h-[250px] prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none">
-        <EditorContent editor={editor} className="h-full focus:outline-none" />
-      </div>
+      
+      <Textarea
+        id="wysiwyg-editor"
+        value={content}
+        onChange={handleChange}
+        className="min-h-[200px] font-mono text-sm"
+        placeholder="Enter your content here..."
+      />
     </div>
   );
 };

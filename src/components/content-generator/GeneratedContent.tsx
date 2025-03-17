@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ContentBlockRenderer from "./editor/ContentBlockRenderer";
-import { ContentBlock } from "@/services/keywords/types";
+import { ContentBlock, EditableContentBlock } from "@/services/keywords/types";
 
 interface GeneratedContentProps {
   generatedContent: {
@@ -15,11 +15,6 @@ interface GeneratedContentProps {
     content: string;
   };
   contentType: string;
-}
-
-// Extended ContentBlock interface for editing functionality
-interface EditableContentBlock extends ContentBlock {
-  isEditing: boolean;
 }
 
 const GeneratedContent: React.FC<GeneratedContentProps> = ({ 
@@ -68,7 +63,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
       } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
         blocks.push({
           id: `block-${index}`,
-          type: 'paragraph', 
+          type: 'paragraph',
           content: `<p>${node.textContent}</p>`,
           isEditing: false
         });
@@ -170,7 +165,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <>
+                  <div className="block-wrapper">
                     <ContentBlockRenderer block={block} showBadge={true} />
                     <div className="absolute top-2 right-16 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       <Button size="icon" variant="ghost" onClick={() => handleEditBlock(block.id)}>
@@ -180,7 +175,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             ))}

@@ -99,19 +99,23 @@ export interface ContentGenerationResponse {
   keywords: string[];
 }
 
-// New types required by various components
-
+// Content block types
 export interface ContentBlock {
   id: string;
   type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image' | 'orderedList';
   content: string;
 }
 
+// Editable content block extends ContentBlock
+export interface EditableContentBlock extends ContentBlock {
+  isEditing: boolean;
+}
+
 export interface ContentOutline {
   title: string;
   metaDescription?: string;
-  headings: string[];  // Changed from outline to headings to match code usage
-  outline?: string[];  // Keep outline for backward compatibility
+  headings: string[];
+  outline?: string[];
   faqs?: Array<{
     question: string;
     answer: string;
@@ -140,8 +144,8 @@ export interface GeneratedContent {
     max: number;
     target: number;
   };
-  customBlocksContent?: string; // New field for custom block format
-  ragInfo?: RagInfo; // Added ragInfo property to fix type error
+  customBlocksContent?: string;
+  ragInfo?: RagInfo;
 }
 
 export interface ContentTemplate {
@@ -149,8 +153,8 @@ export interface ContentTemplate {
   name: string;
   description: string;
   contentType: string;
-  structure?: string[];  // Added to match code usage
-  headings?: string[];   // Keep headings for new code
+  structure?: string[];
+  headings?: string[];
   promptTemplate?: string;
   outline?: string[];
   sampleContent?: string;
@@ -175,6 +179,6 @@ export interface TrendData {
   date: string;
   value: number;
   change?: number;
-  month?: string;   // Added to match code usage
-  volume?: number;  // Added to match code usage
+  month?: string;
+  volume?: number;
 }
