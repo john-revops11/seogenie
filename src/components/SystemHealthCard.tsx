@@ -8,6 +8,7 @@ import { ModelTestDialog } from "@/components/system-health/ModelTestDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
 import { useModelTesting } from "@/components/system-health/useModelTesting";
+import { ApiStates } from "@/types/systemHealth";
 
 export const SystemHealthCard = () => {
   const { 
@@ -29,12 +30,15 @@ export const SystemHealthCard = () => {
     handleTestModel
   } = useModelTesting();
   
-  // Filter to only show active API states
-  const filteredApiStates = Object.fromEntries(
-    Object.entries(apiStates).filter(([key]) => 
-      ["openai", "gemini", "pinecone", "dataForSeo"].includes(key)
-    )
-  );
+  // Create a properly typed filtered version of apiStates
+  const filteredApiStates: ApiStates = {
+    pinecone: apiStates.pinecone,
+    openai: apiStates.openai,
+    gemini: apiStates.gemini,
+    dataForSeo: apiStates.dataForSeo,
+    googleAds: apiStates.googleAds,
+    rapidApi: apiStates.rapidApi
+  };
   
   return (
     <Card className="overflow-hidden">

@@ -57,7 +57,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
     for (const file of files) {
       const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       
-      // Create a basic file attachment first
       const fileAttachment: FileAttachment = {
         id: fileId,
         name: file.name,
@@ -67,7 +66,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       fileAttachments.push(fileAttachment);
       
       try {
-        // For document analysis (PDF, Excel, Word, etc.)
         if (file.type === 'application/pdf' || 
             file.name.endsWith('.xlsx') || 
             file.name.endsWith('.xls') || 
@@ -78,7 +76,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
           
           const analysisResult = await analyzeDocument(file, selectedModel);
           
-          // Update the file attachment with analysis results
           const index = fileAttachments.findIndex(f => f.id === fileId);
           if (index !== -1) {
             fileAttachments[index] = {
@@ -101,7 +98,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
     
     const userMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // Create the user message
     const userMessage: Message = {
       id: userMessageId,
       role: 'user',
@@ -109,19 +105,15 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       timestamp: new Date()
     };
     
-    // Add file attachments if provided
     if (files && files.length > 0) {
-      // First add message with loading state to show user message immediately
       setMessages(prev => [...prev, userMessage]);
       
       try {
         setIsLoading(true);
         const fileAttachments = await processFiles(files);
         
-        // Update user message with processed files
         userMessage.files = fileAttachments;
         
-        // Update message in state
         setMessages(prev => 
           prev.map(msg => msg.id === userMessageId ? userMessage : msg)
         );
@@ -142,11 +134,9 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
       isLoading: true
     };
     
-    // Add both messages to state if files were not already processed
     if (!files || files.length === 0) {
       setMessages(prev => [...prev, userMessage, assistantMessage]);
     } else {
-      // Only add assistant message since user message was already added
       setMessages(prev => [...prev, assistantMessage]);
     }
     
@@ -158,7 +148,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
         .map(msg => {
           let msgText = `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`;
           
-          // Add file context if available
           if (msg.files && msg.files.length > 0) {
             msgText += '\n\nAttached files:';
             msg.files.forEach(file => {
@@ -186,7 +175,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
         })
         .join("\n\n");
       
-      // Build file context for the current message
       let fileContext = '';
       if (userMessage.files && userMessage.files.length > 0) {
         fileContext = '\n\nThe user has uploaded the following files:\n';
@@ -266,19 +254,17 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
         }
       }
       
-      // Update the model selection to use correct model names
       const modelToUse = userMessage.files && userMessage.files.length > 0 
         ? "gpt-4" 
-        : selectedModel || "gpt-4"; // Use selectedModel instead of aiModel, with fallback to gpt-4
-
+        : selectedModel || "gpt-4";
+      
       const response = await generateWithAI(
         provider,
         modelToUse,
         prompt,
-        70 // Keep reasonable temperature
+        70
       );
 
-      // Ensure response is not empty
       if (!response) {
         throw new Error("Empty response received from AI");
       }
@@ -299,7 +285,6 @@ export const AIChatTabContent: React.FC<ChatProps> = ({
     } catch (error) {
       console.error("Error generating response:", error);
       
-      // Show more descriptive error message
       const errorMessage = error instanceof Error 
         ? `Generation failed: ${error.message}` 
         : "Failed to generate response. Please try again.";

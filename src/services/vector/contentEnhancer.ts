@@ -1,6 +1,6 @@
-
 import { isPineconeConfigured, retrieveSimilarDocuments, testPineconeConnection } from './pineconeService';
 import { toast } from 'sonner';
+import { RagInfo } from '@/types/systemHealth';
 
 /**
  * Enhances content with Retrieval Augmented Generation (RAG)
@@ -11,14 +11,7 @@ export const enhanceWithRAG = async (
   heading: string,
   title: string, 
   keywords: string[]
-): Promise<{ 
-  enhancedPrompt: string; 
-  contextInfo: { 
-    chunksRetrieved: number;
-    avgScore: number;
-    topics?: string[];
-  }
-}> => {
+): Promise<string> => {
   const combinedQuery = `${title} ${heading} ${keywords.join(' ')}`;
   
   try {
@@ -26,26 +19,14 @@ export const enhanceWithRAG = async (
     if (!isPineconeConfigured()) {
       console.log("Pinecone not configured for RAG enhancement");
       // Return original prompt to allow fallback to standard generation
-      return { 
-        enhancedPrompt: prompt,
-        contextInfo: { 
-          chunksRetrieved: 0,
-          avgScore: 0
-        }
-      };
+      return prompt;
     }
     
     // Test Pinecone connection
     const testResult = await testPineconeConnection();
     if (!testResult.success) {
       console.error("Pinecone connection test failed:", testResult.message);
-      return { 
-        enhancedPrompt: prompt,
-        contextInfo: { 
-          chunksRetrieved: 0,
-          avgScore: 0
-        }
-      };
+      return prompt;
     }
     
     // Retrieve documents from Pinecone vector database
@@ -53,13 +34,7 @@ export const enhanceWithRAG = async (
     
     if (relevantDocs.length === 0) {
       console.log("No relevant documents found for RAG enhancement");
-      return { 
-        enhancedPrompt: prompt,
-        contextInfo: { 
-          chunksRetrieved: 0,
-          avgScore: 0
-        }
-      };
+      return prompt;
     }
     
     // Extract context from the retrieved documents
@@ -95,24 +70,21 @@ INSTRUCTIONS FOR USING REFERENCE CONTEXT:
     
     console.log(`RAG enhancement: Retrieved ${relevantDocs.length} documents with avg score ${avgScore.toFixed(3)}`);
     
-    return {
-      enhancedPrompt, 
-      contextInfo: {
-        chunksRetrieved: relevantDocs.length,
-        avgScore,
-        topics
-      }
+    // Store RAG info in a global or accessible place for UI display if needed
+    const ragInfo: RagInfo = {
+      chunksRetrieved: relevantDocs.length,
+      relevanceScore: avgScore,
+      topicsFound: topics.length > 0 ? topics : undefined
     };
+    
+    // We could expose this info through a context or state management
+    console.info("RAG Info for UI:", ragInfo);
+    
+    return enhancedPrompt;
   } catch (error) {
     console.error("Error enhancing with RAG:", error);
     toast.error(`RAG enhancement failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-    return { 
-      enhancedPrompt: prompt,
-      contextInfo: { 
-        chunksRetrieved: 0,
-        avgScore: 0
-      }
-    };
+    return prompt;
   }
 };
 
