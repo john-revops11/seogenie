@@ -1,12 +1,19 @@
 
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 interface VisibilityScoreCardProps {
   score: number;
+  lastUpdated: string | null;
+  isLoading?: boolean;
 }
 
-const VisibilityScoreCard: React.FC<VisibilityScoreCardProps> = ({ score }) => {
+const VisibilityScoreCard: React.FC<VisibilityScoreCardProps> = ({ 
+  score, 
+  lastUpdated,
+  isLoading = false
+}) => {
   // Determine the color based on the score
   const getScoreColor = () => {
     if (score >= 80) return "text-green-500";
@@ -28,7 +35,10 @@ const VisibilityScoreCard: React.FC<VisibilityScoreCardProps> = ({ score }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Visibility Score</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Visibility Score
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+        </CardTitle>
         <CardDescription>
           How visible your site is in search results
         </CardDescription>
@@ -44,6 +54,11 @@ const VisibilityScoreCard: React.FC<VisibilityScoreCardProps> = ({ score }) => {
           <div className="mt-4 text-sm text-gray-500 text-center">
             Based on keyword positions and search features
           </div>
+          {lastUpdated && (
+            <div className="mt-2 text-xs text-gray-400">
+              Last updated: {lastUpdated}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
