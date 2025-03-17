@@ -48,7 +48,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         
-        // Default to paragraph for unknown element types
+        // Map HTML elements to block types
         let type: ContentBlock['type'] = 'paragraph';
         
         if (tagName === 'h1') type = 'heading1';
@@ -68,7 +68,7 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
       } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
         blocks.push({
           id: `block-${index}`,
-          type: 'paragraph', // Changed from 'text' to 'paragraph' to match allowed types
+          type: 'paragraph', 
           content: `<p>${node.textContent}</p>`,
           isEditing: false
         });
