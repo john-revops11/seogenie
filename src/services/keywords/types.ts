@@ -109,8 +109,13 @@ export interface ContentBlock {
 
 export interface ContentOutline {
   title: string;
-  metaDescription: string;
-  outline: string[];
+  metaDescription?: string;
+  headings: string[];  // Changed from outline to headings to match code usage
+  outline?: string[];  // Keep outline for backward compatibility
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
 }
 
 export interface GeneratedContent {
@@ -128,6 +133,14 @@ export interface GeneratedContent {
   };
   createdAt?: string;
   keywords?: string[];
+  aiProvider?: string;  // Added to match code usage
+  aiModel?: string;     // Added to match code usage
+  wordCountOption?: string; // Added to match code usage
+  wordCount?: {
+    min: number;
+    max: number;
+    target: number;
+  };
 }
 
 export interface ContentTemplate {
@@ -135,9 +148,10 @@ export interface ContentTemplate {
   name: string;
   description: string;
   contentType: string;
-  headings: string[];
-  promptTemplate: string;
-  outline: string[];
+  structure?: string[];  // Added to match code usage
+  headings?: string[];   // Keep headings for new code
+  promptTemplate?: string;
+  outline?: string[];
   sampleContent?: string;
 }
 
@@ -153,11 +167,13 @@ export interface SeoRecommendation {
   implementationDifficulty?: 'easy' | 'medium' | 'hard';
   impact?: 'high' | 'medium' | 'low';
   timeToImplement?: string;
+  implementation?: string;
 }
 
 export interface TrendData {
   date: string;
   value: number;
   change?: number;
+  month?: string;   // Added to match code usage
+  volume?: number;  // Added to match code usage
 }
-
