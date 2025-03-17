@@ -1,12 +1,17 @@
 
 import React from "react";
 import { ContentBlock } from "@/services/keywords/types";
+import { Badge } from "@/components/ui/badge";
 
 interface ContentBlockRendererProps {
   block: ContentBlock;
+  showBadge?: boolean;
 }
 
-const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) => {
+const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ 
+  block,
+  showBadge = false
+}) => {
   // Add specific class names based on block type
   const getBlockClasses = () => {
     switch (block.type) {
@@ -26,6 +31,42 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) =>
         return 'pl-4 border-l-4 border-gray-300 italic my-4 py-2 bg-gray-50';
       default:
         return 'mt-3 mb-4';
+    }
+  };
+
+  // Get human-readable block type name for badge
+  const getBlockTypeName = (type: string) => {
+    switch (type) {
+      case 'heading1': return 'H1';
+      case 'heading2': return 'H2';
+      case 'heading3': return 'H3';
+      case 'paragraph': return 'Paragraph';
+      case 'list': return 'Bullet List';
+      case 'orderedList': return 'Numbered List';
+      case 'quote': return 'Quote';
+      default: return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+  };
+
+  // Get badge color based on block type
+  const getBlockTypeColor = (type: string) => {
+    switch (type) {
+      case 'heading1':
+        return 'bg-blue-500 text-white';
+      case 'heading2': 
+        return 'bg-blue-300 text-blue-900';
+      case 'heading3':
+        return 'bg-blue-100 text-blue-800';
+      case 'paragraph':
+        return 'bg-gray-100 text-gray-800';
+      case 'list':
+        return 'bg-green-100 text-green-800';
+      case 'orderedList':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'quote':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -102,8 +143,17 @@ const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({ block }) =>
   };
 
   return (
-    <div className="block-container">
-      {renderContent()}
+    <div className="block-container relative border-2 rounded-lg p-5 mb-4 shadow-sm hover:shadow-md transition-all bg-white">
+      {showBadge && (
+        <div className="absolute top-2 right-2">
+          <Badge className={getBlockTypeColor(block.type)}>
+            {getBlockTypeName(block.type)}
+          </Badge>
+        </div>
+      )}
+      <div className={showBadge ? "pt-6" : ""}>
+        {renderContent()}
+      </div>
     </div>
   );
 };
