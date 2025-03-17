@@ -9,6 +9,7 @@ import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
 import { KeywordPositionChart } from "./KeywordPositionChart";
 import { TopKeywordsTable } from "./TopKeywordsTable";
+import { CompetitorsTable } from "./CompetitorsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -124,6 +125,9 @@ export function DomainAnalyticsDashboard() {
           isLoading={analytics.isLoading}
         />
       </div>
+      
+      {/* Add the new Competitors Table component */}
+      <CompetitorsTable domain={domain} />
     </div>
   );
 }

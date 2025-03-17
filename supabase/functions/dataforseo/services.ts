@@ -33,6 +33,14 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
         location_code
       }]);
       
+      // Also fetch competitor data in the same call to optimize API usage
+      const competitorResult = await makeDataForSEORequest('/v3/dataforseo_labs/google/competitors_domain/live', 'POST', [{
+        target: cleanDomain,
+        location_code,
+        language_code: "en",
+        limit: 10
+      }]);
+      
       return {
         success: true,
         keywords: keywordsData.map((item: any) => ({
@@ -44,7 +52,8 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
           competition_index: item.competition_index || 50,
           rankingUrl: null, // Not provided in this endpoint
         })),
-        domain_metrics: overviewResult?.tasks?.[0]?.result?.[0] || null
+        domain_metrics: overviewResult?.tasks?.[0]?.result?.[0] || null,
+        competitors: competitorResult?.tasks?.[0]?.result?.[0]?.items || []
       };
     } catch (overviewError) {
       console.warn(`Error getting domain overview for ${domain}:`, overviewError);
@@ -58,7 +67,8 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
           competition: item.competition || 0, 
           competition_index: item.competition_index || 50,
         })),
-        domain_metrics: null
+        domain_metrics: null,
+        competitors: []
       };
     }
   } catch (error) {
@@ -104,3 +114,49 @@ export async function getKeywordVolume(keywords: string[], location_code = 2840)
     };
   }
 }
+
+// Get competitor domains for a specific target domain
+export async function getCompetitorDomains(domain: string, location_code = 2840) {
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+  
+  const data = [{
+    target: cleanDomain,
+    location_code,
+    language_code: "en",
+    exclude_top_domains: false,
+    ignore_synonyms: false,
+    include_clickstream_data: false,
+    item_types: ["organic", "paid"],
+    limit: 10,
+    order_by: ["sum_position,desc"]
+  }];
+  
+  try {
+    const result = await makeDataForSEORequest('/v3/dataforseo_labs/google/competitors_domain/live', 'POST', data);
+    
+    if (!result || !result.tasks || result.tasks.length === 0 || !result.tasks[0].result) {
+      throw new Error(`No competitor results found for domain: ${domain}`);
+    }
+    
+    const competitorData = result.tasks[0].result?.[0]?.items || [];
+    console.log(`Got ${competitorData.length} competitors for domain ${domain}`);
+    
+    return {
+      success: true,
+      competitors: competitorData.map((item: any) => ({
+        domain: item.domain || "",
+        avg_position: item.avg_position || 0,
+        intersections: item.intersections || 0,
+        overall_etv: item.full_domain_metrics?.organic?.etv || 0,
+        intersection_etv: item.metrics?.organic?.etv || 0
+      }))
+    };
+  } catch (error) {
+    console.error(`Error getting competitors for ${domain}:`, error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+

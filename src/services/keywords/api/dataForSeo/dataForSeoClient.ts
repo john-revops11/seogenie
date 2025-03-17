@@ -16,7 +16,8 @@ export type DataForSEOEndpoint =
   | '/v3/competitors_domain/google/organic/live/regular'
   | '/v3/keywords_data/google_ads/keywords_for_site/live'
   | '/v3/keywords_data/google/search_volume/live'
-  | '/v3/dataforseo_labs/google/domain_intersection/live';
+  | '/v3/dataforseo_labs/google/domain_intersection/live'
+  | '/v3/dataforseo_labs/google/competitors_domain/live';
 
 // In-memory API response cache
 const apiCache: Record<string, { data: any, timestamp: number }> = {};
@@ -130,6 +131,25 @@ export const fetchKeywordVolume = async (keywords: string[]): Promise<DataForSeo
       keywords
     }
   ]);
+};
+
+// Competitors Domain - new function for the competitors feature
+export const fetchCompetitorsDomain = async (
+  targetDomain: string,
+  locationCode: number = 2840,
+  limit: number = 10
+): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/competitors_domain/live', [{ 
+    target: targetDomain,
+    location_code: locationCode,
+    language_code: "en",
+    exclude_top_domains: false,
+    ignore_synonyms: false,
+    include_clickstream_data: false,
+    item_types: ["organic", "paid"],
+    limit: limit,
+    order_by: ["sum_position,desc"]
+  }]);
 };
 
 // Clear API cache
