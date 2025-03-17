@@ -6,6 +6,10 @@ import {
   formatBlocksToHtml 
 } from "@/services/keywords/generation/contentBlockService";
 import { AIProvider } from "@/types/aiModels";
+import { generateWithAI } from "@/services/keywords/generation/aiService";
+import { enhanceWithRAG } from "@/services/vector/ragService";
+import { generateContentOutline } from "@/services/vector/ragService";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 interface GenerateContentParams {
   domain: string;
@@ -50,70 +54,139 @@ export const generateContent = async (params: GenerateContentParams): Promise<{
   }
 
   try {
-    // For simplicity in this demo, we'll generate placeholder content
-    // In a real application, you would call your AI service here
-
-    const outlineHeadings = customSubheadings || [
-      "Introduction",
-      "What is " + title,
-      "Key Benefits",
-      "How to Implement",
-      "Best Practices",
-      "Conclusion"
-    ];
-
-    // Generate some placeholder content based on the title and keywords
-    const paragraphs = [
-      `<h1>${title}</h1>`,
-      `<p>This article explores ${title} in detail, with a focus on ${keywords.join(", ")}.</p>`,
-      `<h2>Introduction</h2>`,
-      `<p>Understanding ${title} is crucial for success in today's competitive landscape. This comprehensive guide will walk you through everything you need to know.</p>`,
-      `<h2>What is ${title}?</h2>`,
-      `<p>${title} refers to a strategic approach for optimizing performance in various contexts. The concept has gained significant traction in recent years.</p>`,
-      `<h2>Key Benefits</h2>`,
-      `<ul>
-        <li>Improved efficiency and productivity</li>
-        <li>Enhanced strategic positioning</li>
-        <li>Better resource allocation</li>
-        <li>Competitive advantage in the marketplace</li>
-      </ul>`,
-      `<h2>How to Implement</h2>`,
-      `<p>Implementing ${title} requires a thoughtful approach and careful planning. Begin by assessing your current situation and identifying areas for improvement.</p>`,
-      `<ol>
-        <li>Conduct a thorough analysis</li>
-        <li>Develop a strategic plan</li>
-        <li>Allocate necessary resources</li>
-        <li>Measure results and iterate</li>
-      </ol>`,
-      `<h2>Best Practices</h2>`,
-      `<p>To maximize the impact of ${title}, consider these best practices that industry leaders have successfully implemented.</p>`,
-      `<blockquote>The key to success with ${title} is consistency and continuous improvement.</blockquote>`,
-      `<h2>Conclusion</h2>`,
-      `<p>By leveraging ${title} effectively, organizations can achieve significant improvements in performance and strategic positioning.</p>`
-    ];
-
-    const htmlContent = paragraphs.join("\n");
+    console.log(`Generating content with RAG ${ragEnabled ? 'enabled' : 'disabled'}`);
     
-    // Parse the content into blocks
-    const contentBlocks = parseContentToBlocks(htmlContent);
+    // Use custom subheadings if provided, otherwise generate an outline
+    let outline: ContentOutline;
+    
+    if (customSubheadings && customSubheadings.length > 0) {
+      outline = {
+        headings: customSubheadings,
+        faqs: [],
+        wordCountTarget: 1200,
+        keywordDensity: 2.0
+      };
+    } else {
+      // Generate content outline with RAG if enabled
+      if (ragEnabled && isPineconeConfigured()) {
+        outline = await generateContentOutline(title, keywords, contentType);
+      } else {
+        // Default outline without RAG
+        outline = {
+          headings: [
+            "Introduction",
+            `What is ${title}`,
+            "Key Benefits",
+            "How to Implement",
+            "Best Practices",
+            "Conclusion"
+          ],
+          faqs: [],
+          wordCountTarget: 1200,
+          keywordDensity: 2.0
+        };
+      }
+    }
+    
+    // Create the content structure
+    let html = `<h1>${title}</h1>\n\n`;
+    const contentBlocks = [
+      {
+        type: 'title',
+        content: `<h1>${title}</h1>`,
+        metadata: { level: 1 }
+      }
+    ];
+    
+    // Generate introduction
+    let introPrompt = `
+Write an engaging introduction for a ${contentType} about "${title}". 
+The content should be professional, informative, and optimized for SEO.
+Include the main keywords: ${keywords.join(', ')}.
+Explain what the article will cover and why it's important.
+Keep it under 150 words and make it compelling.
+`;
+
+    // Apply RAG enhancement if enabled
+    let ragInfo = null;
+    if (ragEnabled && isPineconeConfigured()) {
+      try {
+        const enhancedResult = await enhanceWithRAG(introPrompt, "Introduction", title, keywords);
+        introPrompt = enhancedResult.enhancedPrompt;
+        ragInfo = {
+          chunksRetrieved: enhancedResult.contextInfo.chunksRetrieved,
+          relevanceScore: enhancedResult.contextInfo.avgScore,
+          topicsFound: enhancedResult.contextInfo.topics || []
+        };
+      } catch (ragError) {
+        console.error("RAG enhancement failed for intro, using standard generation:", ragError);
+      }
+    }
+    
+    // Generate the introduction with AI
+    const introContent = await generateWithAI(aiProvider, aiModel, introPrompt, creativity);
+    html += `<p>${introContent}</p>\n\n`;
+    contentBlocks.push({
+      type: 'paragraph',
+      content: `<p>${introContent}</p>`,
+      metadata: { section: 'introduction' }
+    });
+    
+    // Generate each section based on the outline
+    for (const heading of outline.headings) {
+      html += `<h2>${heading}</h2>\n\n`;
+      contentBlocks.push({
+        type: 'heading',
+        content: `<h2>${heading}</h2>`,
+        metadata: { level: 2 }
+      });
+      
+      let sectionPrompt = `
+Write a detailed section for a ${contentType} about "${title}" with the heading "${heading}".
+Include the keywords: ${keywords.join(', ')} naturally where appropriate.
+The content should be informative, engaging, and provide value to the reader.
+Include examples, statistics, or case studies if relevant to this section.
+Format with appropriate paragraphs, bullet points, or numbered lists as needed.
+Keep it between 200-300 words.
+`;
+
+      // Apply RAG enhancement for this section if enabled
+      if (ragEnabled && isPineconeConfigured()) {
+        try {
+          const enhancedResult = await enhanceWithRAG(sectionPrompt, heading, title, keywords);
+          sectionPrompt = enhancedResult.enhancedPrompt;
+        } catch (ragError) {
+          console.error(`RAG enhancement failed for section ${heading}, using standard generation:`, ragError);
+        }
+      }
+      
+      // Generate the section content with AI
+      const sectionContent = await generateWithAI(aiProvider, aiModel, sectionPrompt, creativity);
+      html += `${sectionContent}\n\n`;
+      
+      // Parse the section content into blocks
+      const sectionBlocks = parseContentToBlocks(sectionContent);
+      contentBlocks.push(...sectionBlocks);
+    }
     
     // Create the final generated content object
     const generatedContent: GeneratedContent = {
       title,
       metaDescription: `A comprehensive guide to ${title}, focusing on ${keywords.slice(0, 3).join(", ")}.`,
-      outline: outlineHeadings,
-      content: htmlContent,
+      outline: outline.headings,
+      content: html,
       blocks: contentBlocks,
       keywords,
       contentType,
       generationMethod: ragEnabled ? 'rag' : 'standard',
       aiProvider,
       aiModel,
-      wordCountOption
+      wordCountOption,
+      ragInfo
     };
 
     return {
-      content: htmlContent,
+      content: html,
       generatedContent
     };
   } catch (error) {
