@@ -9,6 +9,10 @@ import { toast } from "sonner";
 import { Loader2, ChevronRight } from "lucide-react";
 import { SeoAnimatedBackground } from "@/components/auth/SeoAnimatedBackground";
 
+// Instead of trying to access protected properties, we'll use the actual URL values
+const SUPABASE_URL = "https://rgtptfhlkplnahzehpci.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJndHB0Zmhsa3BsbmFoemVocGNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExMDI5ODEsImV4cCI6MjA1NjY3ODk4MX0.rhXFrgtnfQMfpDue4DvnxqMW59FRbscNp1Nib4VRyIQ";
+
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,11 +44,11 @@ export default function Auth() {
     const createTestUsers = async () => {
       setCreatingTestUsers(true);
       try {
-        const response = await fetch(`${supabase.supabaseUrl}/functions/v1/create-test-users`, {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-test-users`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.supabaseKey}`
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
           }
         });
         
