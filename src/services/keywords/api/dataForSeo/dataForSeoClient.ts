@@ -11,16 +11,30 @@ export type DataForSEOEndpoint =
   | '/v3/dataforseo_labs/google/domain_rank_overview/live'
   | '/v3/serp/google/organic/live/regular'
   | '/v3/on_page/tasks_post'
-  | '/v3/backlinks/backlinks_overview/live'  // Updated to the correct endpoint
+  | '/v3/backlinks/backlinks_overview/live'
   | '/v3/keywords_data/google_ads/live/regular'
   | '/v3/competitors_domain/google/organic/live/regular'
   | '/v3/keywords_data/google_ads/keywords_for_site/live'
   | '/v3/keywords_data/google/search_volume/live'
-  | '/v3/dataforseo_labs/google/domain_intersection/live'; // Added domain intersection endpoint
+  | '/v3/dataforseo_labs/google/domain_intersection/live';
+
+// In-memory API response cache
+const apiCache: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_EXPIRATION = 5 * 60 * 1000; // 5 minutes
 
 export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: any): Promise<T | null> => {
   const credentials = btoa(`${username}:${password}`);
   const url = `https://api.dataforseo.com${endpoint}`;
+  
+  // Create a cache key based on the endpoint and request data
+  const cacheKey = `${endpoint}_${JSON.stringify(data)}`;
+  
+  // Check if we have a valid cached response
+  const cachedItem = apiCache[cacheKey];
+  if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_EXPIRATION)) {
+    console.log(`Using cached DataForSEO API response for: ${endpoint}`);
+    return cachedItem.data as T;
+  }
 
   try {
     console.log(`Calling DataForSEO API: ${endpoint}`);
@@ -46,6 +60,12 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
       throw new Error(`DataForSEO API error: ${responseData.status_message || 'Unknown error'}`);
     }
     
+    // Cache the successful response
+    apiCache[cacheKey] = {
+      data: responseData,
+      timestamp: Date.now()
+    };
+    
     console.log("DataForSEO API response:", responseData);
     return responseData as T;
   } catch (error) {
@@ -55,34 +75,25 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
   }
 };
 
-// Domain Analytics
+// Domain Analytics - this can provide most metrics in a single API call
 export const fetchDomainAnalytics = async (domain: string): Promise<DataForSeoResponse | null> => {
   return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_rank_overview/live', [{ target: domain }]);
 };
 
-// SERP Organic Tracking
-export const fetchSerpData = async (keyword: string) => {
-  return callDataForSeoApi('/v3/serp/google/organic/live/regular', [
+// Domain Keywords
+export const fetchDomainKeywords = async (domain: string): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/keywords_data/google_ads/keywords_for_site/live', [
     {
-      keyword,
+      target: domain,
       location_code: 2840,
-      language_code: "en"
+      language_code: "en",
+      sort_by: "relevance"
     }
   ]);
 };
 
-// On-Page SEO Checker
-export const fetchOnPageData = async (urlToCheck: string) => {
-  return callDataForSeoApi('/v3/on_page/tasks_post', [
-    {
-      target: urlToCheck
-    }
-  ]);
-};
-
-// Backlinks Analytics - Updated to use correct endpoint
+// Backlinks Analytics
 export const fetchBacklinkData = async (domain: string): Promise<DataForSeoResponse | null> => {
-  // Using backlinks_overview endpoint instead of the incorrect summary endpoint
   return callDataForSeoApi<DataForSeoResponse>('/v3/backlinks/backlinks_overview/live', [{ 
     target: domain,
     limit: 10
@@ -110,32 +121,9 @@ export const fetchDomainIntersection = async (
   }]);
 };
 
-// Keywords Data (Google Ads)
-export const fetchKeywordData = async (keyword: string) => {
-  return callDataForSeoApi('/v3/keywords_data/google_ads/live/regular', [
-    {
-      keyword,
-      location_code: 2840,
-      language_code: "en"
-    }
-  ]);
-};
-
-// Domain Keywords
-export const fetchDomainKeywords = async (domain: string): Promise<DataForSeoResponse | null> => {
-  return callDataForSeoApi<DataForSeoResponse>('/v3/keywords_data/google_ads/keywords_for_site/live', [
-    {
-      target: domain,
-      location_code: 2840,
-      language_code: "en",
-      sort_by: "relevance"
-    }
-  ]);
-};
-
-// Keyword Search Volume
-export const fetchKeywordVolume = async (keywords: string[]) => {
-  return callDataForSeoApi('/v3/keywords_data/google/search_volume/live', [
+// Keyword Search Volume - used for bulk keyword data
+export const fetchKeywordVolume = async (keywords: string[]): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/keywords_data/google/search_volume/live', [
     {
       language_code: "en",
       location_code: 2840,
@@ -144,7 +132,8 @@ export const fetchKeywordVolume = async (keywords: string[]) => {
   ]);
 };
 
-// Competitor Data
-export const fetchCompetitorData = async (domain: string) => {
-  return callDataForSeoApi('/v3/competitors_domain/google/organic/live/regular', [{ target: domain }]);
+// Clear API cache
+export const clearApiCache = (): void => {
+  Object.keys(apiCache).forEach(key => delete apiCache[key]);
+  console.log("DataForSEO API cache cleared");
 };

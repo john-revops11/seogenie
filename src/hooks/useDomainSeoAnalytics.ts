@@ -27,6 +27,15 @@ export interface DomainAnalytics {
   refetch: () => void;
 }
 
+// Cache to store domain analysis results
+const analysisCache: Record<string, {
+  data: Omit<DomainAnalytics, 'refetch' | 'isLoading' | 'error'>,
+  timestamp: number
+}> = {};
+
+// Cache expiration time (5 minutes)
+const CACHE_EXPIRY = 5 * 60 * 1000;
+
 export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
   const [analytics, setAnalytics] = useState<Omit<DomainAnalytics, 'refetch'>>({
     organicTraffic: 0,
@@ -49,10 +58,24 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
     if (!domainUrl) return;
     
     const cleanDomain = domainUrl.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+    
+    // Check if we have cached data that's still valid
+    const cachedData = analysisCache[cleanDomain];
+    if (cachedData && (Date.now() - cachedData.timestamp < CACHE_EXPIRY)) {
+      console.log('Using cached domain analytics data for:', cleanDomain);
+      setAnalytics({
+        ...cachedData.data,
+        isLoading: false,
+        error: null
+      });
+      return;
+    }
+    
     setAnalytics(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      // Fetch domain overview
+      // Fetch domain overview - this single API call provides most of the data we need
+      // We only need to make additional calls if specific data isn't available here
       const overviewResponse = await dataForSeoClient.getDomainOverview(cleanDomain);
       console.log('Domain overview response:', overviewResponse);
       
@@ -63,27 +86,6 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
         throw new Error(errorMsg);
       }
       
-      // Fetch domain keywords
-      const keywordsResponse = await dataForSeoClient.getDomainKeywords(cleanDomain);
-      console.log('Domain keywords response:', keywordsResponse);
-      
-      // Check for API quota errors in keywords response
-      if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 && 
-          keywordsResponse.tasks[0]?.status_code === 40203) {
-        const errorMsg = keywordsResponse.tasks[0]?.status_message || "API quota exceeded";
-        throw new Error(errorMsg);
-      }
-      
-      // Fetch backlink summary
-      let backlinkResponse: DataForSeoResponse | null = null;
-      try {
-        backlinkResponse = await dataForSeoClient.getBacklinkSummary(cleanDomain);
-        console.log('Backlink response:', backlinkResponse);
-      } catch (backlinksError) {
-        console.warn('Failed to fetch backlink data:', backlinksError);
-        // Continue with other data even if backlinks fail
-      }
-      
       // Process domain overview data
       let organicTraffic = 0;
       let paidTraffic = 0;
@@ -91,7 +93,12 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
       let paidKeywords = 0;
       let estimatedTrafficCost = 0;
       let keywordDistribution: { position: string, count: number }[] = [];
+      let topKeywords: any[] = [];
+      let authorityScore = null;
+      let totalBacklinks = null;
+      let referringDomains = null;
       
+      // Extract overview data
       if (overviewResponse && overviewResponse.tasks && overviewResponse.tasks.length > 0 && 
           overviewResponse.tasks[0]?.result && overviewResponse.tasks[0]?.result.length > 0) {
         const result = overviewResponse.tasks[0].result[0];
@@ -116,57 +123,97 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
             paidTraffic = metricsData.paid.etv || 0;
             paidKeywords = calculateTotalKeywords(metricsData.paid);
           }
+          
+          // Extract authority metrics if available
+          if (metricsData.backlinks_info) {
+            authorityScore = metricsData.backlinks_info.domain_rank || 
+                            metricsData.backlinks_info.trust_score || null;
+            totalBacklinks = metricsData.backlinks_info.backlinks_count || null;
+            referringDomains = metricsData.backlinks_info.referring_domains_count || null;
+          }
         }
       }
       
-      // Process domain keywords for top keywords
-      let topKeywords: any[] = [];
-      if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 &&
-          keywordsResponse.tasks[0]?.result && keywordsResponse.tasks[0]?.result.length > 0) {
-        
-        // Handle potentially nested items structure
-        const keywordItems = keywordsResponse.tasks[0].result[0]?.items || 
-                            keywordsResponse.tasks[0].result[0] || 
-                            [];
-                            
-        if (Array.isArray(keywordItems)) {
-          topKeywords = keywordItems
-            .slice(0, 10)
-            .map((item: any) => ({
-              keyword: item.keyword || '',
-              position: item.serp_info?.position || item.position || 0,
-              search_volume: item.keyword_info?.search_volume || item.search_volume || 0,
-              cpc: item.keyword_info?.cpc || item.cpc || 0
-            }))
-            .filter((item: any) => item.keyword); // Only include items with keywords
+      // Only fetch domain keywords if we need them (top keywords aren't in overview)
+      // and if we have some organic traffic/keywords (to avoid unnecessary API calls)
+      if (organicKeywords > 0 || !keywordDistribution.length) {
+        try {
+          const keywordsResponse = await dataForSeoClient.getDomainKeywords(cleanDomain);
+          console.log('Domain keywords response:', keywordsResponse);
+          
+          // Check for API quota errors
+          if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 && 
+              keywordsResponse.tasks[0]?.status_code === 40203) {
+            const errorMsg = keywordsResponse.tasks[0]?.status_message || "API quota exceeded";
+            throw new Error(errorMsg);
+          }
+          
+          // Process domain keywords for top keywords
+          if (keywordsResponse && keywordsResponse.tasks && keywordsResponse.tasks.length > 0 &&
+              keywordsResponse.tasks[0]?.result && keywordsResponse.tasks[0]?.result.length > 0) {
+            
+            // Handle potentially nested items structure
+            const keywordItems = keywordsResponse.tasks[0].result[0]?.items || 
+                                keywordsResponse.tasks[0].result[0] || 
+                                [];
+                                
+            if (Array.isArray(keywordItems)) {
+              topKeywords = keywordItems
+                .slice(0, 10)
+                .map((item: any) => ({
+                  keyword: item.keyword || '',
+                  position: item.serp_info?.position || item.position || 0,
+                  search_volume: item.keyword_info?.search_volume || item.search_volume || 0,
+                  cpc: item.keyword_info?.cpc || item.cpc || 0
+                }))
+                .filter((item: any) => item.keyword); // Only include items with keywords
+            }
+          }
+        } catch (keywordsError) {
+          console.warn('Failed to fetch keywords data:', keywordsError);
+          // Continue with the data we have
         }
       }
       
-      // Process backlink data with fallbacks
-      let authorityScore = null;
-      let totalBacklinks = null;
-      let referringDomains = null;
-      
-      if (backlinkResponse && backlinkResponse.tasks && backlinkResponse.tasks.length > 0 &&
-          backlinkResponse.tasks[0]?.result && backlinkResponse.tasks[0]?.result.length > 0) {
-        const backlinksData = backlinkResponse.tasks[0].result[0];
-        
-        // Handle different data formats from backlinks_overview endpoint
-        if (backlinksData.domain_info) {
-          // New endpoint format
-          authorityScore = backlinksData.domain_info.rank || backlinksData.domain_info.trust_score || 0;
-          totalBacklinks = backlinksData.backlinks_summary?.total_count || backlinksData.total_count || 0;
-          referringDomains = backlinksData.backlinks_summary?.referring_domains_count || 
-                            backlinksData.referring_domains_count || 0;
-        } else {
-          // Old/fallback format
-          authorityScore = backlinksData.domain_rank || backlinksData.trust_score || 0;
-          totalBacklinks = backlinksData.backlinks_count || 0;
-          referringDomains = backlinksData.referring_domains_count || 0;
+      // Only fetch backlink data if not available in overview response
+      if (authorityScore === null || referringDomains === null) {
+        try {
+          const backlinkResponse = await dataForSeoClient.getBacklinkSummary(cleanDomain);
+          console.log('Backlink response:', backlinkResponse);
+          
+          if (backlinkResponse && backlinkResponse.tasks && backlinkResponse.tasks.length > 0 &&
+              backlinkResponse.tasks[0]?.result && backlinkResponse.tasks[0]?.result.length > 0) {
+            const backlinksData = backlinkResponse.tasks[0].result[0];
+            
+            // Handle different data formats from backlinks_overview endpoint
+            if (backlinksData.domain_info) {
+              // New endpoint format
+              authorityScore = backlinksData.domain_info.rank || 
+                              backlinksData.domain_info.trust_score || 
+                              authorityScore;
+              totalBacklinks = backlinksData.backlinks_summary?.total_count || 
+                              backlinksData.total_count || 
+                              totalBacklinks;
+              referringDomains = backlinksData.backlinks_summary?.referring_domains_count || 
+                                backlinksData.referring_domains_count || 
+                                referringDomains;
+            } else {
+              // Old/fallback format
+              authorityScore = backlinksData.domain_rank || 
+                              backlinksData.trust_score || 
+                              authorityScore;
+              totalBacklinks = backlinksData.backlinks_count || totalBacklinks;
+              referringDomains = backlinksData.referring_domains_count || referringDomains;
+            }
+          }
+        } catch (backlinksError) {
+          console.warn('Failed to fetch backlink data:', backlinksError);
+          // Continue with the data we have
         }
       }
       
-      setAnalytics({
+      // Save analysis results to state and cache
+      const analysisResult = {
         organicTraffic,
         paidTraffic,
         organicKeywords,
@@ -179,7 +226,26 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
         topKeywords,
         isLoading: false,
         error: null
-      });
+      };
+      
+      setAnalytics(analysisResult);
+      
+      // Cache the results
+      analysisCache[cleanDomain] = {
+        data: {
+          organicTraffic,
+          paidTraffic,
+          organicKeywords,
+          paidKeywords,
+          estimatedTrafficCost,
+          authorityScore,
+          totalBacklinks,
+          referringDomains,
+          keywordDistribution,
+          topKeywords,
+        },
+        timestamp: Date.now()
+      };
       
       if (organicTraffic === 0 && organicKeywords === 0 && authorityScore === null) {
         toast.warning("Limited data available for this domain. Some metrics may not display.");

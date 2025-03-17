@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { 
   fetchDomainKeywords, 
@@ -34,18 +34,53 @@ const DEFAULT_ERROR_RESPONSE: DataForSeoResponse = {
   error: "Failed to fetch data"
 };
 
+// Cache to store API responses
+interface CacheItem {
+  response: DataForSeoResponse;
+  timestamp: number;
+}
+
+// Cache expiration time (5 minutes)
+const CACHE_EXPIRY = 5 * 60 * 1000;
+
 export function useDataForSeoClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const getDomainKeywords = async (domain: string): Promise<DataForSeoResponse> => {
+  
+  // Use useRef for cache to persist between renders
+  const cache = useRef<Record<string, CacheItem>>({});
+  
+  // Helper for API calls with caching
+  const cachedApiCall = async (
+    cacheKey: string,
+    apiFn: () => Promise<DataForSeoResponse | null>
+  ): Promise<DataForSeoResponse> => {
+    // Check if we have a valid cached response
+    const cachedItem = cache.current[cacheKey];
+    if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_EXPIRY)) {
+      console.log(`Using cached data for: ${cacheKey}`);
+      return cachedItem.response;
+    }
+    
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetchDomainKeywords(domain);
+      const response = await apiFn();
+      
+      // If the API call fails, return an error response
+      if (!response) {
+        throw new Error("API call failed");
+      }
+      
+      // Cache the response
+      cache.current[cacheKey] = {
+        response: response,
+        timestamp: Date.now()
+      };
+      
       setIsLoading(false);
-      return response as DataForSeoResponse || DEFAULT_ERROR_RESPONSE;
+      return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
@@ -55,26 +90,25 @@ export function useDataForSeoClient() {
       return { ...DEFAULT_ERROR_RESPONSE, status_message: errorMessage, error: errorMessage };
     }
   };
+
+  const getDomainKeywords = async (domain: string): Promise<DataForSeoResponse> => {
+    return cachedApiCall(`domain_keywords_${domain}`, () => fetchDomainKeywords(domain));
+  };
   
   const getDomainOverview = async (domain: string): Promise<DataForSeoResponse> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetchDomainAnalytics(domain);
-      setIsLoading(false);
-      return response as DataForSeoResponse || DEFAULT_ERROR_RESPONSE;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(errorMessage);
-      setIsLoading(false);
-      toast.error(`API Error: ${errorMessage}`);
-      console.error('DataForSEO Domain Overview API error:', err);
-      return { ...DEFAULT_ERROR_RESPONSE, status_message: errorMessage, error: errorMessage };
-    }
+    return cachedApiCall(`domain_overview_${domain}`, () => fetchDomainAnalytics(domain));
   };
   
   const getBacklinkSummary = async (domain: string): Promise<DataForSeoResponse> => {
+    // For backlink API, we need special handling since it might return null for some domains
+    const cacheKey = `backlink_summary_${domain}`;
+    const cachedItem = cache.current[cacheKey];
+    
+    if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_EXPIRY)) {
+      console.log(`Using cached backlink data for: ${domain}`);
+      return cachedItem.response;
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -85,7 +119,8 @@ export function useDataForSeoClient() {
       if (!response) {
         console.warn('Backlink API not available for this domain, returning empty data');
         setIsLoading(false);
-        return {
+        
+        const fallbackResponse = {
           status_code: 200,
           status_message: "No backlink data available for this domain",
           tasks: [{
@@ -101,10 +136,24 @@ export function useDataForSeoClient() {
             }]
           }],
         };
+        
+        // Cache the fallback response
+        cache.current[cacheKey] = {
+          response: fallbackResponse,
+          timestamp: Date.now()
+        };
+        
+        return fallbackResponse;
       }
       
+      // Cache the actual response
+      cache.current[cacheKey] = {
+        response: response,
+        timestamp: Date.now()
+      };
+      
       setIsLoading(false);
-      return response as DataForSeoResponse;
+      return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
@@ -120,54 +169,13 @@ export function useDataForSeoClient() {
     target2Domain: string,
     locationCode: number = 2840
   ): Promise<DataForSeoResponse> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`Fetching domain intersection for ${target1Domain} vs ${target2Domain} (location: ${locationCode})`);
-      const response = await fetchDomainIntersection(target1Domain, target2Domain, locationCode);
-      
-      if (!response) {
-        console.warn(`Domain intersection API not available for ${target1Domain} vs ${target2Domain}`);
-        setIsLoading(false);
-        return {
-          status_code: 200,
-          status_message: "No intersection data available",
-          tasks: [{
-            id: "fallback",
-            status_code: 200,
-            status_message: "No data",
-            time: new Date().toISOString(),
-            result: []
-          }],
-        };
-      }
-      
-      // Properly type-cast the response before accessing properties
-      const typedResponse = response as DataForSeoResponse;
-      
-      // Log more details for debugging
-      if (typedResponse.tasks && typedResponse.tasks[0] && typedResponse.tasks[0].result) {
-        console.log(`Domain intersection found ${typedResponse.tasks[0].result.length} results`);
-        
-        if (typedResponse.tasks[0].result.length > 0) {
-          const firstResult = typedResponse.tasks[0].result[0];
-          console.log(`Sample result: ${JSON.stringify(firstResult).substring(0, 200)}...`);
-        }
-      } else {
-        console.warn("Domain intersection API returned no results");
-      }
-      
-      setIsLoading(false);
-      return typedResponse;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(errorMessage);
-      setIsLoading(false);
-      toast.error(`API Error: ${errorMessage}`);
-      console.error('DataForSEO Domain Intersection API error:', err);
-      return { ...DEFAULT_ERROR_RESPONSE, status_message: errorMessage, error: errorMessage };
-    }
+    const cacheKey = `domain_intersection_${target1Domain}_${target2Domain}_${locationCode}`;
+    return cachedApiCall(cacheKey, () => fetchDomainIntersection(target1Domain, target2Domain, locationCode));
+  };
+  
+  const clearCache = () => {
+    cache.current = {};
+    console.log("DataForSEO API cache cleared");
   };
   
   return {
@@ -176,6 +184,7 @@ export function useDataForSeoClient() {
     getDomainKeywords,
     getDomainOverview,
     getBacklinkSummary,
-    getDomainIntersection
+    getDomainIntersection,
+    clearCache
   };
 }

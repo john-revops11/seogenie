@@ -27,6 +27,19 @@ export function useKeywordGapApi() {
         .filter(d => d && d.trim() !== '')
         .map(d => d.trim());
       
+      // Generate a cache key based on the inputs
+      const cacheKey = `${normalizedDomain}_${validCompetitors.join('_')}_${apiSource}_${locationCode}`;
+      
+      // Check if we already have cached results
+      if (keywordGapsCache.data.length > 0 && 
+          keywordGapsCache.domain === normalizedDomain &&
+          arraysEqual(keywordGapsCache.competitorDomains, normalizeDomainList(validCompetitors)) &&
+          keywordGapsCache.locationCode === locationCode &&
+          keywordGapsCache.apiSource === apiSource) {
+        console.log("Using cached keyword gaps");
+        return keywordGapsCache.data;
+      }
+      
       console.log(`Generating keyword gaps for ${normalizedDomain} vs`, validCompetitors);
       console.log(`Using API source: ${apiSource} and location: ${getLocationNameByCode(locationCode)}`);
       
@@ -37,6 +50,7 @@ export function useKeywordGapApi() {
       }
       
       // Use the DataForSEO domain intersection API if specified
+      // This is the most efficient way to get keyword gaps
       let gaps: KeywordGap[] = [];
       
       if (apiSource === 'dataforseo-intersection') {
@@ -62,20 +76,7 @@ export function useKeywordGapApi() {
       if (gaps && gaps.length > 0) {
         console.log(`Found ${gaps.length} keyword gaps`);
         
-        // Debug: Check which competitors actually appear in the results
-        const competitorsInGaps = new Set<string>();
-        const gapsByCompetitor = new Map<string, number>();
-        
-        gaps.forEach(gap => {
-          if (gap.competitor) {
-            competitorsInGaps.add(gap.competitor);
-            gapsByCompetitor.set(gap.competitor, (gapsByCompetitor.get(gap.competitor) || 0) + 1);
-          }
-        });
-        
-        console.log("Competitors present in the gaps:", Array.from(competitorsInGaps));
-        console.log("Gaps by competitor:", Object.fromEntries(gapsByCompetitor));
-        
+        // Update cache
         keywordGapsCache.data = gaps;
         keywordGapsCache.domain = normalizedDomain;
         keywordGapsCache.competitorDomains = normalizeDomainList(validCompetitors);
@@ -95,6 +96,15 @@ export function useKeywordGapApi() {
       toast.error(`Failed to fetch keyword gaps: ${(error as Error).message}`);
       return null;
     }
+  };
+  
+  // Helper function to compare arrays
+  const arraysEqual = (arr1: string[], arr2: string[]): boolean => {
+    if (arr1.length !== arr2.length) return false;
+    for (let i = 0; i < arr1.length; i++) {
+      if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
   };
 
   return {
