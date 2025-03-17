@@ -60,26 +60,18 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
 
     setLoadingTopics(true);
     try {
-      const topics = generateTopicSuggestions("", [], null, keywords);
+      // Create simple topics based on keywords
+      const topics = keywords.map(keyword => `Guide to ${keyword}`);
       
-      if (topics.length < 10) {
-        const currentYear = new Date().getFullYear();
-        const additionalTopics = [
-          `Complete Guide to ${keywords[0]} in ${currentYear}`,
-          `How to Master ${keywords[0]}: Expert Tips`,
-          `${keywords[0]}: Everything You Need to Know`,
-          `The Ultimate ${keywords[0]} Strategy Guide`,
-          `Understanding ${keywords[0]}: A Comprehensive Guide`,
-          ...keywords.slice(1).map(kw => `${keywords[0]} and ${kw}: Complete Guide`),
-          ...keywords.map(kw => `${kw} Mastery: Step by Step Guide`)
-        ];
-        
-        const allTopics = [...topics, ...additionalTopics];
-        setSuggestedTopics(Array.from(new Set(allTopics)).slice(0, 15));
-      } else {
-        setSuggestedTopics(topics.slice(0, 15));
-      }
+      const currentYear = new Date().getFullYear();
+      const additionalTopics = [
+        ...keywords.map(k => `Complete Guide to ${k} in ${currentYear}`),
+        ...keywords.map(k => `How to Master ${k}: Expert Tips`),
+        ...keywords.map(k => `${k}: Everything You Need to Know`),
+        ...keywords.map(k => `The Ultimate ${k} Strategy Guide`),
+      ];
       
+      setSuggestedTopics([...topics, ...additionalTopics].slice(0, 15));
       toast.success("Topic suggestions generated!");
     } catch (error) {
       console.error("Error generating topic suggestions:", error);
@@ -106,6 +98,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
       const provider = 'openai';
       const titles = await generateTitlesWithAI(provider, topic, keywords, contentType);
       
+      // If we don't get enough titles, generate some simple ones
       if (titles.length < 5) {
         const currentYear = new Date().getFullYear();
         const additionalTitles = [
