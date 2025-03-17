@@ -22,6 +22,12 @@ export interface DomainAnalytics {
     search_volume: number;
     cpc: number;
   }[];
+  keywordTrends: {
+    new: number;
+    up: number;
+    down: number;
+    lost: number;
+  };
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
@@ -48,6 +54,12 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
     referringDomains: null,
     keywordDistribution: [],
     topKeywords: [],
+    keywordTrends: {
+      new: 0,
+      up: 0,
+      down: 0,
+      lost: 0
+    },
     isLoading: false,
     error: null
   });
@@ -97,6 +109,12 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
       let authorityScore = null;
       let totalBacklinks = null;
       let referringDomains = null;
+      let keywordTrends = {
+        new: 0,
+        up: 0,
+        down: 0,
+        lost: 0
+      };
       
       // Extract overview data
       if (overviewResponse && overviewResponse.tasks && overviewResponse.tasks.length > 0 && 
@@ -116,6 +134,14 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
             
             // Create keyword distribution
             keywordDistribution = createKeywordDistribution(metricsData.organic);
+            
+            // Extract keyword trends
+            keywordTrends = {
+              new: metricsData.organic.is_new || 0,
+              up: metricsData.organic.is_up || 0,
+              down: metricsData.organic.is_down || 0,
+              lost: metricsData.organic.is_lost || 0
+            };
           }
           
           // Extract paid metrics
@@ -224,6 +250,7 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
         referringDomains,
         keywordDistribution,
         topKeywords,
+        keywordTrends,
         isLoading: false,
         error: null
       };
@@ -243,6 +270,7 @@ export function useDomainSeoAnalytics(domain: string): DomainAnalytics {
           referringDomains,
           keywordDistribution,
           topKeywords,
+          keywordTrends
         },
         timestamp: Date.now()
       };

@@ -77,8 +77,13 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
 };
 
 // Domain Analytics - this can provide most metrics in a single API call
-export const fetchDomainAnalytics = async (domain: string): Promise<DataForSeoResponse | null> => {
-  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_rank_overview/live', [{ target: domain }]);
+export const fetchDomainAnalytics = async (domain: string, locationCode: number = 2840): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_rank_overview/live', [{ 
+    target: domain,
+    location_code: locationCode,
+    language_code: "en",
+    ignore_synonyms: false
+  }]);
 };
 
 // Domain Keywords

@@ -153,11 +153,12 @@ export function DomainAnalyticsDashboard() {
       {apiCallsMade && (
         <>
           <DomainMetricsCards
-            organicTraffic={metricsFromCompetitors.organicTraffic}
-            organicKeywords={metricsFromCompetitors.organicKeywords}
+            organicTraffic={analytics.organicTraffic || metricsFromCompetitors.organicTraffic}
+            organicKeywords={analytics.organicKeywords || metricsFromCompetitors.organicKeywords}
             referringDomains={analytics.referringDomains}
             authorityScore={analytics.authorityScore}
-            estimatedTrafficCost={metricsFromCompetitors.trafficValue}
+            estimatedTrafficCost={analytics.estimatedTrafficCost || metricsFromCompetitors.trafficValue}
+            keywordTrends={analytics.keywordTrends}
             isLoading={analytics.isLoading}
           />
           
