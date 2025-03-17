@@ -1,6 +1,6 @@
 
 import { cn } from "@/lib/utils";
-import { Activity, X, ExternalLink } from "lucide-react";
+import { BarChart2, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface SystemHealthHeaderProps {
@@ -27,8 +27,8 @@ export const SystemHealthHeader = ({
   return (
     <div className="flex items-center justify-between px-4 mb-4">
       <div className="flex items-center space-x-2">
-        <Activity className={cn("h-5 w-5", healthColor)} />
-        <h3 className="font-medium text-sm">System Health</h3>
+        <BarChart2 className={cn("h-5 w-5", healthColor)} />
+        <h3 className="font-medium text-sm">SEO Tools Status</h3>
       </div>
       <Button 
         variant="ghost" 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -12,7 +11,6 @@ import SeoAnalyticsTabContent from "@/components/tabs/SeoAnalyticsTabContent";
 import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
-import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
 import { DomainAnalyticsDashboard } from "@/components/dashboard/DomainAnalyticsDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -103,10 +101,6 @@ const Index = () => {
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex justify-between items-center mb-4">
-        <ApiHealthCard />
-      </div>
-      
       <Header analysisComplete={analysisComplete} onReset={handleReset} />
       
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">

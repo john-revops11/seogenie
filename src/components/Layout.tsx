@@ -7,7 +7,7 @@ import { UserAuthDisplay } from "./dashboard/UserAuthDisplay";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiHealthCard } from "./api-integration/ApiHealthCard";
+import SystemHealthCard from "./SystemHealthCard";
 
 interface LayoutProps {
   children: ReactNode;
@@ -52,7 +52,7 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="fixed inset-0 bg-grid-black/[0.02] -z-10"></div>
       <div className="flex justify-between items-center p-4">
         <UserAuthDisplay user={user} />
-        <ApiHealthCard />
+        <SystemHealthCard />
       </div>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         {children}

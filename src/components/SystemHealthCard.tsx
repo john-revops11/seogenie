@@ -6,6 +6,9 @@ import { ModelTestDialog } from "@/components/system-health/ModelTestDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { useModelTesting } from "@/components/system-health/useModelTesting";
 import { ApiStates } from "@/types/systemHealth";
+import { Search, BarChart2 } from "lucide-react";
+import { SystemHealthHeader } from "@/components/system-health/SystemHealthHeader";
+import { ApiCardDetail } from "@/components/system-health/ApiCardDetail";
 
 export const SystemHealthCard = () => {
   const { 
@@ -36,9 +39,44 @@ export const SystemHealthCard = () => {
     rapidApi: apiStates.rapidApi
   };
   
+  if (!expanded) {
+    return (
+      <Card className="overflow-hidden cursor-pointer" onClick={() => setExpanded(true)}>
+        <CardContent className="p-0">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <BarChart2 className="h-5 w-5 text-amber-500" />
+              <h3 className="font-medium text-sm">SEO Tools Status</h3>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
+        <SystemHealthHeader 
+          systemHealth={apiStates.dataForSeo.status === "success" ? "good" : "warning"} 
+          expanded={expanded} 
+          setExpanded={setExpanded} 
+        />
+        
+        <div className="px-4 pb-4 space-y-2">
+          {Object.entries(filteredApiStates).map(([key, state]) => (
+            <ApiCardDetail
+              key={key}
+              api={key as keyof ApiStates}
+              state={state}
+              expanded={expanded}
+              onRetry={() => retryApiConnection(key as keyof ApiStates)}
+              onTestModels={key === activeProvider ? handleTestModels : undefined}
+              onOpenDocs={() => openDocsForApi(key as keyof ApiStates)}
+            />
+          ))}
+        </div>
+        
         <ModelTestDialog
           open={showModelDialog}
           onOpenChange={setShowModelDialog}
