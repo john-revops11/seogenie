@@ -1,6 +1,6 @@
+
 import { isPineconeConfigured, retrieveSimilarDocuments, testPineconeConnection } from './pineconeService';
 import { toast } from 'sonner';
-import { RagInfo } from '@/types/systemHealth';
 
 /**
  * Enhances content with Retrieval Augmented Generation (RAG)
@@ -52,6 +52,13 @@ export const enhanceWithRAG = async (
         .flatMap(doc => doc.metadata.topics)
     ));
     
+    // Log RAG info for monitoring
+    console.info("RAG enhancement info:", {
+      chunksRetrieved: relevantDocs.length,
+      avgScore,
+      topics
+    });
+    
     // Enhanced prompt with the retrieved context
     const enhancedPrompt = `
 ${prompt}
@@ -69,16 +76,6 @@ INSTRUCTIONS FOR USING REFERENCE CONTEXT:
 `;
     
     console.log(`RAG enhancement: Retrieved ${relevantDocs.length} documents with avg score ${avgScore.toFixed(3)}`);
-    
-    // Store RAG info in a global or accessible place for UI display if needed
-    const ragInfo: RagInfo = {
-      chunksRetrieved: relevantDocs.length,
-      relevanceScore: avgScore,
-      topicsFound: topics.length > 0 ? topics : undefined
-    };
-    
-    // We could expose this info through a context or state management
-    console.info("RAG Info for UI:", ragInfo);
     
     return enhancedPrompt;
   } catch (error) {

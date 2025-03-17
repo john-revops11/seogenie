@@ -8,7 +8,7 @@ import { ModelTestDialog } from "@/components/system-health/ModelTestDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
 import { useModelTesting } from "@/components/system-health/useModelTesting";
-import { ApiStates } from "@/types/systemHealth";
+import { ApiStates, ApiState } from "@/types/systemHealth";
 
 export const SystemHealthCard = () => {
   const { 

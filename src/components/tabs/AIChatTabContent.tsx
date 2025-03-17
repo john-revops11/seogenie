@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AIProvider, getModelsForProvider } from "@/types/aiModels";
-import { enhanceWithRAG } from "@/services/vector/ragService";
+import { enhanceWithRAG } from "@/services/vector/contentEnhancer";
 import { generateWithAI } from "@/services/keywords/generation/aiService";
 import { toast } from "sonner";
 import ChatMessages from "@/components/chat/ChatMessages";
