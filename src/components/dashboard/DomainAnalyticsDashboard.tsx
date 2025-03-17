@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import { CompetitorsTable } from "./CompetitorsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import RankedKeywordsTable from "../ranked-keywords/RankedKeywordsTable";
 import {
   Tooltip,
   TooltipContent,
@@ -40,7 +40,6 @@ export function DomainAnalyticsDashboard() {
     }
   };
   
-  // Helper function to determine if we have an API quota error
   const hasQuotaError = () => {
     return analytics.error && 
            (analytics.error.includes("money limit") || 
@@ -48,7 +47,6 @@ export function DomainAnalyticsDashboard() {
             analytics.error.includes("limit per day"));
   };
   
-  // Helper function to determine if we should show the limited data alert
   const hasLimitedData = () => {
     return !analytics.isLoading && 
            !analytics.error && 
@@ -57,7 +55,6 @@ export function DomainAnalyticsDashboard() {
            analytics.authorityScore === null;
   };
 
-  // Handle metrics loaded from competitor API
   const handleMetricsLoaded = (metrics: {
     organicTraffic: number;
     organicKeywords: number;
@@ -140,7 +137,6 @@ export function DomainAnalyticsDashboard() {
         </Alert>
       )}
       
-      {/* Check if there's no data at all */}
       {hasLimitedData() && apiCallsMade && (
         <Alert>
           <AlertTitle>Limited Data</AlertTitle>
@@ -173,10 +169,11 @@ export function DomainAnalyticsDashboard() {
               isLoading={analytics.isLoading}
             />
           </div>
+          
+          <RankedKeywordsTable />
         </>
       )}
       
-      {/* Competitors Table - now allows custom domain input and shows top 3 recommended competitors */}
       <CompetitorsTable 
         domain={domain} 
         onMetricsLoaded={handleMetricsLoaded}

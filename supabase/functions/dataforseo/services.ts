@@ -1,4 +1,3 @@
-
 import { makeDataForSEORequest } from "./api-client.ts";
 
 // Function to get domain keywords - updated to return more complete data
@@ -50,7 +49,7 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
           cpc: item.cpc || 0,
           competition: item.competition || 0, 
           competition_index: item.competition_index || 50,
-          rankingUrl: null, // Not provided in this endpoint
+          rankingUrl: null // Not provided in this endpoint
         })),
         domain_metrics: overviewResult?.tasks?.[0]?.result?.[0] || null,
         competitors: competitorResult?.tasks?.[0]?.result?.[0]?.items || []
@@ -160,3 +159,36 @@ export async function getCompetitorDomains(domain: string, location_code = 2840)
   }
 }
 
+// Add a new function to handle ranked keywords
+export async function getRankedKeywords(
+  domain: string,
+  locationCode: number,
+  languageCode: string,
+  limit: number,
+  orderBy: string[]
+) {
+  const endpoint = "/v3/dataforseo_labs/google/ranked_keywords/live";
+  
+  const payload = [{
+    target: domain,
+    location_code: locationCode,
+    language_code: languageCode,
+    historical_serp_mode: "live",
+    ignore_synonyms: false,
+    include_clickstream_data: false,
+    item_types: ["organic", "paid", "featured_snippet"],
+    load_rank_absolute: false,
+    limit: limit,
+    order_by: orderBy
+  }];
+  
+  console.log(`Fetching ranked keywords for ${domain}`);
+  
+  try {
+    const response = await makeDataForSEORequest(endpoint, "POST", payload);
+    return response;
+  } catch (error) {
+    console.error("Error fetching ranked keywords:", error);
+    throw error;
+  }
+}
