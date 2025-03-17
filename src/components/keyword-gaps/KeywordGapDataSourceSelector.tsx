@@ -8,9 +8,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 interface KeywordGapDataSourceSelectorProps {
   value: ApiSource;
   onChange: (value: ApiSource) => void;
+  locationCode?: number;
+  onLocationChange?: (value: number) => void;
 }
 
-export function KeywordGapDataSourceSelector({ value, onChange }: KeywordGapDataSourceSelectorProps) {
+export function KeywordGapDataSourceSelector({ 
+  value, 
+  onChange,
+  locationCode,
+  onLocationChange 
+}: KeywordGapDataSourceSelectorProps) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Data Source:</span>
