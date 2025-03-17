@@ -6,7 +6,6 @@ import { KeywordPositionChart } from "./KeywordPositionChart";
 import { TopKeywordsTable } from "./TopKeywordsTable";
 import { toast } from "sonner";
 import RankedKeywordsTable from "../ranked-keywords/RankedKeywordsTable";
-import { DomainIntersectionCard } from "../domain-intersection";
 import { supabase } from "@/integrations/supabase/client";
 import { SearchDomainForm } from "./SearchDomainForm";
 import { AlertMessages } from "./AlertMessages";
@@ -45,14 +44,6 @@ export function DomainAnalyticsDashboard() {
            metricsFromCompetitors.organicTraffic === 0 && 
            metricsFromCompetitors.organicKeywords === 0 && 
            analytics.authorityScore === null;
-  };
-
-  const handleMetricsLoaded = (metrics: {
-    organicTraffic: number;
-    organicKeywords: number;
-    trafficValue: number;
-  }) => {
-    setMetricsFromCompetitors(metrics);
   };
   
   return (
@@ -108,11 +99,6 @@ export function DomainAnalyticsDashboard() {
           <RankedKeywordsTable />
         </>
       )}
-      
-      <DomainIntersectionCard 
-        domain={domain} 
-        onMetricsLoaded={handleMetricsLoaded}
-      />
     </div>
   );
 }
