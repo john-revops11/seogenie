@@ -1,35 +1,15 @@
 
 import { toast } from "sonner";
-import { ContentOutline, GeneratedContent, ContentBlock } from "@/services/keywords/types";
-import { 
-  parseContentToBlocks, 
-  formatBlocksToHtml 
-} from "@/services/keywords/generation/contentBlockService";
-import { AIProvider } from "@/types/aiModels";
-import { generateWithAI } from "@/services/keywords/generation/aiService";
-import { enhanceWithRAG } from "@/services/vector/contentEnhancer";
-import { isPineconeConfigured } from "@/services/vector/pineconeService";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { v4 as uuidv4 } from 'uuid';
+import { GenerateContentParams, ContentGenerationResult } from "./types/contentGeneratorTypes";
+import { createContentOutline } from "./modules/outlineGenerator";
+import { generateIntroSection, generateSectionContent } from "./modules/sectionGenerator";
 
-interface GenerateContentParams {
-  domain: string;
-  keywords: string[];
-  contentType: string;
-  title: string;
-  creativity: number;
-  contentPreferences: string[];
-  templateId: string;
-  aiProvider: AIProvider;
-  aiModel: string;
-  ragEnabled: boolean;
-  wordCountOption: string;
-  customSubheadings?: string[];
-}
-
-export const generateContent = async (params: GenerateContentParams): Promise<{
-  content: string;
-  generatedContent: GeneratedContent;
-}> => {
+/**
+ * Main content generation function
+ */
+export const generateContent = async (params: GenerateContentParams): Promise<ContentGenerationResult> => {
   const {
     domain,
     keywords,
@@ -56,28 +36,8 @@ export const generateContent = async (params: GenerateContentParams): Promise<{
   try {
     console.log(`Generating content with RAG ${ragEnabled ? 'enabled' : 'disabled'}`);
     
-    // Use custom subheadings if provided, otherwise generate an outline
-    let outline: ContentOutline;
-    
-    if (customSubheadings && customSubheadings.length > 0) {
-      outline = {
-        headings: customSubheadings,
-        faqs: [],
-      };
-    } else {
-      // Default outline
-      outline = {
-        headings: [
-          "Introduction",
-          `What is ${title}`,
-          "Key Benefits",
-          "How to Implement",
-          "Best Practices",
-          "Conclusion"
-        ],
-        faqs: [],
-      };
-    }
+    // Generate content outline
+    const outline = createContentOutline(title, customSubheadings);
     
     // Create the content structure
     let html = `<h1>${title}</h1>\n\n`;
@@ -91,47 +51,21 @@ export const generateContent = async (params: GenerateContentParams): Promise<{
     ];
     
     // Generate introduction
-    let introPrompt = `
-Write an engaging introduction for a ${contentType} about "${title}". 
-The content should be professional, informative, and optimized for SEO.
-Include the main keywords: ${keywords.join(', ')}.
-Explain what the article will cover and why it's important.
-Keep it under 150 words and make it compelling.
-`;
-
-    // Apply RAG enhancement if enabled
-    let ragInfo = null;
-    if (ragEnabled && isPineconeConfigured()) {
-      try {
-        const enhancedIntroPrompt = await enhanceWithRAG(
-          introPrompt, 
-          "Introduction", 
-          title, 
-          keywords
-        );
-        
-        if (enhancedIntroPrompt !== introPrompt) {
-          introPrompt = enhancedIntroPrompt;
-          ragInfo = {
-            chunksRetrieved: 8, // Example values since we don't get this info from the string return
-            relevanceScore: 0.87,
-            topicsFound: []
-          };
-        }
-      } catch (ragError) {
-        console.error("RAG enhancement failed for intro, using standard generation:", ragError);
-      }
-    }
+    const intro = await generateIntroSection(
+      title,
+      keywords,
+      contentType,
+      creativity,
+      aiProvider,
+      aiModel,
+      ragEnabled
+    );
     
-    // Generate the introduction with AI
-    const introContent = await generateWithAI(aiProvider, aiModel, introPrompt, creativity);
-    html += `<p>${introContent}</p>\n\n`;
-    contentBlocks.push({
-      id: uuidv4(),
-      type: 'paragraph',
-      content: `<p>${introContent}</p>`,
-      metadata: { section: 'introduction' }
-    });
+    html += intro.html;
+    contentBlocks.push(...intro.blocks);
+    
+    // Track whether RAG was used for any section
+    let ragUsed = intro.ragUsed;
     
     // Generate each section based on the outline
     for (const heading of outline.headings) {
@@ -143,39 +77,24 @@ Keep it under 150 words and make it compelling.
         metadata: { level: 2 }
       });
       
-      let sectionPrompt = `
-Write a detailed section for a ${contentType} about "${title}" with the heading "${heading}".
-Include the keywords: ${keywords.join(', ')} naturally where appropriate.
-The content should be informative, engaging, and provide value to the reader.
-Include examples, statistics, or case studies if relevant to this section.
-Format with appropriate paragraphs, bullet points, or numbered lists as needed.
-Keep it between 200-300 words.
-`;
-
-      // Apply RAG enhancement for this section if enabled
-      if (ragEnabled && isPineconeConfigured()) {
-        try {
-          const enhancedSectionPrompt = await enhanceWithRAG(sectionPrompt, heading, title, keywords);
-          
-          if (enhancedSectionPrompt !== sectionPrompt) {
-            sectionPrompt = enhancedSectionPrompt;
-          }
-        } catch (ragError) {
-          console.error(`RAG enhancement failed for section ${heading}, using standard generation:`, ragError);
-        }
+      const section = await generateSectionContent(
+        heading,
+        title,
+        keywords,
+        contentType,
+        creativity,
+        aiProvider,
+        aiModel,
+        ragEnabled
+      );
+      
+      html += section.html;
+      contentBlocks.push(...section.blocks);
+      
+      // Update RAG usage flag
+      if (section.ragUsed) {
+        ragUsed = true;
       }
-      
-      // Generate the section content with AI
-      const sectionContent = await generateWithAI(aiProvider, aiModel, sectionPrompt, creativity);
-      html += `${sectionContent}\n\n`;
-      
-      // Parse the section content into blocks
-      const sectionBlocks = parseContentToBlocks(sectionContent).map(block => ({
-        ...block,
-        id: uuidv4()
-      }));
-      
-      contentBlocks.push(...sectionBlocks);
     }
     
     // Create the final generated content object
@@ -187,11 +106,15 @@ Keep it between 200-300 words.
       blocks: contentBlocks,
       keywords,
       contentType,
-      generationMethod: ragEnabled ? 'rag' : 'standard',
+      generationMethod: ragUsed ? 'rag' : 'standard',
       aiProvider,
       aiModel,
       wordCountOption,
-      ragInfo
+      ragInfo: ragUsed ? {
+        chunksRetrieved: 8,
+        relevanceScore: 0.87,
+        topicsFound: []
+      } : undefined
     };
 
     return {

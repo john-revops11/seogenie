@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import SubheadingRecommendations from "./SubheadingRecommendations";
 import { useContentTemplates } from "@/hooks/content-generator/contentTemplates";
 import { useContentPreferences } from "@/hooks/content-generator/contentPreferences";
 import { useContentGeneratorState } from "@/hooks/content-generator/useContentGeneratorState";
+import { generateContent } from "@/hooks/content-generator/contentGenerator";
 
 interface ContentGeneratorContainerProps {
   domain: string;
@@ -27,11 +27,9 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
   
-  // Reset state when component mounts to avoid leftover keywords
   useEffect(() => {
     dispatch({ type: 'RESET_STATE' });
     
-    // Initialize state from props only if explicitly provided
     if (selectedKeywords && selectedKeywords.length > 0) {
       dispatch({ type: 'SET_KEYWORDS', payload: selectedKeywords });
     }
@@ -41,13 +39,12 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
     }
   }, []);
   
-  // Watch for changes in selectedKeywords from props
   useEffect(() => {
     if (selectedKeywords && selectedKeywords.length > 0) {
       dispatch({ type: 'SET_KEYWORDS', payload: selectedKeywords });
     }
-  }, [JSON.stringify(selectedKeywords)]); // Use JSON.stringify to compare arrays
-
+  }, [JSON.stringify(selectedKeywords)]);
+  
   const stepLabels = ["Content Type", "Content Details", "Subheadings", "AI Settings", "Preview"];
 
   const renderStepContent = () => {
@@ -176,7 +173,6 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
               dispatch({ type: 'SET_IS_GENERATING', payload: true });
               dispatch({ type: 'SET_STEP', payload: 4 });
               
-              // Regenerate with same parameters after a short delay
               setTimeout(() => {
                 dispatch({ type: 'SET_IS_GENERATING', payload: false });
               }, 500);
