@@ -90,7 +90,7 @@ export const DataForSEOTabContent = ({
           </form>
           
           {error && (
-            <Alert variant={isTimeoutError ? "warning" : "destructive"} className="mt-4">
+            <Alert variant={isTimeoutError ? "default" : "destructive"} className={`mt-4 ${isTimeoutError ? "border-amber-500 bg-amber-50 text-amber-900" : ""}`}>
               {isTimeoutError ? (
                 <Info className="h-4 w-4" />
               ) : (
