@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, TrendingUp, TrendingDown, ArrowUpDown, Info, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useCompetitorAnalysis } from "@/hooks/useCompetitorAnalysis";
+import { useDomainIntersection } from "@/hooks/useDomainIntersection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +15,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CompetitorsTableProps {
   domain: string;
@@ -26,61 +37,96 @@ interface CompetitorsTableProps {
 }
 
 export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTableProps) {
-  const [customDomain, setCustomDomain] = useState(domain);
+  // State for the domains
+  const [targetDomain, setTargetDomain] = useState(domain);
   const [competitorDomain, setCompetitorDomain] = useState("");
-  const [showCompetitorInput, setShowCompetitorInput] = useState(false);
-  const [recommendationsLoaded, setRecommendationsLoaded] = useState(false);
-
+  const [openDialog, setOpenDialog] = useState(false);
+  
+  // Get domain intersection data
   const {
-    competitors,
-    domainMetrics,
+    intersectionData,
+    totalKeywords,
     isLoading,
     error,
-    sortConfig,
-    handleSort,
-    fetchCompetitorData,
-    resetCompetitorData
-  } = useCompetitorAnalysis(customDomain);
+    lastUpdated,
+    domains,
+    fetchIntersectionData,
+    resetData
+  } = useDomainIntersection();
 
-  const [dataFetched, setDataFetched] = useState(false);
+  // Sort state
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof typeof intersectionData[0];
+    direction: 'asc' | 'desc';
+  }>({
+    key: 'search_volume',
+    direction: 'desc'
+  });
 
   useEffect(() => {
-    setCustomDomain(domain);
+    setTargetDomain(domain);
   }, [domain]);
 
-  useEffect(() => {
-    if (onMetricsLoaded && domainMetrics && dataFetched) {
-      onMetricsLoaded(domainMetrics);
+  const handleSort = (key: keyof typeof intersectionData[0]) => {
+    setSortConfig((prevConfig) => {
+      if (prevConfig.key === key) {
+        return {
+          key,
+          direction: prevConfig.direction === 'asc' ? 'desc' : 'asc'
+        };
+      }
+      return {
+        key,
+        direction: 'desc'
+      };
+    });
+  };
+
+  const handleCompare = () => {
+    if (targetDomain && competitorDomain) {
+      setOpenDialog(true);
+    } else {
+      if (!targetDomain) {
+        toast.error("Please enter a target domain");
+      } else {
+        toast.error("Please enter a competitor domain");
+      }
     }
-  }, [domainMetrics, onMetricsLoaded, dataFetched]);
+  };
 
-  const handleFetchData = () => {
-    if (customDomain) {
-      setDataFetched(true);
-      fetchCompetitorData(customDomain);
+  const confirmAnalysis = () => {
+    fetchIntersectionData(targetDomain, competitorDomain);
+    setOpenDialog(false);
+  };
+
+  // Sort the intersection data
+  const sortedData = [...intersectionData].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  // Get position difference
+  const getPositionDifference = (pos1: number, pos2: number) => {
+    if (pos1 === 0 || pos2 === 0) return null; // One of the positions is missing
+    return pos1 - pos2;
+  };
+
+  // Competition level color
+  const getCompetitionLevelColor = (level: string) => {
+    switch (level.toUpperCase()) {
+      case 'HIGH': return "bg-red-100 text-red-800";
+      case 'MEDIUM': return "bg-yellow-100 text-yellow-800";
+      case 'LOW': return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  const handleAddCompetitor = () => {
-    setShowCompetitorInput(!showCompetitorInput);
-  };
-
-  const submitCompetitor = () => {
-    if (competitorDomain) {
-      // This would be where you'd integrate a custom API call to analyze this competitor
-      // For now, we'll just show a message
-      alert(`Feature coming soon: Analyze competitor ${competitorDomain}`);
-      setCompetitorDomain("");
-      setShowCompetitorInput(false);
-    }
-  };
-
-  const getRecommendedCompetitors = () => {
-    setRecommendationsLoaded(true);
-    handleFetchData();
-  };
-
-  const renderSortIcon = (column: string) => {
+  const renderSortIcon = (column: keyof typeof intersectionData[0]) => {
     if (sortConfig.key === column) {
       return sortConfig.direction === 'asc' ? 
         <TrendingUp className="ml-1 h-4 w-4" /> : 
@@ -94,196 +140,243 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span>Competitor Analysis</span>
+            <span>Domain Intersection Analysis</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-sm">
-                  <p>This feature uses the DataForSEO API to fetch competitor data. Each analysis counts as an API call against your DataForSEO quota.</p>
+                  <p>Compare your domain with a competitor to see common ranking keywords. This uses the DataForSEO API and counts against your API quota.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          {!isLoading && competitors.length > 0 && (
+          {!isLoading && intersectionData.length > 0 && (
             <Badge variant="outline" className="ml-2 text-xs">
-              {competitors.length} competitors
+              {intersectionData.length} shared keywords
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Domain input field */}
+          {/* Domain input fields */}
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input 
-              placeholder="Enter domain to analyze" 
-              value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value)}
-              className="flex-grow"
-            />
-            <Button 
-              onClick={handleFetchData} 
-              disabled={isLoading || !customDomain}
-              className="whitespace-nowrap"
-            >
-              Analyze Competitors
-            </Button>
-          </div>
-
-          {/* Add competitor input */}
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleAddCompetitor}
-              className="flex-shrink-0"
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Specific Competitor
-            </Button>
-            
-            {!dataFetched && !recommendationsLoaded && (
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={getRecommendedCompetitors}
-                className="flex-shrink-0"
-              >
-                Get Recommended Competitors
-              </Button>
-            )}
-          </div>
-          
-          {showCompetitorInput && (
-            <div className="flex gap-2">
+            <div className="flex-grow space-y-2">
+              <label className="text-sm font-medium">Your Domain</label>
+              <Input 
+                placeholder="yourdomain.com" 
+                value={targetDomain}
+                onChange={(e) => setTargetDomain(e.target.value)}
+              />
+            </div>
+            <div className="flex-grow space-y-2">
+              <label className="text-sm font-medium">Competitor Domain</label>
               <Input 
                 placeholder="competitor.com" 
                 value={competitorDomain}
                 onChange={(e) => setCompetitorDomain(e.target.value)}
-                className="flex-grow"
               />
-              <Button onClick={submitCompetitor} disabled={!competitorDomain}>
-                Add
-              </Button>
             </div>
-          )}
+          </div>
 
-          {!dataFetched && !isLoading && !recommendationsLoaded ? (
-            <Alert>
-              <AlertDescription>
-                Enter a domain above and click "Analyze Competitors" to find competitors for that domain. This will use the DataForSEO API and count against your API quota.
-              </AlertDescription>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={handleCompare} 
+              disabled={isLoading || !targetDomain || !competitorDomain}
+              className="whitespace-nowrap"
+            >
+              Compare Domains
+            </Button>
+            
+            {intersectionData.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={resetData}
+                disabled={isLoading}
+              >
+                Reset
+              </Button>
+            )}
+          </div>
+          
+          <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm API Request</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will make an API call to DataForSEO to analyze common keywords between {targetDomain} and {competitorDomain}.
+                  Each request counts against your API quota. Do you want to proceed?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmAnalysis}>
+                  Proceed
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
-          ) : error ? (
-            <div className="p-4 text-sm text-red-600 bg-red-50 rounded-md">
-              {error}
+          ) : isLoading ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded-full animate-spin" />
+                <p>Analyzing intersection between {targetDomain} and {competitorDomain}...</p>
+              </div>
+              {Array(5).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
-          ) : (
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Competitor Domain</TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="h-8 px-2 text-xs font-medium"
-                        onClick={() => handleSort('intersections')}
-                      >
-                        Shared Keywords
-                        {renderSortIcon('intersections')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="h-8 px-2 text-xs font-medium"
-                        onClick={() => handleSort('avg_position')}
-                      >
-                        Avg. Position
-                        {renderSortIcon('avg_position')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="h-8 px-2 text-xs font-medium"
-                        onClick={() => handleSort('intersection_etv')}
-                      >
-                        Intersection ETV
-                        {renderSortIcon('intersection_etv')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        className="h-8 px-2 text-xs font-medium"
-                        onClick={() => handleSort('overall_etv')}
-                      >
-                        Overall ETV
-                        {renderSortIcon('overall_etv')}
-                      </Button>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 5 }).map((_, index) => (
-                      <TableRow key={index}>
-                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                      </TableRow>
-                    ))
-                  ) : competitors.length === 0 ? (
+          ) : intersectionData.length > 0 ? (
+            <div>
+              <div className="mb-4">
+                <h3 className="text-sm font-medium">
+                  Showing {intersectionData.length} common keywords between <span className="font-bold">{domains.target1}</span> and <span className="font-bold">{domains.target2}</span>
+                </h3>
+                {lastUpdated && (
+                  <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
+                )}
+              </div>
+              
+              <div className="overflow-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        {dataFetched ? "No competitor data available" : "Enter a domain and click 'Analyze Competitors'"}
-                      </TableCell>
+                      <TableHead className="min-w-[200px]">Keyword</TableHead>
+                      <TableHead className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 px-2 text-xs font-medium"
+                          onClick={() => handleSort('search_volume')}
+                        >
+                          Volume
+                          {renderSortIcon('search_volume')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 px-2 text-xs font-medium"
+                          onClick={() => handleSort('competition_level')}
+                        >
+                          Competition
+                          {renderSortIcon('competition_level')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 px-2 text-xs font-medium"
+                          onClick={() => handleSort('cpc')}
+                        >
+                          CPC
+                          {renderSortIcon('cpc')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 px-2 text-xs font-medium"
+                          onClick={() => handleSort('target1_position')}
+                        >
+                          Your Position
+                          {renderSortIcon('target1_position')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 px-2 text-xs font-medium"
+                          onClick={() => handleSort('target2_position')}
+                        >
+                          Competitor Position
+                          {renderSortIcon('target2_position')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-right">Difference</TableHead>
                     </TableRow>
-                  ) : (
-                    competitors.map((competitor, index) => {
-                      // Highlight top 3 recommended competitors
-                      const isRecommended = index < 3;
-                      const isTopEtv = index < 3 && sortConfig.key === 'intersection_etv';
-                      const isTopPosition = index < 3 && sortConfig.key === 'avg_position' && sortConfig.direction === 'asc';
-                      const isHighlighted = isTopEtv || isTopPosition;
+                  </TableHeader>
+                  <TableBody>
+                    {sortedData.map((keyword, index) => {
+                      const positionDiff = getPositionDifference(keyword.target1_position, keyword.target2_position);
+                      const isWinning = positionDiff !== null && positionDiff < 0;
+                      const isLosing = positionDiff !== null && positionDiff > 0;
                       
                       return (
-                        <TableRow key={competitor.domain} className={isHighlighted ? "bg-gray-50" : ""}>
+                        <TableRow key={index}>
                           <TableCell className="font-medium">
-                            <div className="flex items-center">
-                              {isRecommended && (
-                                <Badge className="mr-2 bg-green-100 text-green-800 hover:bg-green-200 hover:text-green-900">
-                                  {index + 1}
+                            <div className="flex items-center gap-2">
+                              {keyword.keyword}
+                              {keyword.is_featured_snippet && (
+                                <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                                  Featured
                                 </Badge>
                               )}
-                              <a 
-                                href={`https://${competitor.domain}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="flex items-center text-blue-600 hover:underline"
-                              >
-                                {competitor.domain}
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </a>
+                              {keyword.keyword_difficulty > 6 && (
+                                <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                  Difficult
+                                </Badge>
+                              )}
                             </div>
+                            {keyword.core_keyword && keyword.core_keyword !== keyword.keyword && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Core: {keyword.core_keyword}
+                              </div>
+                            )}
                           </TableCell>
-                          <TableCell className="text-right">{competitor.intersections.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">{competitor.avg_position}</TableCell>
-                          <TableCell className="text-right">${competitor.intersection_etv.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">${competitor.overall_etv.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{keyword.search_volume.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="outline" className={getCompetitionLevelColor(keyword.competition_level)}>
+                              {keyword.competition_level || "Unknown"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">${keyword.cpc?.toFixed(2) || "0.00"}</TableCell>
+                          <TableCell className="text-right">
+                            {keyword.target1_position ? 
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                {keyword.target1_position}
+                              </Badge> : 
+                              "-"
+                            }
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {keyword.target2_position ? 
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                                {keyword.target2_position}
+                              </Badge> : 
+                              "-"
+                            }
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {positionDiff !== null ? (
+                              <Badge variant={isWinning ? "success" : isLosing ? "destructive" : "outline"}>
+                                {isWinning ? "+" : ""}{Math.abs(positionDiff)}
+                              </Badge>
+                            ) : "-"}
+                          </TableCell>
                         </TableRow>
                       );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
+          ) : lastUpdated ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No intersection data found between these domains
+            </div>
+          ) : (
+            <Alert>
+              <AlertDescription>
+                Enter your domain and a competitor domain, then click "Compare Domains" to find common keywords and ranking positions.
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       </CardContent>

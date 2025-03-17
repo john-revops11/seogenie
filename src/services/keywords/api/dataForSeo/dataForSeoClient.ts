@@ -161,9 +161,9 @@ export const fetchDomainIntersection = async (
     location_code: locationCode,
     language_code: "en",
     include_serp_info: true,
-    include_clickstream_data: true,
-    intersections: false,
-    item_types: ["organic", "featured_snippet"],
+    include_clickstream_data: false,
+    intersections: true,
+    item_types: ["organic", "paid", "featured_snippet"],
     limit: 100
   }]);
 };
