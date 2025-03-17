@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileEdit, Copy, Download, RefreshCw, Check, ArrowLeft, Code } from "lucide-react";
 import { toast } from "sonner";
 import { GeneratedContent } from "@/services/keywords/types";
+import { formatBlocksToHtml } from "@/services/keywords/generation/contentBlockService";
 
 interface ContentPreviewProps {
   content: string;
@@ -44,8 +45,8 @@ const ContentPreview = ({
   };
 
   const handleCopy = () => {
-    const contentToCopy = activeTab === "blocks" && generatedContent?.customBlocksContent
-      ? generatedContent.customBlocksContent
+    const contentToCopy = activeTab === "blocks" 
+      ? generatedContent?.blocks ? formatBlocksToHtml(generatedContent.blocks) : ""
       : isEditing ? editedContent : content;
       
     navigator.clipboard.writeText(contentToCopy);
@@ -53,12 +54,12 @@ const ContentPreview = ({
   };
 
   const handleDownload = () => {
-    const contentToDownload = activeTab === "blocks" && generatedContent?.customBlocksContent
-      ? generatedContent.customBlocksContent
+    const contentToDownload = activeTab === "blocks"
+      ? generatedContent?.blocks ? formatBlocksToHtml(generatedContent.blocks) : ""
       : isEditing ? editedContent : content;
       
     const title = generatedContent?.title || "content";
-    const fileExtension = activeTab === "blocks" ? "txt" : "md";
+    const fileExtension = activeTab === "blocks" ? "html" : "md";
     
     const blob = new Blob([contentToDownload], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
@@ -187,7 +188,9 @@ const ContentPreview = ({
         <TabsContent value="blocks" className="mt-0">
           <ScrollArea className="h-[500px] border rounded-md bg-white">
             <pre className="p-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">
-              {generatedContent.customBlocksContent || "No custom block format available. Please regenerate the content."}
+              {generatedContent.blocks && generatedContent.blocks.length > 0 
+                ? formatBlocksToHtml(generatedContent.blocks) 
+                : "No custom block format available. Please regenerate the content."}
             </pre>
           </ScrollArea>
         </TabsContent>

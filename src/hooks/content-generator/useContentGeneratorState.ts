@@ -1,4 +1,3 @@
-
 import { useReducer, useEffect } from "react";
 import { GeneratedContent } from "@/services/keywords/types";
 import { AIProvider, getPrimaryModelForProvider } from "@/types/aiModels";
@@ -51,7 +50,8 @@ type ContentGeneratorAction =
   | { type: 'SET_TOPICS'; payload: string[] }
   | { type: 'SET_TITLE_SUGGESTIONS'; payload: { [topic: string]: string[] } }
   | { type: 'SET_SELECTED_TOPIC'; payload: string }
-  | { type: 'SET_CONTENT_PREFERENCES'; payload: string[] };
+  | { type: 'SET_CONTENT_PREFERENCES'; payload: string[] }
+  | { type: 'RESET_STATE'; };
 
 // Reducer function
 const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGeneratorAction): ContentGeneratorState => {
@@ -96,38 +96,44 @@ const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGe
       return { ...state, selectedTopic: action.payload };
     case 'SET_CONTENT_PREFERENCES':
       return { ...state, contentPreferences: action.payload };
+    case 'RESET_STATE':
+      // Reset to initial state but keep the AI provider and model
+      return {
+        ...initialState,
+        aiProvider: state.aiProvider,
+        aiModel: state.aiModel
+      };
     default:
       return state;
   }
 };
 
+// Define initialState outside the hook so it can be used in the RESET_STATE action
+const primaryModel = getPrimaryModelForProvider('openai');
+  
+const initialState: ContentGeneratorState = {
+  step: 1,
+  contentType: "blog-post",
+  selectedTemplateId: "",
+  title: "",
+  keywords: [], // Empty keywords by default
+  creativity: 50,
+  ragEnabled: isPineconeConfigured(),
+  isGenerating: false,
+  generatedContent: null,
+  contentHtml: "",
+  aiProvider: "openai",
+  aiModel: primaryModel?.id || "gpt-4o",
+  wordCountOption: "standard",
+  selectedSubheadings: [],
+  isLoadingTopics: false,
+  topics: [],
+  titleSuggestions: {},
+  selectedTopic: "",
+  contentPreferences: []
+};
+
 export function useContentGeneratorState() {
-  // Get primary model for default OpenAI provider
-  const primaryModel = getPrimaryModelForProvider('openai');
-  
-  // Set initial state
-  const initialState: ContentGeneratorState = {
-    step: 1,
-    contentType: "blog-post",
-    selectedTemplateId: "",
-    title: "",
-    keywords: [],
-    creativity: 50,
-    ragEnabled: isPineconeConfigured(),
-    isGenerating: false,
-    generatedContent: null,
-    contentHtml: "",
-    aiProvider: "openai",
-    aiModel: primaryModel?.id || "gpt-4o-1",
-    wordCountOption: "standard",
-    selectedSubheadings: [],
-    isLoadingTopics: false,
-    topics: [],
-    titleSuggestions: {},
-    selectedTopic: "",
-    contentPreferences: []
-  };
-  
   // Create reducer
   const [state, dispatch] = useReducer(contentGeneratorReducer, initialState);
   
@@ -141,3 +147,4 @@ export function useContentGeneratorState() {
   
   return [state, dispatch] as const;
 }
+

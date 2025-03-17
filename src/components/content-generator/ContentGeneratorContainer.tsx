@@ -26,17 +26,27 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   const [state, dispatch] = useContentGeneratorState();
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
-
-  // Initialize state from props
+  
+  // Reset state when component mounts to avoid leftover keywords
   useEffect(() => {
-    if (selectedKeywords.length > 0) {
+    dispatch({ type: 'RESET_STATE' });
+    
+    // Initialize state from props only if explicitly provided
+    if (selectedKeywords && selectedKeywords.length > 0) {
       dispatch({ type: 'SET_KEYWORDS', payload: selectedKeywords });
     }
     
-    if (initialTitle) {
+    if (initialTitle && initialTitle.trim() !== "") {
       dispatch({ type: 'SET_TITLE', payload: initialTitle });
     }
-  }, [selectedKeywords, initialTitle, dispatch]);
+  }, []);
+  
+  // Watch for changes in selectedKeywords from props
+  useEffect(() => {
+    if (selectedKeywords && selectedKeywords.length > 0) {
+      dispatch({ type: 'SET_KEYWORDS', payload: selectedKeywords });
+    }
+  }, [JSON.stringify(selectedKeywords)]); // Use JSON.stringify to compare arrays
 
   const stepLabels = ["Content Type", "Content Details", "Subheadings", "AI Settings", "Preview"];
 
@@ -162,6 +172,16 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
             content={state.contentHtml}
             generatedContent={state.generatedContent}
             onBack={() => dispatch({ type: 'SET_STEP', payload: 4 })}
+            onRegenerateContent={async () => {
+              dispatch({ type: 'SET_IS_GENERATING', payload: true });
+              dispatch({ type: 'SET_STEP', payload: 4 });
+              
+              // Regenerate with same parameters after a short delay
+              setTimeout(() => {
+                dispatch({ type: 'SET_IS_GENERATING', payload: false });
+              }, 500);
+            }}
+            isGenerating={state.isGenerating}
           />
         );
       default:

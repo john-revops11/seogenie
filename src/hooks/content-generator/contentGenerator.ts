@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { ContentOutline, GeneratedContent } from "@/services/keywords/types";
 import { 
   parseContentToBlocks, 
-  convertHtmlToContentBlocks 
+  formatBlocksToHtml 
 } from "@/services/keywords/generation/contentBlockService";
 import { AIProvider } from "@/types/aiModels";
 
