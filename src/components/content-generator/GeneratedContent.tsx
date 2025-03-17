@@ -1,10 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface GeneratedContentProps {
   generatedContent: {
@@ -31,6 +32,11 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
     return parseContentToBlocks(generatedContent.content);
   });
 
+  // Re-parse when content changes
+  useEffect(() => {
+    setContentBlocks(parseContentToBlocks(generatedContent.content));
+  }, [generatedContent.content]);
+
   function parseContentToBlocks(htmlContent: string): ContentBlock[] {
     if (!htmlContent) return [];
 
@@ -44,28 +50,22 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         
-        if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'].includes(tagName)) {
-          blocks.push({
-            id: `block-${index}`,
-            type: tagName,
-            content: element.outerHTML,
-            isEditing: false
-          });
-        } else if (['ul', 'ol'].includes(tagName)) {
-          blocks.push({
-            id: `block-${index}`,
-            type: tagName,
-            content: element.outerHTML,
-            isEditing: false
-          });
-        } else {
-          blocks.push({
-            id: `block-${index}`,
-            type: 'other',
-            content: element.outerHTML,
-            isEditing: false
-          });
-        }
+        let type = 'other';
+        
+        if (tagName === 'h1') type = 'heading1';
+        else if (tagName === 'h2') type = 'heading2';
+        else if (tagName === 'h3') type = 'heading3'; 
+        else if (tagName === 'p') type = 'paragraph';
+        else if (tagName === 'ul') type = 'list';
+        else if (tagName === 'ol') type = 'orderedList';
+        else if (tagName === 'blockquote') type = 'quote';
+        
+        blocks.push({
+          id: `block-${index}`,
+          type,
+          content: element.outerHTML,
+          isEditing: false
+        });
       } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
         blocks.push({
           id: `block-${index}`,
@@ -109,8 +109,38 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
     toast.success("Content block updated");
   };
 
-  const getFullHtmlContent = () => {
-    return contentBlocks.map(block => block.content).join('');
+  // Helper function to get badge color based on block type
+  const getBlockTypeColor = (type: string) => {
+    switch (type) {
+      case 'heading1':
+      case 'heading2': 
+      case 'heading3':
+        return 'bg-blue-100 text-blue-800';
+      case 'paragraph':
+        return 'bg-gray-100 text-gray-800';
+      case 'list':
+        return 'bg-green-100 text-green-800';
+      case 'orderedList':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'quote':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Helper function to get human-readable block type name
+  const getBlockTypeName = (type: string) => {
+    switch (type) {
+      case 'heading1': return 'H1';
+      case 'heading2': return 'H2';
+      case 'heading3': return 'H3';
+      case 'paragraph': return 'Paragraph';
+      case 'list': return 'Bullet List';
+      case 'orderedList': return 'Numbered List';
+      case 'quote': return 'Quote';
+      default: return type.charAt(0).toUpperCase() + type.slice(1);
+    }
   };
 
   const renderContent = () => {
@@ -146,8 +176,14 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
           <div className="space-y-4 prose max-w-none">
             {contentBlocks.map(block => (
               <div key={block.id} className="relative group border rounded-md p-4 hover:bg-gray-50 transition-colors">
+                <div className="absolute top-2 left-2 z-10">
+                  <Badge className={getBlockTypeColor(block.type)} variant="outline">
+                    {getBlockTypeName(block.type)}
+                  </Badge>
+                </div>
+                
                 {block.isEditing ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-6">
                     <Textarea 
                       className="min-h-[100px] font-mono text-sm"
                       defaultValue={block.content}
@@ -179,11 +215,12 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
                     <div 
                       dangerouslySetInnerHTML={{ __html: block.content }} 
                       className={
-                        block.type === 'h1' ? 'text-2xl font-bold mb-2' :
-                        block.type === 'h2' ? 'text-xl font-bold mt-4 mb-2' :
-                        block.type === 'h3' ? 'text-lg font-bold mt-3 mb-2' :
-                        block.type === 'ul' || block.type === 'ol' ? 'pl-5 my-2 space-y-1' :
-                        'my-2'
+                        block.type === 'heading1' ? 'text-2xl font-bold mb-2 pt-6' :
+                        block.type === 'heading2' ? 'text-xl font-bold mt-4 mb-2 pt-6' :
+                        block.type === 'heading3' ? 'text-lg font-bold mt-3 mb-2 pt-6' :
+                        block.type === 'list' || block.type === 'orderedList' ? 'pl-5 my-2 space-y-1 pt-6' :
+                        block.type === 'quote' ? 'pl-4 border-l-4 border-gray-300 italic my-4 pt-6' :
+                        'my-2 pt-6'
                       }
                     />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -205,15 +242,13 @@ const GeneratedContent: React.FC<GeneratedContentProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{generatedContent.title}</CardTitle>
-        <CardDescription>{generatedContent.metaDescription}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {renderContent()}
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold mb-1">{generatedContent.title}</h2>
+        <p className="text-muted-foreground">{generatedContent.metaDescription}</p>
+      </div>
+      {renderContent()}
+    </div>
   );
 };
 

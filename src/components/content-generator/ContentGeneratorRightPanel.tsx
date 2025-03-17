@@ -26,17 +26,18 @@ const ContentGeneratorRightPanel: React.FC<ContentGeneratorRightPanelProps> = ({
   onContentUpdate
 }) => {
   return (
-    <>
+    <div className="space-y-6">
       {/* Block Editor */}
       {showEditor && generatedContentData && (
         <Card>
           <CardHeader>
-            <CardTitle>Block Editor</CardTitle>
+            <CardTitle>Content Editor</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="editor">
               <TabsList className="mb-4">
                 <TabsTrigger value="editor">Block Editor</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
               </TabsList>
               
               <TabsContent value="editor">
@@ -45,13 +46,22 @@ const ContentGeneratorRightPanel: React.FC<ContentGeneratorRightPanelProps> = ({
                   onUpdateContent={onContentUpdate}
                 />
               </TabsContent>
+              
+              <TabsContent value="preview">
+                {generatedContent && (
+                  <GeneratedContent 
+                    generatedContent={generatedContent} 
+                    contentType={contentType} 
+                  />
+                )}
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       )}
 
-      {/* Preview Card */}
-      {generatedContent && (
+      {/* Preview Card - only show when editor not visible */}
+      {generatedContent && !showEditor && (
         <Card>
           <CardHeader>
             <CardTitle>Preview</CardTitle>
@@ -64,7 +74,7 @@ const ContentGeneratorRightPanel: React.FC<ContentGeneratorRightPanelProps> = ({
           </CardContent>
         </Card>
       )}
-    </>
+    </div>
   );
 };
 

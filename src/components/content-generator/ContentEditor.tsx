@@ -32,12 +32,77 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
   // Update content when blocks change
   useEffect(() => {
     const updatedContent = blocks.map(block => block.content).join('\n');
+    const customBlocksContent = convertToCustomBlocks(blocks);
+    
     onUpdateContent({
       ...generatedContent,
       blocks,
-      content: updatedContent
+      content: updatedContent,
+      customBlocksContent
     });
   }, [blocks]);
+
+  // Convert blocks to custom block format
+  const convertToCustomBlocks = (blocks: ContentBlock[]): string => {
+    let customBlockContent = '';
+    
+    blocks.forEach((block) => {
+      switch (block.type) {
+        case 'heading1':
+          const h1Content = block.content.replace(/<h1>(.*?)<\/h1>/g, '$1');
+          customBlockContent += `<!-- custom-block:heading {"level":1} -->\n# ${h1Content}\n<!-- /custom-block:heading -->\n\n`;
+          break;
+        case 'heading2':
+          const h2Content = block.content.replace(/<h2>(.*?)<\/h2>/g, '$1');
+          customBlockContent += `<!-- custom-block:heading {"level":2} -->\n## ${h2Content}\n<!-- /custom-block:heading -->\n\n`;
+          break;
+        case 'heading3':
+          const h3Content = block.content.replace(/<h3>(.*?)<\/h3>/g, '$1');
+          customBlockContent += `<!-- custom-block:heading {"level":3} -->\n### ${h3Content}\n<!-- /custom-block:heading -->\n\n`;
+          break;
+        case 'paragraph':
+          const pContent = block.content.replace(/<p>(.*?)<\/p>/gs, '$1')
+            .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+            .replace(/<em>(.*?)<\/em>/g, '*$1*')
+            .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+          customBlockContent += `<!-- custom-block:paragraph -->\n${pContent}\n<!-- /custom-block:paragraph -->\n\n`;
+          break;
+        case 'list':
+          let listContent = block.content;
+          if (listContent.includes('<ul>')) {
+            listContent = listContent.replace(/<ul>(.*?)<\/ul>/gs, '$1')
+              .replace(/<li>(.*?)<\/li>/gs, '- $1\n')
+              .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+            customBlockContent += `<!-- custom-block:list {"type":"bullet"} -->\n${listContent}<!-- /custom-block:list -->\n\n`;
+          }
+          break;
+        case 'orderedList':
+          let orderedListContent = block.content;
+          if (orderedListContent.includes('<ol>')) {
+            const listItems = orderedListContent.match(/<li>(.*?)<\/li>/gs);
+            let numberedList = '';
+            if (listItems) {
+              listItems.forEach((item, index) => {
+                const content = item.replace(/<li>(.*?)<\/li>/s, '$1');
+                numberedList += `${index + 1}. ${content}\n`;
+              });
+            }
+            customBlockContent += `<!-- custom-block:list {"type":"numbered"} -->\n${numberedList}<!-- /custom-block:list -->\n\n`;
+          }
+          break;
+        case 'quote':
+          const quoteContent = block.content.replace(/<blockquote>(.*?)<\/blockquote>/gs, '$1')
+            .replace(/<.*?>/g, ''); // Remove any remaining HTML tags
+          customBlockContent += `<!-- custom-block:quote -->\n${quoteContent}\n<!-- /custom-block:quote -->\n\n`;
+          break;
+        default:
+          // Handle any other block types as raw content
+          customBlockContent += `<!-- custom-block:raw -->\n${block.content}\n<!-- /custom-block:raw -->\n\n`;
+      }
+    });
+    
+    return customBlockContent;
+  };
 
   const handleEditBlock = (blockId: string) => {
     setEditingBlockId(blockId);
@@ -88,6 +153,12 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
         id: uuidv4(),
         type: 'orderedList',
         content: '<ol><li>New item</li></ol>'
+      };
+    } else if (type === 'quote') {
+      newBlock = {
+        id: uuidv4(),
+        type: 'quote',
+        content: '<blockquote>New quote</blockquote>'
       };
     } else {
       newBlock = {
@@ -153,7 +224,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
         </TabsContent>
         
         <TabsContent value="customBlocks" className="mt-4">
-          <div className="border rounded-md p-4 bg-white">
+          <div className="border rounded-md p-4 bg-gray-50">
             <ScrollArea className="h-[500px]">
               <pre className="font-mono text-sm whitespace-pre-wrap overflow-x-auto">
                 {generatedContent.customBlocksContent || "No custom block format available. Please regenerate the content."}
