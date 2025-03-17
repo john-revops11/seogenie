@@ -11,6 +11,7 @@ import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
 import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
+import SeoAnalyticsDashboard from "@/components/SeoAnalyticsDashboard";
 
 const Index = () => {
   // Domain Analysis State from custom hook
@@ -71,10 +72,10 @@ const Index = () => {
   const goToAnalysisTab = () => {
     const tabsElement = document.getElementById('main-tabs');
     if (tabsElement) {
-      // Find the dashboard tab trigger and click it
-      const dashboardTrigger = tabsElement.querySelector('[data-value="dashboard"]');
-      if (dashboardTrigger && dashboardTrigger instanceof HTMLElement) {
-        dashboardTrigger.click();
+      // Find the domain-analysis tab trigger and click it
+      const domainAnalysisTrigger = tabsElement.querySelector('[data-value="domain-analysis"]');
+      if (domainAnalysisTrigger && domainAnalysisTrigger instanceof HTMLElement) {
+        domainAnalysisTrigger.click();
       }
     }
   };
@@ -87,13 +88,24 @@ const Index = () => {
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">
         <TabsList>
           <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="domain-analysis" data-value="domain-analysis">Domain Analysis</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="dashboard" className="space-y-4">
+          <div className="p-4 border rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
+            <p className="text-muted-foreground">
+              This is your new empty dashboard tab. You can start developing it as needed.
+            </p>
+            <SeoAnalyticsDashboard />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="domain-analysis" className="space-y-4">
           <DashboardTabContent 
             mainDomain={mainDomain}
             competitorDomains={competitorDomains}
