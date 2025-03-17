@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BarChart2, Globe, Search, RefreshCw, Info } from "lucide-react";
+import { BarChart2, Globe, Search, RefreshCw, Info, LogOut, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
@@ -19,6 +19,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DomainIntersectionCard } from "../domain-intersection";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export function DomainAnalyticsDashboard() {
   const [domain, setDomain] = useState("revologyanalytics.com");
@@ -29,7 +31,40 @@ export function DomainAnalyticsDashboard() {
     trafficValue: 0
   });
   const [apiCallsMade, setApiCallsMade] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const analytics = useDomainSeoAnalytics(domain);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    
+    fetchUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      
+      if (event === 'SIGNED_OUT') {
+        navigate('/auth');
+      }
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+  
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast.error("Failed to log out");
+    }
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,12 +102,41 @@ export function DomainAnalyticsDashboard() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold tracking-tight">Domain SEO Analytics</h2>
-        {domain && apiCallsMade && (
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Globe className="h-3.5 w-3.5" />
-            {domain}
-          </Badge>
-        )}
+        
+        <div className="flex items-center gap-3">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-md text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>{user.email}</span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLogout} 
+                className="flex items-center gap-1"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/auth')}
+            >
+              Login
+            </Button>
+          )}
+          
+          {domain && apiCallsMade && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Globe className="h-3.5 w-3.5" />
+              {domain}
+            </Badge>
+          )}
+        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="flex gap-2 max-w-md">
