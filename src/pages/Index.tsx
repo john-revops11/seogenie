@@ -11,7 +11,7 @@ import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
 import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
-import SeoAnalyticsDashboard from "@/components/SeoAnalyticsDashboard";
+import { DomainAnalyticsDashboard } from "@/components/dashboard/DomainAnalyticsDashboard";
 
 const Index = () => {
   // Domain Analysis State from custom hook
@@ -96,13 +96,7 @@ const Index = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
-          <div className="p-4 border rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
-            <p className="text-muted-foreground">
-              This is your new empty dashboard tab. You can start developing it as needed.
-            </p>
-            <SeoAnalyticsDashboard />
-          </div>
+          <DomainAnalyticsDashboard />
         </TabsContent>
         
         <TabsContent value="domain-analysis" className="space-y-4">
