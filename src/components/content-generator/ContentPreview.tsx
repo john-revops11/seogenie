@@ -2,8 +2,10 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Code, FileEdit, Redo, Save } from "lucide-react";
+import { ArrowLeft, Code, FileEdit } from "lucide-react";
 import { GeneratedContent } from "@/services/keywords/types";
+import ContentActions from "./preview/ContentActions";
+import ContentMetaInfo from "./preview/ContentMetaInfo";
 
 interface ContentPreviewProps {
   content: string;
@@ -22,22 +24,16 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   isGenerating,
   saveToHistory
 }) => {
-  const [activeTab, setActiveTab] = React.useState("preview");
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [activeTab, setActiveTab] = useState<string>("preview");
   const [isEditing, setIsEditing] = useState(false);
   
-  const handleSaveAsDraft = async () => {
-    if (!generatedContent) return;
-    
-    try {
-      setIsSaving(true);
-      await saveToHistory(generatedContent);
-      setIsSaving(false);
-    } catch (error) {
-      console.error("Error saving draft:", error);
-      setIsSaving(false);
-    }
-  };
+  if (!generatedContent || !content) {
+    return (
+      <div className="text-center text-muted-foreground py-12">
+        Generate content to see the preview here
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4">
@@ -51,25 +47,14 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
         
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            onClick={handleSaveAsDraft}
-            disabled={isGenerating || isSaving || !generatedContent}
-            className="flex items-center"
-          >
-            <Save className="mr-2 h-4 w-4" /> Save as Draft
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={onRegenerateContent} 
-            disabled={isGenerating}
-            className="flex items-center"
-          >
-            <Redo className="mr-2 h-4 w-4" /> Regenerate
-          </Button>
-        </div>
+        <ContentActions 
+          activeTab={activeTab}
+          content={content}
+          generatedContent={generatedContent}
+          onRegenerateContent={onRegenerateContent}
+          isGenerating={isGenerating}
+          saveToHistory={saveToHistory}
+        />
       </div>
       
       <Tabs
@@ -134,27 +119,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
       </Tabs>
       
       {generatedContent && (
-        <div className="bg-muted p-4 rounded-md mt-4">
-          <h3 className="text-sm font-semibold mb-2">Content Information</h3>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-xs text-muted-foreground">Content Type</p>
-              <p className="text-sm">{generatedContent.contentType}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">AI Model</p>
-              <p className="text-sm">{generatedContent.aiProvider} / {generatedContent.aiModel}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Generation Method</p>
-              <p className="text-sm capitalize">{generatedContent.generationMethod}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Keywords</p>
-              <p className="text-sm">{generatedContent.keywords?.join(", ")}</p>
-            </div>
-          </div>
-        </div>
+        <ContentMetaInfo generatedContent={generatedContent} />
       )}
     </div>
   );

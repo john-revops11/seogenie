@@ -93,14 +93,14 @@ export function useContentHistory() {
   const saveToHistory = async (content: GeneratedContent) => {
     try {
       // Convert blocks to HTML string for storage
-      const contentHtml = content.blocks.map(block => block.content).join('\n');
+      const contentHtml = content.blocks?.map(block => block.content).join('\n') || content.content || '';
       
       const { error } = await supabase.from("content_history").insert({
-        title: content.title,
+        title: content.title || 'Untitled Content',
         content_type: content.contentType || '',
         keywords: content.keywords || [],
-        meta_description: content.metaDescription,
-        outline: content.outline,
+        meta_description: content.metaDescription || null,
+        outline: content.outline || null,
         content: contentHtml,
         rag_enabled: content.generationMethod === 'rag',
         ai_provider: content.aiProvider || null,
@@ -110,6 +110,7 @@ export function useContentHistory() {
       });
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
