@@ -1,4 +1,3 @@
-
 import { useReducer, useEffect } from "react";
 import { GeneratedContent } from "@/services/keywords/types";
 import { AIProvider, getPrimaryModelForProvider } from "@/types/aiModels";
@@ -28,6 +27,7 @@ export interface ContentGeneratorState {
   titleSuggestions?: { [topic: string]: string[] };
   selectedTopic?: string;
   contentPreferences?: string[];
+  topic?: string;
 }
 
 // Action types
@@ -52,6 +52,7 @@ type ContentGeneratorAction =
   | { type: 'SET_TITLE_SUGGESTIONS'; payload: { [topic: string]: string[] } }
   | { type: 'SET_SELECTED_TOPIC'; payload: string }
   | { type: 'SET_CONTENT_PREFERENCES'; payload: string[] }
+  | { type: 'SET_TOPIC'; payload: string }
   | { type: 'RESET_STATE'; };
 
 // Define initialState outside the hook so it can be used in the RESET_STATE action
@@ -76,7 +77,8 @@ const initialState: ContentGeneratorState = {
   topics: [],
   titleSuggestions: {},
   selectedTopic: "",
-  contentPreferences: []
+  contentPreferences: [],
+  topic: ""
 };
 
 // Add these helper functions to support serialization/deserialization
@@ -165,6 +167,9 @@ const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGe
     case 'SET_CONTENT_PREFERENCES':
       newState = { ...state, contentPreferences: action.payload };
       break;
+    case 'SET_TOPIC':
+      newState = { ...state, topic: action.payload };
+      break;
     case 'RESET_STATE':
       // Reset to initial state but keep the AI provider and model
       newState = {
@@ -233,6 +238,8 @@ export function useContentGeneratorState() {
         dispatch({ type: 'SET_SELECTED_TOPIC', payload: value as string });
       } else if (key === 'contentPreferences') {
         dispatch({ type: 'SET_CONTENT_PREFERENCES', payload: value as string[] });
+      } else if (key === 'topic') {
+        dispatch({ type: 'SET_TOPIC', payload: value as string });
       }
       // Exclude 'isGenerating' since we don't want to restore that
     });

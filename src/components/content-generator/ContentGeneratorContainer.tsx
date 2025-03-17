@@ -10,7 +10,8 @@ import SubheadingRecommendations from "./SubheadingRecommendations";
 import { useContentTemplates } from "@/hooks/content-generator/contentTemplates";
 import { useContentPreferences } from "@/hooks/content-generator/contentPreferences";
 import { useContentGeneratorState } from "@/hooks/content-generator/useContentGeneratorState";
-import { generateContent } from "@/hooks/content-generator/contentGenerator";
+import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentGeneratorContainerProps {
   domain: string;
@@ -26,6 +27,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   const [state, dispatch, applyRestoredState] = useContentGeneratorState();
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
+  const { saveToHistory } = useContentHistory();
   
   // Load state from localStorage on initial render
   useEffect(() => {
@@ -142,57 +144,6 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
             onBack={() => dispatch({ type: 'SET_STEP', payload: 2 })}
           />
         );
-      case 4:
-        return (
-          <ContentGeneratorStepThree
-            contentType={state.contentType}
-            selectedTemplateId={state.selectedTemplateId}
-            title={state.title}
-            selectedKeywords={state.keywords}
-            creativity={state.creativity}
-            ragEnabled={state.ragEnabled}
-            isGenerating={state.isGenerating}
-            aiProvider={state.aiProvider}
-            aiModel={state.aiModel}
-            wordCountOption={state.wordCountOption}
-            customSubheadings={state.selectedSubheadings}
-            onAIProviderChange={(provider) => dispatch({ type: 'SET_AI_PROVIDER', payload: provider })}
-            onAIModelChange={(model) => dispatch({ type: 'SET_AI_MODEL', payload: model })}
-            onGenerateContent={async () => {
-              dispatch({ type: 'SET_IS_GENERATING', payload: true });
-              
-              try {
-                const { generateContent } = await import("@/hooks/content-generator/contentGenerator");
-                const result = await generateContent({
-                  domain,
-                  keywords: state.keywords,
-                  contentType: state.contentType,
-                  title: state.title,
-                  creativity: state.creativity,
-                  contentPreferences: selectedPreferences,
-                  templateId: state.selectedTemplateId,
-                  aiProvider: state.aiProvider,
-                  aiModel: state.aiModel,
-                  ragEnabled: state.ragEnabled,
-                  wordCountOption: state.wordCountOption,
-                  customSubheadings: state.selectedSubheadings
-                });
-                
-                dispatch({ type: 'SET_CONTENT_HTML', payload: result.content });
-                dispatch({ type: 'SET_GENERATED_CONTENT', payload: result.generatedContent });
-                
-                toast.success("Content generated successfully!");
-                dispatch({ type: 'SET_STEP', payload: 5 });
-              } catch (error) {
-                console.error("Error generating content:", error);
-                toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
-              } finally {
-                dispatch({ type: 'SET_IS_GENERATING', payload: false });
-              }
-            }}
-            onBack={() => dispatch({ type: 'SET_STEP', payload: 3 })}
-          />
-        );
       case 5:
         return (
           <ContentPreview
@@ -215,6 +166,23 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
     }
   };
 
+  // Function to handle content generation success
+  const handleContentGenerated = async (result) => {
+    dispatch({ type: 'SET_CONTENT_HTML', payload: result.content });
+    dispatch({ type: 'SET_GENERATED_CONTENT', payload: result.generatedContent });
+    
+    // Save the generated content to history in Supabase
+    try {
+      await saveToHistory(result.generatedContent);
+    } catch (error) {
+      console.error("Error saving to history:", error);
+      // Continue even if saving to history fails - don't block the user
+    }
+    
+    toast.success("Content generated successfully!");
+    dispatch({ type: 'SET_STEP', payload: 5 });
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -223,7 +191,54 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
       <CardContent>
         <ContentGeneratorSteps step={state.step} stepLabels={stepLabels} />
         <form onSubmit={(e) => e.preventDefault()}>
-          {renderStepContent()}
+          {state.step === 4 && (
+            <ContentGeneratorStepThree
+              contentType={state.contentType}
+              selectedTemplateId={state.selectedTemplateId}
+              title={state.title}
+              selectedKeywords={state.keywords}
+              creativity={state.creativity}
+              ragEnabled={state.ragEnabled}
+              isGenerating={state.isGenerating}
+              aiProvider={state.aiProvider}
+              aiModel={state.aiModel}
+              wordCountOption={state.wordCountOption}
+              customSubheadings={state.selectedSubheadings}
+              onAIProviderChange={(provider) => dispatch({ type: 'SET_AI_PROVIDER', payload: provider })}
+              onAIModelChange={(model) => dispatch({ type: 'SET_AI_MODEL', payload: model })}
+              onGenerateContent={async () => {
+                dispatch({ type: 'SET_IS_GENERATING', payload: true });
+                
+                try {
+                  const { generateContent } = await import("@/hooks/content-generator/contentGenerator");
+                  const result = await generateContent({
+                    domain,
+                    keywords: state.keywords,
+                    contentType: state.contentType,
+                    title: state.title,
+                    creativity: state.creativity,
+                    contentPreferences: selectedPreferences,
+                    templateId: state.selectedTemplateId,
+                    aiProvider: state.aiProvider,
+                    aiModel: state.aiModel,
+                    ragEnabled: state.ragEnabled,
+                    wordCountOption: state.wordCountOption,
+                    customSubheadings: state.selectedSubheadings
+                  });
+                  
+                  // Use the handler to process the result
+                  await handleContentGenerated(result);
+                } catch (error) {
+                  console.error("Error generating content:", error);
+                  toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                } finally {
+                  dispatch({ type: 'SET_IS_GENERATING', payload: false });
+                }
+              }}
+              onBack={() => dispatch({ type: 'SET_STEP', payload: 3 })}
+            />
+          )}
+          {state.step !== 4 && renderStepContent()}
         </form>
       </CardContent>
     </Card>
