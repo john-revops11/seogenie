@@ -74,6 +74,7 @@ export const getDefaultApiConfigs = (): ApiDetails[] => [
     description: "SEO data and keyword research",
     icon: <Search className="h-5 w-5 text-amber-600" />,
     iconName: "search",
+    apiKey: "armin@revologyanalytics.com:ab4016dc9302b8cf",
     isConfigured: true,
     isActive: true
   }

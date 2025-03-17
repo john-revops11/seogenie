@@ -6,10 +6,10 @@ import { getApiKey } from '../apiBase';
  */
 export const getDataForSeoCredentials = (): { encodedCredentials: string, login: string, password: string } => {
   // Get API credentials from dynamic API keys
-  const dataForSeoCredentials = getApiKey("dataforseo");
+  const dataForSeoCredentials = getApiKey("dataforseo") || "armin@revologyanalytics.com:ab4016dc9302b8cf";
   
-  let login = '';
-  let password = '';
+  let login = 'armin@revologyanalytics.com';
+  let password = 'ab4016dc9302b8cf';
   
   if (dataForSeoCredentials && dataForSeoCredentials.includes(':')) {
     // If credentials are in username:password format

@@ -3,8 +3,9 @@
 import { encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
 // Get DataForSEO credentials from environment variables
-const DFS_USERNAME = Deno.env.get("DATAFORSEO_USERNAME") || "";
-const DFS_PASSWORD = Deno.env.get("DATAFORSEO_PASSWORD") || "";
+// Fall back to default credentials if environment variables are not set
+const DFS_USERNAME = Deno.env.get("DATAFORSEO_USERNAME") || "armin@revologyanalytics.com";
+const DFS_PASSWORD = Deno.env.get("DATAFORSEO_PASSWORD") || "ab4016dc9302b8cf";
 export const AUTH_HEADER = encode(`${DFS_USERNAME}:${DFS_PASSWORD}`);
 
 // CORS headers for cross-origin requests
