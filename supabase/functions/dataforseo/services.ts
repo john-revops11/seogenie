@@ -1,7 +1,7 @@
 
 import { makeDataForSEORequest } from "./api-client.ts";
 
-// Function to get domain keywords - this is the main function we need
+// Function to get domain keywords - updated endpoint to match the one in useDataForSeoClient
 export async function getDomainKeywords(domain: string, location_code = 2840) {
   // Format domain by removing http/https if present
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
@@ -15,7 +15,7 @@ export async function getDomainKeywords(domain: string, location_code = 2840) {
   }];
   
   try {
-    // Use the correct endpoint as shown in the documentation
+    // Use the correct endpoint that matches what's in useDataForSeoClient.ts
     const result = await makeDataForSEORequest('/v3/keywords_data/google_ads/keywords_for_site/live', 'POST', data);
     
     if (!result || !result.tasks || result.tasks.length === 0 || !result.tasks[0].result) {

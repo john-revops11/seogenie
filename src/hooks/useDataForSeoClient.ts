@@ -97,16 +97,7 @@ export function useDataForSeoClient() {
     }
   };
 
-  const getDomainOverview = async (domain: string, options?: DataForSeoOptions) => {
-    const data = [{
-      target: domain,
-      location_name: options?.location_name || "United States",
-      language_name: options?.language_name || "English"
-    }];
-    
-    return callDataForSeoApi('/v3/dataforseo_labs/google/domain_rank_overview/live', data);
-  };
-  
+  // Updated to use the correct endpoint for keyword data
   const getDomainKeywords = async (domain: string, options?: DataForSeoOptions) => {
     const data = [{
       target: domain,
@@ -115,7 +106,18 @@ export function useDataForSeoClient() {
       limit: 100
     }];
     
-    return callDataForSeoApi('/v3/dataforseo_labs/google/domain_keywords/live', data);
+    // Change from dataforseo_labs endpoint to keywords_data endpoint which is more reliable
+    return callDataForSeoApi('/v3/keywords_data/google_ads/keywords_for_site/live', data);
+  };
+  
+  const getDomainOverview = async (domain: string, options?: DataForSeoOptions) => {
+    const data = [{
+      target: domain,
+      location_name: options?.location_name || "United States",
+      language_name: options?.language_name || "English"
+    }];
+    
+    return callDataForSeoApi('/v3/dataforseo_labs/google/domain_rank_overview/live', data);
   };
   
   const getBacklinkSummary = async (domain: string) => {
