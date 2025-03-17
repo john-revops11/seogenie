@@ -4,6 +4,10 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import SystemHealthCard from "./SystemHealthCard";
+import { UserAuthDisplay } from "./dashboard/UserAuthDisplay";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,10 +27,31 @@ const ErrorFallback = ({ error }: { error: Error }) => {
 };
 
 const Layout = ({ children }: LayoutProps) => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    
+    fetchUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
       <div className="fixed inset-0 bg-grid-black/[0.02] -z-10"></div>
-      <div className="mb-4 mt-4 mr-4 flex justify-end">
+      <div className="flex justify-between items-center p-4">
+        <UserAuthDisplay user={user} />
         <SystemHealthCard />
       </div>
       <ErrorBoundary FallbackComponent={ErrorFallback}>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
@@ -7,8 +8,6 @@ import { toast } from "sonner";
 import RankedKeywordsTable from "../ranked-keywords/RankedKeywordsTable";
 import { DomainIntersectionCard } from "../domain-intersection";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { UserAuthDisplay } from "./UserAuthDisplay";
 import { SearchDomainForm } from "./SearchDomainForm";
 import { AlertMessages } from "./AlertMessages";
 import { DomainBadge } from "./DomainBadge";
@@ -22,30 +21,7 @@ export function DomainAnalyticsDashboard() {
     trafficValue: 0
   });
   const [apiCallsMade, setApiCallsMade] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const analytics = useDomainSeoAnalytics(domain);
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    
-    fetchUser();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      
-      if (event === 'SIGNED_OUT') {
-        navigate('/auth');
-      }
-    });
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [navigate]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +59,6 @@ export function DomainAnalyticsDashboard() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <UserAuthDisplay user={user} />
           <h2 className="text-2xl font-bold tracking-tight">Domain SEO Analytics</h2>
           <DomainBadge domain={domain} apiCallsMade={apiCallsMade} />
         </div>
