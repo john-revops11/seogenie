@@ -26,9 +26,9 @@ export const generateSampleKeywords = (domain: string, count: number = 10): Keyw
     results.push({
       keyword,
       monthly_search: volume,
-      competition: competition.toFixed(2),
+      competition: Number(competition.toFixed(2)), // Convert to number instead of string
       competition_index: competitionIndex,
-      cpc: (Math.random() * 10 + 1).toFixed(2),
+      cpc: Number((Math.random() * 10 + 1).toFixed(2)), // Convert to number instead of string
       position: position,
       rankingUrl: `https://${domain}/${keyword.replace(/\s+/g, '-')}`,
       competitorRankings: {},
