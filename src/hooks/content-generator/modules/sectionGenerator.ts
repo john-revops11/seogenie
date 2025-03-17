@@ -41,7 +41,7 @@ Keep it under 150 words and make it compelling.
   const introContent = await generateWithAI(aiProvider, aiModel, enhancedPrompt, creativity);
   
   const html = `<p>${introContent}</p>\n\n`;
-  const blocks = [{
+  const blocks: ContentBlock[] = [{
     id: uuidv4(),
     type: 'paragraph',
     content: `<p>${introContent}</p>`,
@@ -91,6 +91,7 @@ Keep it between 200-300 words.
   
   const sectionContent = await generateWithAI(aiProvider, aiModel, enhancedPrompt, creativity);
   
+  // Use the parseContentToBlocks function to properly parse and type the blocks
   const sectionBlocks = parseContentToBlocks(sectionContent).map(block => ({
     ...block,
     id: uuidv4()
