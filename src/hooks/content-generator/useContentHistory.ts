@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { GeneratedContent } from "@/services/keywords/types";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 
 export interface ContentHistoryItem {
   id: string;

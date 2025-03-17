@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -37,7 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useContentGeneratorState } from "@/hooks/content-generator/useContentGeneratorState";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { GeneratedContent } from "@/services/keywords/types";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { v4 as uuidv4 } from 'uuid';
 
 interface ContentHistoryProps {
@@ -150,7 +149,7 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
   const loadContentInGenerator = async (item: ContentHistoryItem) => {
     try {
       // Convert the history item to a GeneratedContent object
-      const contentBlocks = item.content.split('\n').map(html => ({
+      const contentBlocks: ContentBlock[] = item.content.split('\n').map(html => ({
         id: uuidv4(),
         type: html.startsWith('<h1>') ? 'heading1' : 
               html.startsWith('<h2>') ? 'heading2' : 
@@ -190,7 +189,8 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
         aiModel: item.ai_model || 'gpt-4',
         wordCountOption: 'standard',
         selectedSubheadings: item.outline || [],
-        contentPreferences: []
+        contentPreferences: [],
+        topic: item.topic || ''
       };
       
       localStorage.setItem('contentGeneratorState', JSON.stringify(contentStateToSave));
