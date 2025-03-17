@@ -47,18 +47,31 @@ export function useDomainIntersection() {
       
       toast.info(`Analyzing keyword intersection between ${cleanTarget1} and ${cleanTarget2}`);
       
-      // Call the DataForSEO edge function
-      const { data, error } = await supabase.functions.invoke('dataforseo', {
-        body: {
-          action: 'domain_intersection',
-          target1: cleanTarget1,
-          target2: cleanTarget2,
-          location_code: 2840
+      // Call the DataForSEO edge function with a timeout
+      const fetchWithTimeout = async () => {
+        try {
+          const response = await supabase.functions.invoke('dataforseo', {
+            body: {
+              action: 'domain_intersection',
+              target1: cleanTarget1,
+              target2: cleanTarget2,
+              location_code: 2840
+            },
+            options: {
+              timeout: 60000 // 60 second timeout
+            }
+          });
+          return response;
+        } catch (e) {
+          console.error("Error calling edge function:", e);
+          throw new Error(`Failed to connect to the edge function. Please try again later. (${e.message})`);
         }
-      });
+      };
       
-      if (error) {
-        throw new Error(`Edge function error: ${error.message}`);
+      const { data, error: fetchError } = await fetchWithTimeout();
+      
+      if (fetchError) {
+        throw new Error(`Edge function error: ${fetchError.message}`);
       }
       
       if (!data || !data.success) {

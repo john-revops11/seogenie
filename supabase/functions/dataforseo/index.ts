@@ -68,7 +68,12 @@ serve(async (req) => {
       success: true,
       results: result.tasks?.[0]?.result?.[0]?.items || result.tasks?.[0]?.result || [],
     }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
     });
   } catch (error) {
     console.error("Error processing request:", error);
@@ -78,7 +83,12 @@ serve(async (req) => {
       error: error.message,
     }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
     });
   }
 });
