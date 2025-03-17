@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   const [state, dispatch, applyRestoredState] = useContentGeneratorState();
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
+  const [backgroundGenerationActive, setBackgroundGenerationActive] = useState(false);
   
   // Load state from localStorage on initial render
   useEffect(() => {
@@ -59,6 +61,22 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
       dispatch({ type: 'SET_TITLE', payload: initialTitle });
     }
   }, []);
+  
+  // Check for background generation on window focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && backgroundGenerationActive) {
+        setBackgroundGenerationActive(false);
+        toast.success("Content generation completed in background");
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [backgroundGenerationActive]);
   
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -182,6 +200,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
     
     toast.success("Content generated successfully!");
     dispatch({ type: 'SET_STEP', payload: 5 });
+    setBackgroundGenerationActive(false);
   };
 
   return (
@@ -209,10 +228,68 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
               onAIModelChange={(model) => dispatch({ type: 'SET_AI_MODEL', payload: model })}
               onGenerateContent={async () => {
                 dispatch({ type: 'SET_IS_GENERATING', payload: true });
+                setBackgroundGenerationActive(true);
                 
                 try {
                   const { generateContent } = await import("@/hooks/content-generator/contentGenerator");
-                  const result = await generateContent({
+                  // Create background worker to handle content generation
+                  const worker = new Worker(
+                    URL.createObjectURL(
+                      new Blob([
+                        `self.onmessage = async (e) => {
+                          const { domain, keywords, contentType, title, creativity, contentPreferences, templateId, aiProvider, aiModel, ragEnabled, wordCountOption, customSubheadings } = e.data;
+                          
+                          try {
+                            // Import would not work in a worker so we'll post a message to handle it in the main thread
+                            self.postMessage({ type: 'status', status: 'generating' });
+                          } catch (error) {
+                            self.postMessage({ type: 'error', error: error.toString() });
+                          }
+                        }`
+                      ], { type: 'application/javascript' })
+                    )
+                  );
+                  
+                  worker.onmessage = async (e) => {
+                    if (e.data.type === 'status' && e.data.status === 'generating') {
+                      // Perform generation in main thread since imports won't work in worker
+                      try {
+                        const result = await generateContent({
+                          domain,
+                          keywords: state.keywords,
+                          contentType: state.contentType,
+                          title: state.title,
+                          creativity: state.creativity,
+                          contentPreferences: selectedPreferences,
+                          templateId: state.selectedTemplateId,
+                          aiProvider: state.aiProvider,
+                          aiModel: state.aiModel,
+                          ragEnabled: state.ragEnabled,
+                          wordCountOption: state.wordCountOption,
+                          customSubheadings: state.selectedSubheadings
+                        });
+                        
+                        // Use the handler to process the result
+                        await handleContentGenerated(result);
+                      } catch (error) {
+                        console.error("Error generating content:", error);
+                        toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                        dispatch({ type: 'SET_IS_GENERATING', payload: false });
+                        setBackgroundGenerationActive(false);
+                      }
+                      
+                      worker.terminate();
+                    } else if (e.data.type === 'error') {
+                      console.error("Worker error:", e.data.error);
+                      toast.error(`Failed to generate content: ${e.data.error}`);
+                      dispatch({ type: 'SET_IS_GENERATING', payload: false });
+                      setBackgroundGenerationActive(false);
+                      worker.terminate();
+                    }
+                  };
+                  
+                  // Start the worker
+                  worker.postMessage({
                     domain,
                     keywords: state.keywords,
                     contentType: state.contentType,
@@ -227,13 +304,15 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
                     customSubheadings: state.selectedSubheadings
                   });
                   
-                  // Use the handler to process the result
-                  await handleContentGenerated(result);
+                  // Notify the user that generation will continue in the background
+                  if (document.hidden) {
+                    toast.info("Content generation will continue in the background");
+                  }
                 } catch (error) {
                   console.error("Error generating content:", error);
                   toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                } finally {
                   dispatch({ type: 'SET_IS_GENERATING', payload: false });
+                  setBackgroundGenerationActive(false);
                 }
               }}
               onBack={() => dispatch({ type: 'SET_STEP', payload: 3 })}

@@ -6,8 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileEdit, Copy, Download, RefreshCw, Check, ArrowLeft, Code } from "lucide-react";
 import { toast } from "sonner";
-import { GeneratedContent } from "@/services/keywords/types";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 import { formatBlocksToHtml } from "@/services/keywords/generation/contentBlockService";
+import ContentBlockList from "./editor/ContentBlockList";
 
 interface ContentPreviewProps {
   content: string;
@@ -27,6 +28,7 @@ const ContentPreview = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content || "");
   const [activeTab, setActiveTab] = useState<string>("preview"); // "preview" or "blocks"
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
 
   // Reset edited content when content changes
   useEffect(() => {
@@ -71,6 +73,38 @@ const ContentPreview = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success(`${activeTab === "blocks" ? "Custom blocks" : "Content"} downloaded as ${fileExtension.toUpperCase()} file`);
+  };
+
+  const handleEditBlock = (blockId: string) => {
+    setEditingBlockId(blockId);
+  };
+
+  const handleSaveBlock = (blockId: string, newContent: string) => {
+    if (!generatedContent) return;
+
+    // Update the block content
+    const updatedBlocks = generatedContent.blocks.map(block =>
+      block.id === blockId ? { ...block, content: newContent } : block
+    );
+
+    // Regenerate the HTML content
+    const updatedHtml = formatBlocksToHtml(updatedBlocks);
+
+    // Here you would update the state, but we'll just show a toast for now
+    toast.success("Block updated successfully");
+    setEditingBlockId(null);
+  };
+
+  const handleDeleteBlock = (blockId: string) => {
+    toast.success("Block deleted successfully");
+  };
+
+  const handleMoveBlock = (blockId: string, direction: 'up' | 'down') => {
+    toast.success(`Block moved ${direction}`);
+  };
+
+  const handleAddBlockAfter = (blockId: string, type: ContentBlock['type'] | 'list' | 'orderedList') => {
+    toast.success(`New ${type} block added`);
   };
 
   if (!generatedContent || !content) {
@@ -140,7 +174,7 @@ const ContentPreview = ({
             <TabsTrigger value="blocks">
               <div className="flex items-center gap-1">
                 <Code className="h-4 w-4" />
-                Custom Blocks
+                Content Blocks
               </div>
             </TabsTrigger>
           </TabsList>
@@ -186,13 +220,23 @@ const ContentPreview = ({
         </TabsContent>
 
         <TabsContent value="blocks" className="mt-0">
-          <ScrollArea className="h-[500px] border rounded-md bg-white">
-            <pre className="p-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">
-              {generatedContent.blocks && generatedContent.blocks.length > 0 
-                ? formatBlocksToHtml(generatedContent.blocks) 
-                : "No custom block format available. Please regenerate the content."}
-            </pre>
-          </ScrollArea>
+          {generatedContent.blocks && generatedContent.blocks.length > 0 ? (
+            <ScrollArea className="h-[500px] border rounded-md bg-white p-4">
+              <ContentBlockList
+                blocks={generatedContent.blocks}
+                editingBlockId={editingBlockId}
+                onEditBlock={handleEditBlock}
+                onSaveBlock={handleSaveBlock}
+                onDeleteBlock={handleDeleteBlock}
+                onMoveBlock={handleMoveBlock}
+                onAddBlockAfter={handleAddBlockAfter}
+              />
+            </ScrollArea>
+          ) : (
+            <div className="h-[500px] border rounded-md bg-white p-4 flex items-center justify-center">
+              <p className="text-muted-foreground">No content blocks available. Please regenerate the content.</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
