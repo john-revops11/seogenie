@@ -79,36 +79,72 @@ const processIntersectionData = (
 ): KeywordGap[] => {
   const gaps: KeywordGap[] = [];
   
-  for (const result of results) {
-    // We're looking for keywords where the competitor ranks better than the main domain
-    if (!result.keyword) continue;
+  console.log(`Processing ${results.length} intersection results`);
+  
+  // First, look for items array in the results if it exists
+  const itemsArray = results[0]?.items || results;
+  
+  // Debug what we're processing
+  console.log(`Processing items array with ${itemsArray.length} entries`);
+  if (itemsArray.length > 0) {
+    console.log(`Sample item:`, JSON.stringify(itemsArray[0]).substring(0, 300));
+  }
+  
+  for (const result of itemsArray) {
+    // Skip if no keyword
+    if (!result.keyword) {
+      continue;
+    }
+    
+    // Log what we're processing for debugging
+    console.log(`Processing keyword: ${result.keyword}`);
     
     // target1_rank represents the competitor's rank
     // target2_rank represents the main domain's rank
-    const competitorRank = result.target1_rank || 0;
-    const mainDomainRank = result.target2_rank || 100;
+    // If these aren't available directly, look for them in nested objects
+    const competitorRank = result.target1_rank || 
+                          result.rank_data?.target1_rank || 
+                          result.rank_absolute || 
+                          result.rank_position || 
+                          0;
+                         
+    const mainDomainRank = result.target2_rank || 
+                          result.rank_data?.target2_rank || 
+                          100; // Default to 100 (not ranking) if not found
+    
+    console.log(`${result.keyword}: Competitor rank: ${competitorRank}, Main domain rank: ${mainDomainRank}`);
     
     // Only consider keywords where:
     // 1. Competitor has a ranking (not zero)
     // 2. Either main domain doesn't rank at all (rank 100) or ranks much worse
-    if (competitorRank > 0 && (mainDomainRank === 100 || competitorRank < mainDomainRank - 10)) {
+    if (competitorRank > 0 && (mainDomainRank === 100 || competitorRank < mainDomainRank - 5)) {
       const difficulty = calculateDifficulty(result);
-      const opportunity = determineOpportunity(competitorRank, mainDomainRank, result.search_volume || 0);
+      const searchVolume = result.search_volume || 
+                          result.keyword_data?.search_volume || 
+                          result.monthly_searches || 
+                          500; // Default if not found
+                          
+      const opportunity = determineOpportunity(competitorRank, mainDomainRank, searchVolume);
       
       gaps.push({
         keyword: result.keyword,
         competitor: competitorDomain,
         rank: competitorRank,
-        volume: result.search_volume || 0,
+        volume: searchVolume,
         difficulty,
         relevance: calculateRelevance(result, mainDomainRank),
         competitiveAdvantage: calculateCompetitiveAdvantage(mainDomainRank, competitorRank, difficulty),
         isTopOpportunity: false, // Will be determined in prioritizeKeywordGaps
         opportunity
       });
+      
+      console.log(`Added gap for keyword: ${result.keyword}`);
+    } else {
+      console.log(`Skipping keyword: ${result.keyword} - not a valid gap`);
     }
   }
   
+  console.log(`Found ${gaps.length} total gaps for competitor ${competitorDomain}`);
   return gaps;
 };
 
@@ -413,3 +449,4 @@ function mockDataForSEOGaps(
   
   return gaps;
 }
+
