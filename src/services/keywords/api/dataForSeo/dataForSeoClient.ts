@@ -49,6 +49,42 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
       body: JSON.stringify(data)
     });
 
+    // Special handling for backlinks API - create a fallback response for 404 errors
+    if (endpoint === '/v3/backlinks/backlinks_overview/live' && response.status === 404) {
+      console.log(`Backlink data not found for domain, creating fallback response`);
+      const target = data[0]?.target || "unknown";
+      
+      // Create a fallback response with zero values
+      const fallbackResponse = {
+        status_code: 200,
+        status_message: "No backlink data available for this domain",
+        tasks: [
+          {
+            id: "fallback",
+            status_code: 200,
+            status_message: "No data",
+            time: new Date().toISOString(),
+            result: [
+              {
+                target: target,
+                domain_rank: 0,
+                backlinks_count: 0,
+                referring_domains_count: 0
+              }
+            ]
+          }
+        ]
+      };
+      
+      // Cache the fallback response
+      apiCache[cacheKey] = {
+        data: fallbackResponse,
+        timestamp: Date.now()
+      };
+      
+      return fallbackResponse as T;
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`DataForSEO API ${endpoint} responded with ${response.status}: ${errorText}`);
@@ -71,7 +107,12 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
     return responseData as T;
   } catch (error) {
     console.error(`Error calling DataForSEO API ${endpoint}:`, error);
-    toast.error(`API Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    
+    // Don't show toast for backlinks 404 error as we handle it gracefully
+    if (!(endpoint === '/v3/backlinks/backlinks_overview/live' && error instanceof Error && error.message.includes('404'))) {
+      toast.error(`API Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
     return null;
   }
 };
