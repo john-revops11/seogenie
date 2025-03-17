@@ -14,6 +14,8 @@ interface KeywordGapFilterProps {
   onRefreshAnalysis: () => void;
   onVolumeFilterChange: (min: number, max: number) => void;
   onKdFilterChange: (min: number, max: number) => void;
+  keywordTypeFilter?: string;
+  onKeywordTypeFilterChange?: (value: string) => void;
 }
 
 export function KeywordGapFilter({
@@ -23,7 +25,9 @@ export function KeywordGapFilter({
   totalKeywords,
   onRefreshAnalysis,
   onVolumeFilterChange,
-  onKdFilterChange
+  onKdFilterChange,
+  keywordTypeFilter = "all",
+  onKeywordTypeFilterChange
 }: KeywordGapFilterProps) {
   const [prevCompetitorCount, setPrevCompetitorCount] = useState(uniqueCompetitors.length);
   const [volumeRange, setVolumeRange] = useState([0, 10000]);
@@ -59,7 +63,7 @@ export function KeywordGapFilter({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
-        <div className="w-full sm:w-auto">
+        <div className="w-full sm:w-auto space-y-2 sm:space-y-0 sm:flex sm:gap-2">
           <Select value={filterCompetitor} onValueChange={onFilterChange}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Filter by competitor" />
@@ -71,6 +75,23 @@ export function KeywordGapFilter({
               ))}
             </SelectContent>
           </Select>
+          
+          {onKeywordTypeFilterChange && (
+            <Select 
+              value={keywordTypeFilter} 
+              onValueChange={onKeywordTypeFilterChange}
+            >
+              <SelectTrigger className="w-full sm:w-[200px] mt-2 sm:mt-0">
+                <SelectValue placeholder="Filter by keyword type" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="all">All Keywords</SelectItem>
+                <SelectItem value="gaps">Keyword Gaps</SelectItem>
+                <SelectItem value="missing">Missing Keywords</SelectItem>
+                <SelectItem value="shared">Shared Keywords</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="flex gap-2 items-center">
           <Badge variant="outline" className="text-xs">

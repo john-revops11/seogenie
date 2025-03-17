@@ -1,66 +1,77 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { KeywordGap } from "@/services/keywordService";
 import { keywordGapsCache } from "@/components/keyword-gaps/KeywordGapUtils";
 
 export function useKeywordGapPagination(keywordGaps: KeywordGap[] | null) {
-  const [currentPage, setCurrentPage] = useState(keywordGapsCache.currentPage || 1);
-  const [itemsPerPage, setItemsPerPage] = useState(keywordGapsCache.itemsPerPage || 15);
-  const [displayedKeywords, setDisplayedKeywords] = useState<KeywordGap[]>([]);
-  const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(
+    keywordGapsCache.currentPage || 1
+  );
+  const [itemsPerPage, setItemsPerPage] = useState(
+    keywordGapsCache.itemsPerPage || 10
+  );
+  const [filterCompetitor, setFilterCompetitor] = useState(
+    keywordGapsCache.filterCompetitor || "all"
+  );
+  const [filteredKeywords, setFilteredKeywords] = useState<KeywordGap[]>([]);
 
+  // Apply filters to keyword gaps
   useEffect(() => {
-    if (!keywordGaps) return;
+    if (!keywordGaps) {
+      setFilteredKeywords([]);
+      return;
+    }
+
+    let filtered = [...keywordGaps];
     
-    let filteredKeywords = [...keywordGaps]; // Create a copy to avoid mutations
-    
+    // Apply competitor filter if not "all"
     if (filterCompetitor !== "all") {
-      filteredKeywords = keywordGaps.filter(kw => kw.competitor === filterCompetitor);
+      filtered = filtered.filter(
+        (gap) => gap.competitor === filterCompetitor
+      );
     }
     
-    // Calculate pagination values
-    const totalFilteredKeywords = filteredKeywords.length;
-    const maxPage = Math.max(1, Math.ceil(totalFilteredKeywords / itemsPerPage));
+    setFilteredKeywords(filtered);
     
-    // Ensure current page is valid
-    const validCurrentPage = Math.min(maxPage, Math.max(1, currentPage));
-    if (validCurrentPage !== currentPage) {
-      setCurrentPage(validCurrentPage);
+    // Ensure current page is valid with new filtered set
+    const maxPage = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
     }
     
-    const startIndex = (validCurrentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, totalFilteredKeywords);
-    
-    setDisplayedKeywords(filteredKeywords.slice(startIndex, endIndex));
-    
-    // Use currentPage consistently everywhere
-    keywordGapsCache.currentPage = validCurrentPage;
-    keywordGapsCache.page = validCurrentPage; // For backward compatibility
+  }, [keywordGaps, filterCompetitor, itemsPerPage]);
+
+  // Get current page items
+  const displayedKeywords = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredKeywords.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredKeywords, currentPage, itemsPerPage]);
+  
+  // Update cache when filters or pagination change
+  useEffect(() => {
+    keywordGapsCache.currentPage = currentPage;
     keywordGapsCache.itemsPerPage = itemsPerPage;
-  }, [keywordGaps, currentPage, itemsPerPage, filterCompetitor]);
+    keywordGapsCache.filterCompetitor = filterCompetitor;
+  }, [currentPage, itemsPerPage, filterCompetitor]);
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    keywordGapsCache.currentPage = page;
   };
 
-  const handleCompetitorFilterChange = (value: string) => {
-    setFilterCompetitor(value);
-    setCurrentPage(1); // Reset to first page when filter changes
+  const handleCompetitorFilterChange = (competitor: string) => {
+    setFilterCompetitor(competitor);
+    setCurrentPage(1); // Reset to first page when changing filter
+    keywordGapsCache.filterCompetitor = competitor;
+    keywordGapsCache.currentPage = 1;
   };
 
-  // Calculate pagination values for display
   const getPaginationInfo = () => {
-    const filteredKeywords = keywordGaps ? (
-      filterCompetitor === "all" 
-        ? keywordGaps
-        : keywordGaps.filter(kw => kw.competitor === filterCompetitor)
-    ) : [];
-    
     const totalKeywords = filteredKeywords.length;
-    const totalPages = Math.max(1, Math.ceil(totalKeywords / itemsPerPage));
+    const totalPages = Math.ceil(totalKeywords / itemsPerPage) || 1;
     const startItem = totalKeywords === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(startItem + itemsPerPage - 1, totalKeywords);
-
+    
     return {
       totalKeywords,
       totalPages,

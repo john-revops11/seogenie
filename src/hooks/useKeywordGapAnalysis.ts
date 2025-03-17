@@ -22,6 +22,7 @@ export function useKeywordGapAnalysis(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastKeywordsLength, setLastKeywordsLength] = useState(0);
+  const [keywordTypeFilter, setKeywordTypeFilter] = useState("all");
   
   const { haveCompetitorsChanged: checkCompetitorsChanged } = useKeywordGaps();
   const { fetchKeywordGaps } = useKeywordGapApi();
@@ -132,6 +133,11 @@ export function useKeywordGapAnalysis(
     generateKeywordGaps();
   }, [domain, competitorDomains, keywords, isLoading, apiSource, locationCode]);
 
+  const handleKeywordTypeFilterChange = (value: string) => {
+    setKeywordTypeFilter(value);
+    setCurrentPage(1); // Reset to first page when changing filter
+  };
+
   const refreshAnalysis = async () => {
     keywordGapsCache.data = null;
     setKeywordGaps(null);
@@ -172,6 +178,7 @@ export function useKeywordGapAnalysis(
     filterCompetitor,
     apiSource,
     locationCode,
+    keywordTypeFilter,
     totalKeywords,
     totalPages,
     startItem,
@@ -181,6 +188,7 @@ export function useKeywordGapAnalysis(
     handleCompetitorFilterChange,
     handleApiSourceChange,
     handleLocationChange,
+    handleKeywordTypeFilterChange,
     refreshAnalysis
   };
 }
