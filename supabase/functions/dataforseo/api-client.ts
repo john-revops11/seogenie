@@ -6,7 +6,7 @@ export async function makeDataForSEORequest(
   endpoint: string, 
   method: string, 
   data: any = null,
-  timeoutMs: number = 60000 // Increased default timeout to 60 seconds
+  timeoutMs: number = 60000 // Default timeout to 60 seconds
 ) {
   const url = `https://api.dataforseo.com${endpoint}`;
   
@@ -31,7 +31,7 @@ export async function makeDataForSEORequest(
     // Add timeout to fetch to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.warn(`Request to ${endpoint} timed out after ${timeoutMs}ms`);
+      console.warn(`Request to ${endpoint} timed out after ${timeoutMs/1000} seconds`);
       controller.abort();
     }, timeoutMs);
     
@@ -45,20 +45,24 @@ export async function makeDataForSEORequest(
         const errorText = await response.text();
         console.error(`DataForSEO API request failed with status ${response.status}: ${errorText}`);
         
+        // Handle specific error codes
+        if (response.status === 404) {
+          console.warn("Resource not found (404). This might be normal for some endpoints like backlinks for new domains.");
+          // Special handling for backlinks endpoint which might return 404 for new domains
+          if (endpoint.includes('backlinks')) {
+            return {
+              status_code: 20000,
+              status_message: "No data found for this domain",
+              tasks: [{
+                result: []
+              }]
+            };
+          }
+        }
+        
         // Enhanced error message with more details
         const errorMessage = `DataForSEO API request failed (${response.status} ${response.statusText})`;
-        const errorDetails = {
-          status: response.status,
-          statusText: response.statusText,
-          url: endpoint,
-          method,
-          responseText: errorText.substring(0, 200),
-        };
-        
-        throw new Error(JSON.stringify({
-          message: errorMessage,
-          details: errorDetails
-        }));
+        throw new Error(errorMessage);
       }
       
       // Try to parse JSON response, handle empty or malformed responses
@@ -74,14 +78,16 @@ export async function makeDataForSEORequest(
         console.log(`DataForSEO response status code: ${json.status_code}`);
         
         if (json.status_code !== 20000) {
+          // If API returned an error response
           console.error(`API returned error code ${json.status_code}: ${json.status_message || 'Unknown error'}`);
-          throw new Error(JSON.stringify({
-            message: `DataForSEO API error: ${json.status_message || 'Unknown error'}`,
-            details: {
-              statusCode: json.status_code,
-              statusMessage: json.status_message,
-            }
-          }));
+          
+          // Create structured response - we'll handle this on the client
+          return {
+            status_code: json.status_code,
+            status_message: json.status_message,
+            error: true,
+            message: json.status_message || 'API error'
+          };
         }
         
         return json;
@@ -98,17 +104,7 @@ export async function makeDataForSEORequest(
     
     // Check if this is an abort/timeout error
     if (error.name === 'AbortError') {
-      throw new Error(`Request to DataForSEO API timed out after ${timeoutMs}ms. The service may be experiencing delays.`);
-    }
-    
-    // If it's a JSON string containing error details, extract the message
-    if (typeof error.message === 'string' && error.message.startsWith('{') && error.message.endsWith('}')) {
-      try {
-        const errorObj = JSON.parse(error.message);
-        throw new Error(errorObj.message || 'Unknown DataForSEO API error');
-      } catch (parseError) {
-        // If parsing fails, just use the original error
-      }
+      throw new Error(`Request to DataForSEO API timed out after ${timeoutMs/1000} seconds. The service may be experiencing delays.`);
     }
     
     throw error;

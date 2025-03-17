@@ -11,9 +11,11 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
     throw new Error("Domain is required");
   }
   
+  // Clean domain and make sure to remove any protocol prefixes
   const cleanedDomain = cleanDomain(domain);
   console.log(`Getting keywords for domain: ${cleanedDomain}, location: ${location_code}`);
   
+  // Prepare request data
   const data = [{
     target: cleanedDomain,
     location_code,
@@ -27,7 +29,7 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
       '/v3/keywords_data/google_ads/keywords_for_site/live', 
       'POST', 
       data, 
-      120000 // Increased to 120 second timeout specifically for keywords endpoint
+      180000 // Increased to 180 second timeout specifically for keywords endpoint
     );
     
     // Check if the result is valid and has the expected structure
@@ -46,22 +48,16 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
     let keywords = [];
     
     try {
-      keywords = extractItems(result, `No keyword data found for domain: ${domain}`);
+      // Check if there are actual results in the tasks
+      if (result.tasks[0].result && result.tasks[0].result.length > 0) {
+        keywords = result.tasks[0].result[0]?.items || [];
+      } else {
+        console.warn(`No result data found in task for domain: ${domain}`);
+        keywords = [];
+      }
     } catch (extractError) {
       console.warn(`Error extracting keyword data: ${extractError.message}`);
       // Return empty array instead of throwing for extraction errors
-      return {
-        tasks: [{
-          result: [{
-            items: []
-          }]
-        }]
-      };
-    }
-    
-    if (!keywords || keywords.length === 0) {
-      console.warn(`No keywords found for domain: ${cleanedDomain}`);
-      // Return empty array instead of throwing error for no results
       return {
         tasks: [{
           result: [{

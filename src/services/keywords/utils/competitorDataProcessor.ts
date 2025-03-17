@@ -35,9 +35,9 @@ export const processCompetitorData = async (
         setTimeout(() => {
           resolve({
             data: null, 
-            error: new Error('Request timed out after 120 seconds')
+            error: new Error('Request timed out after 180 seconds')
           });
-        }, 120000); // 120 second client-side timeout
+        }, 180000); // 180 second client-side timeout
       })
     ]);
     
@@ -55,6 +55,7 @@ export const processCompetitorData = async (
         errorMessage = `Failed to connect to the DataForSEO service. Please check your network connection or try again later.`;
       }
       
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     }
     
@@ -73,21 +74,12 @@ export const processCompetitorData = async (
         enhancedErrorMessage = `Request timed out for ${normalizedDomain}. Please try again later.`;
       }
       
-      throw new Error(enhancedErrorMessage);
-    }
-    
-    if (!data.results) {
-      console.warn(`No results returned for ${normalizedDomain}`);
+      toast.warning(enhancedErrorMessage);
       return { domain: normalizedDomain, keywords: [] };
     }
     
-    if (!Array.isArray(data.results)) {
-      console.error(`Invalid response format for ${normalizedDomain}:`, data.results);
-      throw new Error(`Invalid response format for ${normalizedDomain}`);
-    }
-    
-    // Handle empty keywords gracefully
-    const keywords = data.results.length === 0 ? [] : data.results;
+    // Handle empty results gracefully - data.results might be an empty array
+    const keywords = data.results && Array.isArray(data.results) ? data.results : [];
     
     console.log(`Successfully fetched ${keywords.length} keywords for competitor ${normalizedDomain}`);
     
