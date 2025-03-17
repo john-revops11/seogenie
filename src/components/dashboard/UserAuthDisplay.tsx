@@ -28,6 +28,7 @@ export function UserAuthDisplay({ user }: UserAuthDisplayProps) {
         variant="outline" 
         size="sm" 
         onClick={() => navigate('/auth')}
+        className="self-start"
       >
         Login
       </Button>
@@ -35,7 +36,7 @@ export function UserAuthDisplay({ user }: UserAuthDisplayProps) {
   }
   
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 self-start">
       <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-md text-sm">
         <User className="h-4 w-4 text-muted-foreground" />
         <span>{user.email}</span>

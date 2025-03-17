@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
@@ -83,10 +82,9 @@ export function DomainAnalyticsDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold tracking-tight">Domain SEO Analytics</h2>
-        
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <UserAuthDisplay user={user} />
+          <h2 className="text-2xl font-bold tracking-tight">Domain SEO Analytics</h2>
           <DomainBadge domain={domain} apiCallsMade={apiCallsMade} />
         </div>
       </div>
