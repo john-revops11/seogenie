@@ -1,224 +1,74 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { 
-  getCompetitorDomains, 
-  getDomainKeywords, 
-  getDomainIntersection, 
-  getDomainOverview, 
-  getRankedKeywords 
+import { corsHeaders } from "./config.ts";
+import {
+  getDomainKeywords,
+  getCompetitorDomains,
+  getRankedKeywords,
+  getDomainIntersection,
+  getDomainOverview
 } from "./services.ts";
 
-// CORS headers for all responses
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey'
-};
-
 serve(async (req) => {
-  // Handle CORS for preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: corsHeaders
-    });
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Parse request JSON with error handling
-    let action, params;
-    try {
-      const body = await req.json();
-      action = body.action;
-      params = { ...body };
-      delete params.action;
-      
-      console.log(`Processing request: action=${action}, params=${JSON.stringify(params, null, 2)}`);
-    } catch (jsonError) {
-      console.error("Error parsing request JSON:", jsonError);
-      return new Response(JSON.stringify({
-        success: false,
-        error: `Invalid request format: ${jsonError.message}`,
-      }), {
-        status: 400,
-        headers: { 
-          "Content-Type": "application/json",
-          ...corsHeaders
-        },
-      });
-    }
+    // Get the request body
+    const body = await req.json();
+    const action = body.action;
     
-    // Validate required parameters
-    if (!action) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Missing required 'action' parameter",
-      }), {
-        status: 400,
-        headers: { 
-          "Content-Type": "application/json",
-          ...corsHeaders
-        },
-      });
+    console.log(`DataForSEO function called with action: ${action}`);
+    let result;
+
+    // Route the request to the appropriate service based on the action
+    switch (action) {
+      case 'domain_keywords':
+        result = await getDomainKeywords(body.domain, body.location_code, body.language_code);
+        break;
+      case 'competitor_domains':
+        result = await getCompetitorDomains(body.domain, body.location_code, body.limit);
+        break;
+      case 'ranked_keywords':
+        result = await getRankedKeywords(
+          body.domain, 
+          body.location_code || 2840, 
+          body.language_code || "en", 
+          body.limit || 100,
+          body.order_by || ["keyword_data.keyword_info.search_volume,desc"]
+        );
+        break;
+      case 'domain_intersection':
+        result = await getDomainIntersection(
+          body.target1, 
+          body.target2, 
+          body.location_code, 
+          body.limit
+        );
+        break;
+      case 'domain_overview':
+        result = await getDomainOverview(body.domain, body.location_code);
+        break;
+      default:
+        throw new Error(`Unknown action: ${action}`);
     }
-    
-    // Add request timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
-    
-    try {
-      let result;
-      console.log(`Processing ${action} request with params:`, params);
-      
-      switch (action) {
-        case "competitors_domain":
-          // Validate domain parameter
-          if (!params.domain) {
-            throw new Error("Missing required 'domain' parameter");
-          }
-          
-          result = await getCompetitorDomains(
-            params.domain,
-            params.location_code,
-            params.limit
-          );
-          break;
-        case "domain_keywords":
-          try {
-            if (!params.domain) {
-              throw new Error("Missing required 'domain' parameter");
-            }
-            
-            // Clean domain by removing protocol prefixes if present
-            const cleanedDomain = params.domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
-            console.log(`Processing domain_keywords for cleaned domain: ${cleanedDomain}`);
-            
-            result = await getDomainKeywords(
-              cleanedDomain,
-              params.location_code,
-              params.sort_by
-            );
-            console.log(`Successfully fetched keywords for ${cleanedDomain}`);
-          } catch (error) {
-            console.error(`Error in domain_keywords for ${params.domain}:`, error);
-            clearTimeout(timeoutId);
-            
-            // Determine if this is a timeout error for better client-side handling
-            const isTimeoutError = 
-              error.name === 'TimeoutError' || 
-              error.name === 'AbortError' || 
-              (error.message && (
-                error.message.includes('timeout') || 
-                error.message.includes('timed out') || 
-                error.message.includes('aborted')
-              ));
-            
-            return new Response(JSON.stringify({
-              success: false,
-              error: `${error.message || 'Unknown error'}`,
-              errorType: isTimeoutError ? 'timeout' : 'api',
-              domain: params.domain
-            }), {
-              status: isTimeoutError ? 504 : 500,
-              headers: { 
-                "Content-Type": "application/json",
-                ...corsHeaders
-              },
-            });
-          }
-          break;
-        case "domain_intersection":
-          if (!params.target1 || !params.target2) {
-            throw new Error("Missing required 'target1' or 'target2' parameter");
-          }
-          
-          result = await getDomainIntersection(
-            params.target1,
-            params.target2,
-            params.location_code
-          );
-          break;
-        case "domain_overview":
-          if (!params.domain) {
-            throw new Error("Missing required 'domain' parameter");
-          }
-          
-          result = await getDomainOverview(
-            params.domain,
-            params.location_code
-          );
-          break;
-        case "ranked_keywords":
-          if (!params.domain) {
-            throw new Error("Missing required 'domain' parameter");
-          }
-          
-          result = await getRankedKeywords(
-            params.domain,
-            params.location_code,
-            params.language_code,
-            params.limit,
-            params.order_by
-          );
-          break;
-        default:
-          throw new Error(`Unknown action: ${action}`);
-      }
-      
-      // Clear the timeout since the request completed successfully
-      clearTimeout(timeoutId);
-      
-      // Check if result is empty or undefined
-      if (!result || !result.tasks || result.tasks.length === 0) {
-        console.warn(`Empty or undefined result for ${action} request`);
-        return new Response(JSON.stringify({
-          success: true,
-          results: [],
-        }), {
-          headers: { 
-            "Content-Type": "application/json",
-            ...corsHeaders
-          },
-        });
-      }
-      
-      return new Response(JSON.stringify({
-        success: true,
-        results: result?.tasks?.[0]?.result?.[0]?.items || result?.tasks?.[0]?.result || [],
-      }), {
-        headers: { 
-          "Content-Type": "application/json",
-          ...corsHeaders
-        },
-      });
-    } catch (actionError) {
-      clearTimeout(timeoutId);
-      throw actionError; // Let the outer catch handle this
-    }
+
+    // Return the result
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
   } catch (error) {
-    console.error("Error processing request:", error);
-    
-    // Determine if the error is a timeout error
-    const isTimeoutError = 
-      error.name === 'AbortError' || 
-      error.name === 'TimeoutError' || 
-      (error.message && (
-        error.message.includes('timeout') || 
-        error.message.includes('timed out') || 
-        error.message.includes('aborted')
-      ));
+    console.error(`Error in DataForSEO function:`, error);
     
     return new Response(JSON.stringify({
       success: false,
-      error: isTimeoutError 
-        ? "Request timed out. The DataForSEO API may be experiencing delays." 
-        : error.message || "Unknown error",
-      errorType: isTimeoutError ? "timeout" : "general"
+      error: error.message,
     }), {
-      status: isTimeoutError ? 504 : 500,
-      headers: { 
-        "Content-Type": "application/json",
-        ...corsHeaders
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
     });
   }
 });
