@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import ContentGeneratorContainer from "./content-generator/ContentGeneratorContainer";
 import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -19,7 +19,6 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
 }) => {
   const { saveToHistory } = useContentHistory();
   const navigate = useNavigate();
-  const location = useLocation();
   
   const handleValueChange = (value: string) => {
     navigate(`/${value}`);
