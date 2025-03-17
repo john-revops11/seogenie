@@ -8,6 +8,7 @@ import { HistoryTabContent } from "@/components/tabs/HistoryTabContent";
 import SettingsTabContent from "@/components/tabs/SettingsTabContent";
 import AIChatTabContent from "@/components/tabs/AIChatTabContent";
 import { PositionTrackingTabContent } from "@/components/tabs/PositionTrackingTabContent";
+import SeoAnalyticsTabContent from "@/components/tabs/SeoAnalyticsTabContent";
 import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
@@ -91,6 +92,7 @@ const Index = () => {
           <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="domain-analysis" data-value="domain-analysis">Domain Analysis</TabsTrigger>
           <TabsTrigger value="position-tracking" data-value="position-tracking">Position Tracking</TabsTrigger>
+          <TabsTrigger value="seo-analytics" data-value="seo-analytics">SEO Analytics</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
@@ -125,6 +127,10 @@ const Index = () => {
         
         <TabsContent value="position-tracking" className="space-y-4">
           <PositionTrackingTabContent domain={mainDomain} />
+        </TabsContent>
+        
+        <TabsContent value="seo-analytics" className="space-y-4">
+          <SeoAnalyticsTabContent />
         </TabsContent>
         
         <TabsContent value="content" className="space-y-6">
