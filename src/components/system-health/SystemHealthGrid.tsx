@@ -18,11 +18,11 @@ export const SystemHealthGrid = ({
   onOpenDocs
 }: SystemHealthGridProps) => {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 p-4">
       {Object.entries(apiStates).map(([apiKey, apiState]) => {
         const api = apiKey as keyof ApiStates;
         return (
-          <div key={apiKey} className="flex-1 min-w-[150px]">
+          <div key={apiKey} className="flex-1 min-w-[220px] max-w-[350px]">
             <ApiCardDetail 
               api={api}
               state={apiState}
