@@ -138,14 +138,6 @@ const Index = () => {
           />
         </TabsContent>
         
-        <TabsContent value="position-tracking" className="space-y-4">
-          <PositionTrackingTabContent domain={mainDomain} />
-        </TabsContent>
-        
-        <TabsContent value="seo-analytics" className="space-y-4">
-          <SeoAnalyticsTabContent />
-        </TabsContent>
-        
         <TabsContent value="content" className="space-y-6">
           <ContentTabContent 
             analysisComplete={analysisComplete} 
@@ -153,6 +145,14 @@ const Index = () => {
             allKeywords={keywordData.map(k => k.keyword)}
             onGoToAnalysis={goToAnalysisTab}
           />
+        </TabsContent>
+        
+        <TabsContent value="position-tracking" className="space-y-4">
+          <PositionTrackingTabContent domain={mainDomain} />
+        </TabsContent>
+        
+        <TabsContent value="seo-analytics" className="space-y-4">
+          <SeoAnalyticsTabContent />
         </TabsContent>
         
         <TabsContent value="ai-chat" className="space-y-6">
