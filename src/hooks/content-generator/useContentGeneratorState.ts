@@ -1,3 +1,4 @@
+
 import { useReducer, useEffect } from "react";
 import { GeneratedContent } from "@/services/keywords/types";
 import { AIProvider, getPrimaryModelForProvider } from "@/types/aiModels";
@@ -92,6 +93,13 @@ const deserializeState = (serializedState: string): Partial<ContentGeneratorStat
   }
 };
 
+// Helper function to convert a state key to a valid action type
+const getActionTypeForKey = (key: string): string => {
+  // Transform the key to match our action types
+  // e.g., "step" becomes "SET_STEP"
+  return `SET_${key.toUpperCase()}` as const;
+};
+
 // Reducer function
 const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGeneratorAction): ContentGeneratorState => {
   let newState: ContentGeneratorState;
@@ -183,6 +191,52 @@ export function useContentGeneratorState() {
       dispatch({ type: 'SET_AI_MODEL', payload: primaryModel.id });
     }
   }, [state.aiProvider]);
+
+  // Helper function to safely apply actions from saved state
+  const applyRestoredState = (savedState: Record<string, any>) => {
+    Object.entries(savedState).forEach(([key, value]) => {
+      if (key === 'step') {
+        dispatch({ type: 'SET_STEP', payload: value as StepType });
+      } else if (key === 'contentType') {
+        dispatch({ type: 'SET_CONTENT_TYPE', payload: value as string });
+      } else if (key === 'selectedTemplateId') {
+        dispatch({ type: 'SET_TEMPLATE_ID', payload: value as string });
+      } else if (key === 'title') {
+        dispatch({ type: 'SET_TITLE', payload: value as string });
+      } else if (key === 'keywords') {
+        dispatch({ type: 'SET_KEYWORDS', payload: value as string[] });
+      } else if (key === 'creativity') {
+        dispatch({ type: 'SET_CREATIVITY', payload: value as number });
+      } else if (key === 'ragEnabled') {
+        dispatch({ type: 'SET_RAG_ENABLED', payload: value as boolean });
+      } else if (key === 'generatedContent') {
+        dispatch({ type: 'SET_GENERATED_CONTENT', payload: value as GeneratedContent | null });
+      } else if (key === 'contentHtml') {
+        dispatch({ type: 'SET_CONTENT_HTML', payload: value as string });
+      } else if (key === 'contentData') {
+        dispatch({ type: 'SET_CONTENT_DATA', payload: value });
+      } else if (key === 'aiProvider') {
+        dispatch({ type: 'SET_AI_PROVIDER', payload: value as AIProvider });
+      } else if (key === 'aiModel') {
+        dispatch({ type: 'SET_AI_MODEL', payload: value as string });
+      } else if (key === 'wordCountOption') {
+        dispatch({ type: 'SET_WORD_COUNT_OPTION', payload: value as string });
+      } else if (key === 'selectedSubheadings') {
+        dispatch({ type: 'SET_SUBHEADINGS', payload: value as string[] });
+      } else if (key === 'isLoadingTopics') {
+        dispatch({ type: 'SET_IS_LOADING_TOPICS', payload: value as boolean });
+      } else if (key === 'topics') {
+        dispatch({ type: 'SET_TOPICS', payload: value as string[] });
+      } else if (key === 'titleSuggestions') {
+        dispatch({ type: 'SET_TITLE_SUGGESTIONS', payload: value as { [topic: string]: string[] } });
+      } else if (key === 'selectedTopic') {
+        dispatch({ type: 'SET_SELECTED_TOPIC', payload: value as string });
+      } else if (key === 'contentPreferences') {
+        dispatch({ type: 'SET_CONTENT_PREFERENCES', payload: value as string[] });
+      }
+      // Exclude 'isGenerating' since we don't want to restore that
+    });
+  };
   
-  return [state, dispatch] as const;
+  return [state, dispatch, applyRestoredState] as const;
 }

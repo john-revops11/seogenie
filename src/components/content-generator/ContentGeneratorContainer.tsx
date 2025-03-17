@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -24,7 +23,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   selectedKeywords = [],
   initialTitle = ""
 }) => {
-  const [state, dispatch] = useContentGeneratorState();
+  const [state, dispatch, applyRestoredState] = useContentGeneratorState();
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
   
@@ -37,11 +36,7 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
         const parsedState = JSON.parse(savedState);
         // Only restore if we have generated content
         if (parsedState.generatedContent || parsedState.contentHtml) {
-          Object.entries(parsedState).forEach(([key, value]) => {
-            if (key !== 'isGenerating') { // Don't restore isGenerating flag
-              dispatch({ type: 'SET_' + key.toUpperCase(), payload: value });
-            }
-          });
+          applyRestoredState(parsedState);
           toast.info("Restored previously generated content");
           return; // Skip the reset if we restored state
         }
