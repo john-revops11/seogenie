@@ -76,7 +76,7 @@ export function useDataForSeoClient() {
     try {
       const response = await fetchBacklinkData(domain);
       
-      // When the backlinks API returns a 404, provide a fallback with empty data
+      // When the backlinks API returns a null/404, provide a fallback with empty data
       if (!response) {
         console.warn('Backlink API not available for this domain, returning empty data');
         setIsLoading(false);

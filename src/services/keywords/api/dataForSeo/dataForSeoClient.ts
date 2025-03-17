@@ -10,7 +10,7 @@ export type DataForSEOEndpoint =
   | '/v3/dataforseo_labs/google/domain_rank_overview/live'
   | '/v3/serp/google/organic/live/regular'
   | '/v3/on_page/tasks_post'
-  | '/v3/backlinks/summary'  // Changed from '/v3/backlinks/live/links' to the correct endpoint
+  | '/v3/backlinks/backlinks_overview/live'  // Updated to the correct endpoint
   | '/v3/keywords_data/google_ads/live/regular'
   | '/v3/competitors_domain/google/organic/live/regular'
   | '/v3/keywords_data/google_ads/keywords_for_site/live'
@@ -78,10 +78,10 @@ export const fetchOnPageData = async (urlToCheck: string) => {
   ]);
 };
 
-// Backlinks Analytics - Updated to use correct endpoint and parameters
+// Backlinks Analytics - Updated to use correct endpoint
 export const fetchBacklinkData = async (domain: string) => {
-  // Using backlinks summary endpoint instead of links endpoint
-  return callDataForSeoApi('/v3/backlinks/summary', [{ 
+  // Using backlinks_overview endpoint instead of the incorrect summary endpoint
+  return callDataForSeoApi('/v3/backlinks/backlinks_overview/live', [{ 
     target: domain,
     limit: 10
   }]);

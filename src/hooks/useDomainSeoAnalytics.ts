@@ -145,9 +145,19 @@ export function useDomainSeoAnalytics(domain: string) {
       if (backlinkResponse && backlinkResponse.tasks && backlinkResponse.tasks.length > 0 &&
           backlinkResponse.tasks[0]?.result && backlinkResponse.tasks[0]?.result.length > 0) {
         const backlinksData = backlinkResponse.tasks[0].result[0];
-        authorityScore = backlinksData.domain_rank || 0;
-        totalBacklinks = backlinksData.backlinks_count || 0;
-        referringDomains = backlinksData.referring_domains_count || 0;
+        
+        // Handle different data formats from backlinks_overview endpoint
+        if (backlinksData.domain_info) {
+          // New endpoint format
+          authorityScore = backlinksData.domain_info.rank || 0;
+          totalBacklinks = backlinksData.backlinks_summary?.total_count || 0;
+          referringDomains = backlinksData.backlinks_summary?.referring_domains_count || 0;
+        } else {
+          // Old/fallback format
+          authorityScore = backlinksData.domain_rank || 0;
+          totalBacklinks = backlinksData.backlinks_count || 0;
+          referringDomains = backlinksData.referring_domains_count || 0;
+        }
       }
       
       setAnalytics({
