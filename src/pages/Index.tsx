@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { DashboardTabContent } from "@/components/tabs/DashboardTabContent";
 import { ContentTabContent } from "@/components/tabs/ContentTabContent";
@@ -15,6 +16,7 @@ import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
 import { DomainAnalyticsDashboard } from "@/components/dashboard/DomainAnalyticsDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { TabNavigation } from "@/components/page/TabNavigation";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -108,16 +110,7 @@ const Index = () => {
       <Header analysisComplete={analysisComplete} onReset={handleReset} />
       
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">
-        <TabsList>
-          <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="domain-analysis" data-value="domain-analysis">Domain Analysis</TabsTrigger>
-          <TabsTrigger value="position-tracking" data-value="position-tracking">Position Tracking</TabsTrigger>
-          <TabsTrigger value="seo-analytics" data-value="seo-analytics">SEO Analytics</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        <TabNavigation />
 
         <TabsContent value="dashboard" className="space-y-4">
           <DomainAnalyticsDashboard />

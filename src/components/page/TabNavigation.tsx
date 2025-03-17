@@ -11,8 +11,8 @@ export const TabNavigation = () => {
       <TabsTrigger value="domain-analysis" className="flex items-center gap-2">
         <BarChart2 className="w-4 h-4" /> Domain Analysis
       </TabsTrigger>
-      <TabsTrigger value="dataforseo" className="flex items-center gap-2">
-        <Globe className="w-4 h-4" /> DataForSEO
+      <TabsTrigger value="position-tracking" className="flex items-center gap-2">
+        <Globe className="w-4 h-4" /> Position Tracking
       </TabsTrigger>
       <TabsTrigger value="content" className="flex items-center gap-2">
         <FileText className="w-4 h-4" /> Content
