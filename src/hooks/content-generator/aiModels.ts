@@ -13,8 +13,9 @@ export const generateTitlesWithAI = async (
   keywords: string[],
   contentType: string
 ): Promise<string[]> => {
+  const currentYear = new Date().getFullYear();
   const prompt = `Generate 5 SEO-optimized title suggestions for a ${contentType} about "${topic}" that incorporates these keywords: ${keywords.join(", ")}. 
-  Format the output as a simple list of titles, one per line. Include the current year where appropriate.`;
+  Format the output as a simple list of titles, one per line. Include the current year (${currentYear}) where appropriate.`;
   
   // Use the most efficient model for title generation
   const model = provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash';
