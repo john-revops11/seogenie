@@ -1,20 +1,25 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getCompetitorsDomain } from "./services.ts";
-import { getDomainKeywords } from "./services.ts";
-import { getDomainIntersection } from "./services.ts";
-import { getDomainOverview } from "./services.ts";
-import { getRankedKeywords } from "./services.ts";
+import { 
+  getCompetitorDomains, 
+  getDomainKeywords, 
+  getDomainIntersection, 
+  getDomainOverview, 
+  getRankedKeywords 
+} from "./services.ts";
+
+// CORS headers for all responses
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
 
 serve(async (req) => {
   // Handle CORS for preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
+      headers: corsHeaders
     });
   }
 
@@ -25,7 +30,7 @@ serve(async (req) => {
     
     switch (action) {
       case "competitors_domain":
-        result = await getCompetitorsDomain(
+        result = await getCompetitorDomains(
           params.domain,
           params.location_code,
           params.limit
@@ -70,9 +75,7 @@ serve(async (req) => {
     }), {
       headers: { 
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        ...corsHeaders
       },
     });
   } catch (error) {
@@ -85,9 +88,7 @@ serve(async (req) => {
       status: 400,
       headers: { 
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        ...corsHeaders
       },
     });
   }
