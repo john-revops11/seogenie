@@ -1,12 +1,19 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
+import { ExternalLink, TrendingUp, TrendingDown, ArrowUpDown, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useCompetitorAnalysis } from "@/hooks/useCompetitorAnalysis";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CompetitorsTableProps {
   domain: string;
@@ -28,17 +35,20 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
     fetchCompetitorData
   } = useCompetitorAnalysis(domain);
 
-  useEffect(() => {
-    if (domain) {
-      fetchCompetitorData(domain);
-    }
-  }, [domain]);
+  const [dataFetched, setDataFetched] = useState(false);
 
   useEffect(() => {
-    if (onMetricsLoaded && domainMetrics) {
+    if (onMetricsLoaded && domainMetrics && dataFetched) {
       onMetricsLoaded(domainMetrics);
     }
-  }, [domainMetrics, onMetricsLoaded]);
+  }, [domainMetrics, onMetricsLoaded, dataFetched]);
+
+  const handleFetchData = () => {
+    if (domain) {
+      setDataFetched(true);
+      fetchCompetitorData(domain);
+    }
+  };
 
   const renderSortIcon = (column: string) => {
     if (sortConfig.key === column) {
@@ -53,7 +63,19 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Competitor Analysis</span>
+          <div className="flex items-center gap-2">
+            <span>Competitor Analysis</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <p>This feature uses the DataForSEO API to fetch competitor data. Each analysis counts as an API call against your DataForSEO quota.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           {!isLoading && competitors.length > 0 && (
             <Badge variant="outline" className="ml-2 text-xs">
               {competitors.length} competitors
@@ -62,7 +84,18 @@ export function CompetitorsTable({ domain, onMetricsLoaded }: CompetitorsTablePr
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {error ? (
+        {!dataFetched && !isLoading ? (
+          <div className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                Click the button below to fetch competitor data for {domain}. This will use the DataForSEO API and count against your API quota.
+              </AlertDescription>
+            </Alert>
+            <Button onClick={handleFetchData} className="w-full sm:w-auto">
+              Fetch Competitor Data
+            </Button>
+          </div>
+        ) : error ? (
           <div className="p-4 text-sm text-red-600 bg-red-50 rounded-md">
             {error}
           </div>

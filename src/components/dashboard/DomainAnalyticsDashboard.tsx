@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BarChart2, Globe, Search, RefreshCw } from "lucide-react";
+import { BarChart2, Globe, Search, RefreshCw, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDomainSeoAnalytics } from "@/hooks/useDomainSeoAnalytics";
 import { DomainMetricsCards } from "./DomainMetricsCards";
@@ -13,6 +13,12 @@ import { CompetitorsTable } from "./CompetitorsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DomainAnalyticsDashboard() {
   const [domain, setDomain] = useState("revologyanalytics.com");
@@ -22,12 +28,14 @@ export function DomainAnalyticsDashboard() {
     organicKeywords: 0,
     trafficValue: 0
   });
+  const [apiCallsMade, setApiCallsMade] = useState(false);
   const analytics = useDomainSeoAnalytics(domain);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchDomain.trim()) {
       setDomain(searchDomain.trim());
+      setApiCallsMade(true);
       toast.info(`Analyzing domain: ${searchDomain.trim()}`);
     }
   };
@@ -62,10 +70,12 @@ export function DomainAnalyticsDashboard() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold tracking-tight">Domain SEO Analytics</h2>
-        <Badge variant="outline" className="flex items-center gap-1">
-          <Globe className="h-3.5 w-3.5" />
-          {domain}
-        </Badge>
+        {domain && apiCallsMade && (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Globe className="h-3.5 w-3.5" />
+            {domain}
+          </Badge>
+        )}
       </div>
       
       <form onSubmit={handleSubmit} className="flex gap-2 max-w-md">
@@ -78,7 +88,7 @@ export function DomainAnalyticsDashboard() {
           <Search className="h-4 w-4 mr-2" />
           Analyze
         </Button>
-        {domain && (
+        {domain && apiCallsMade && (
           <Button 
             type="button" 
             variant="outline" 
@@ -90,6 +100,27 @@ export function DomainAnalyticsDashboard() {
         )}
       </form>
       
+      {!apiCallsMade && (
+        <Alert>
+          <div className="flex items-center gap-2">
+            <AlertTitle>Welcome to Domain SEO Analytics</AlertTitle>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <p>This tool uses the DataForSEO API to fetch domain analytics data. Each analysis counts as an API call against your DataForSEO quota.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <AlertDescription>
+            Enter a domain above and click "Analyze" to get started. This will make API calls to DataForSEO.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {hasQuotaError() && (
         <Alert variant="destructive">
           <AlertTitle>API Quota Exceeded</AlertTitle>
@@ -100,7 +131,7 @@ export function DomainAnalyticsDashboard() {
         </Alert>
       )}
       
-      {analytics.error && !hasQuotaError() && (
+      {analytics.error && !hasQuotaError() && apiCallsMade && (
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
@@ -110,7 +141,7 @@ export function DomainAnalyticsDashboard() {
       )}
       
       {/* Check if there's no data at all */}
-      {hasLimitedData() && (
+      {hasLimitedData() && apiCallsMade && (
         <Alert>
           <AlertTitle>Limited Data</AlertTitle>
           <AlertDescription>
@@ -119,28 +150,32 @@ export function DomainAnalyticsDashboard() {
         </Alert>
       )}
       
-      <DomainMetricsCards
-        organicTraffic={metricsFromCompetitors.organicTraffic}
-        organicKeywords={metricsFromCompetitors.organicKeywords}
-        referringDomains={analytics.referringDomains}
-        authorityScore={analytics.authorityScore}
-        estimatedTrafficCost={metricsFromCompetitors.trafficValue}
-        isLoading={analytics.isLoading}
-      />
+      {apiCallsMade && (
+        <>
+          <DomainMetricsCards
+            organicTraffic={metricsFromCompetitors.organicTraffic}
+            organicKeywords={metricsFromCompetitors.organicKeywords}
+            referringDomains={analytics.referringDomains}
+            authorityScore={analytics.authorityScore}
+            estimatedTrafficCost={metricsFromCompetitors.trafficValue}
+            isLoading={analytics.isLoading}
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <KeywordPositionChart 
+              keywordDistribution={analytics.keywordDistribution}
+              isLoading={analytics.isLoading}
+            />
+            
+            <TopKeywordsTable 
+              keywords={analytics.topKeywords}
+              isLoading={analytics.isLoading}
+            />
+          </div>
+        </>
+      )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <KeywordPositionChart 
-          keywordDistribution={analytics.keywordDistribution}
-          isLoading={analytics.isLoading}
-        />
-        
-        <TopKeywordsTable 
-          keywords={analytics.topKeywords}
-          isLoading={analytics.isLoading}
-        />
-      </div>
-      
-      {/* Add the new Competitors Table component with onMetricsLoaded callback */}
+      {/* Add the Competitors Table component with onMetricsLoaded callback */}
       <CompetitorsTable 
         domain={domain} 
         onMetricsLoaded={handleMetricsLoaded}
