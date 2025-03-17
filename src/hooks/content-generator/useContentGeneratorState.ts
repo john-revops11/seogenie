@@ -1,154 +1,114 @@
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { useReducer, useEffect } from "react";
 import { GeneratedContent } from "@/services/keywords/types";
 import { AIProvider, getPrimaryModelForProvider } from "@/types/aiModels";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
-export type StepType = 1 | 2 | 3 | 4;
+export type StepType = 1 | 2 | 3 | 4 | 5;
 
-// Temporary internal type to maintain compatibility with existing code
-export interface GeneratedContentInternal {
+// State interface
+export interface ContentGeneratorState {
+  step: StepType;
+  contentType: string;
+  selectedTemplateId: string;
   title: string;
-  metaDescription: string;
-  outline: string[];
-  content: string;
+  keywords: string[];
+  creativity: number;
+  ragEnabled: boolean;
+  isGenerating: boolean;
+  generatedContent: GeneratedContent | null;
+  contentHtml: string;
+  aiProvider: AIProvider;
+  aiModel: string;
+  wordCountOption: string;
+  selectedSubheadings: string[];
 }
 
-export function useContentGeneratorState(domain: string = "", allKeywords: string[] = []) {
-  // Step management
-  const [activeStep, setActiveStep] = useState<StepType>(1);
-  
-  // Content configuration
-  const [contentType, setContentType] = useState("blog");
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [title, setTitle] = useState("");
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>(allKeywords.slice(0, 3));
-  const [creativity, setCreativity] = useState(50);
-  const [contentPreferences, setContentPreferences] = useState<string[]>([]);
-  const [wordCountOption, setWordCountOption] = useState("standard");
-  
-  // Check if Pinecone is configured and enable RAG by default if it is
-  const [ragEnabled, setRagEnabled] = useState(isPineconeConfigured());
-  
-  // AI provider settings - default to OpenAI
-  const [aiProvider, setAIProvider] = useState<AIProvider>("openai");
-  
-  // Get primary model for the selected provider as default
-  const primaryModel = getPrimaryModelForProvider(aiProvider);
-  const [aiModel, setAIModel] = useState(primaryModel?.id || "gpt-4o");
-  
-  // Content and generation state
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContentInternal | null>(null);
-  const [generatedContentData, setGeneratedContentData] = useState<GeneratedContent | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isLoadingTopics, setIsLoadingTopics] = useState(false);
-  
-  // Topic and title state
-  const [topics, setTopics] = useState<string[]>([]);
-  const [titleSuggestions, setTitleSuggestions] = useState<{ [topic: string]: string[] }>({});
-  const [selectedTopic, setSelectedTopic] = useState("");
+// Action types
+type ContentGeneratorAction =
+  | { type: 'SET_STEP'; payload: StepType }
+  | { type: 'SET_CONTENT_TYPE'; payload: string }
+  | { type: 'SET_TEMPLATE_ID'; payload: string }
+  | { type: 'SET_TITLE'; payload: string }
+  | { type: 'SET_KEYWORDS'; payload: string[] }
+  | { type: 'SET_CREATIVITY'; payload: number }
+  | { type: 'SET_RAG_ENABLED'; payload: boolean }
+  | { type: 'SET_IS_GENERATING'; payload: boolean }
+  | { type: 'SET_GENERATED_CONTENT'; payload: GeneratedContent | null }
+  | { type: 'SET_CONTENT_HTML'; payload: string }
+  | { type: 'SET_AI_PROVIDER'; payload: AIProvider }
+  | { type: 'SET_AI_MODEL'; payload: string }
+  | { type: 'SET_WORD_COUNT_OPTION'; payload: string }
+  | { type: 'SET_SUBHEADINGS'; payload: string[] };
 
+// Reducer function
+const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGeneratorAction): ContentGeneratorState => {
+  switch (action.type) {
+    case 'SET_STEP':
+      return { ...state, step: action.payload };
+    case 'SET_CONTENT_TYPE':
+      return { ...state, contentType: action.payload };
+    case 'SET_TEMPLATE_ID':
+      return { ...state, selectedTemplateId: action.payload };
+    case 'SET_TITLE':
+      return { ...state, title: action.payload };
+    case 'SET_KEYWORDS':
+      return { ...state, keywords: action.payload };
+    case 'SET_CREATIVITY':
+      return { ...state, creativity: action.payload };
+    case 'SET_RAG_ENABLED':
+      return { ...state, ragEnabled: action.payload };
+    case 'SET_IS_GENERATING':
+      return { ...state, isGenerating: action.payload };
+    case 'SET_GENERATED_CONTENT':
+      return { ...state, generatedContent: action.payload };
+    case 'SET_CONTENT_HTML':
+      return { ...state, contentHtml: action.payload };
+    case 'SET_AI_PROVIDER':
+      return { ...state, aiProvider: action.payload };
+    case 'SET_AI_MODEL':
+      return { ...state, aiModel: action.payload };
+    case 'SET_WORD_COUNT_OPTION':
+      return { ...state, wordCountOption: action.payload };
+    case 'SET_SUBHEADINGS':
+      return { ...state, selectedSubheadings: action.payload };
+    default:
+      return state;
+  }
+};
+
+export function useContentGeneratorState() {
+  // Get primary model for default OpenAI provider
+  const primaryModel = getPrimaryModelForProvider('openai');
+  
+  // Set initial state
+  const initialState: ContentGeneratorState = {
+    step: 1,
+    contentType: "blog-post",
+    selectedTemplateId: "",
+    title: "",
+    keywords: [],
+    creativity: 50,
+    ragEnabled: isPineconeConfigured(),
+    isGenerating: false,
+    generatedContent: null,
+    contentHtml: "",
+    aiProvider: "openai",
+    aiModel: primaryModel?.id || "gpt-4o-1",
+    wordCountOption: "standard",
+    selectedSubheadings: []
+  };
+  
+  // Create reducer
+  const [state, dispatch] = useReducer(contentGeneratorReducer, initialState);
+  
   // Update AI model when provider changes
   useEffect(() => {
-    const primaryModel = getPrimaryModelForProvider(aiProvider);
+    const primaryModel = getPrimaryModelForProvider(state.aiProvider);
     if (primaryModel) {
-      setAIModel(primaryModel.id);
+      dispatch({ type: 'SET_AI_MODEL', payload: primaryModel.id });
     }
-  }, [aiProvider]);
-
-  // Reset title when topic changes
-  useEffect(() => {
-    if (selectedTopic && titleSuggestions[selectedTopic]?.[0]) {
-      setTitle(titleSuggestions[selectedTopic][0]);
-    } else {
-      setTitle("");
-    }
-  }, [selectedTopic, titleSuggestions]);
-
-  // Update selected keywords when allKeywords prop changes
-  useEffect(() => {
-    if (allKeywords && allKeywords.length > 0) {
-      // Take up to 3 keywords from allKeywords
-      const initialKeywords = allKeywords.slice(0, 3);
-      setSelectedKeywords(initialKeywords);
-    }
-  }, [allKeywords]);
-
-  // Update RAG setting when Pinecone configuration changes
-  useEffect(() => {
-    const checkPineconeStatus = () => {
-      const pineconeReady = isPineconeConfigured();
-      setRagEnabled(prevRagEnabled => {
-        // Only set to true if it was previously false and Pinecone is now ready
-        if (!prevRagEnabled && pineconeReady) {
-          console.log("Pinecone detected, enabling RAG by default");
-          return true;
-        }
-        return prevRagEnabled;
-      });
-    };
-
-    // Check on mount
-    checkPineconeStatus();
-
-    // Listen for API change events that might indicate Pinecone was configured
-    const handleApiChange = (event: CustomEvent) => {
-      const { apiId } = event.detail;
-      if (apiId === "pinecone") {
-        console.log("Pinecone API configuration changed, checking status");
-        checkPineconeStatus();
-      }
-    };
-
-    // Add event listener for API changes
-    window.addEventListener('api-integration-change', handleApiChange as EventListener);
-    
-    // Clean up event listener
-    return () => {
-      window.removeEventListener('api-integration-change', handleApiChange as EventListener);
-    };
-  }, []);
-
-  return {
-    // State
-    activeStep,
-    contentType,
-    selectedTemplateId,
-    title,
-    selectedKeywords,
-    creativity,
-    contentPreferences,
-    wordCountOption,
-    generatedContent,
-    generatedContentData,
-    isGenerating,
-    isLoadingTopics,
-    topics,
-    titleSuggestions,
-    selectedTopic,
-    ragEnabled,
-    aiProvider,
-    aiModel,
-    
-    // State setters
-    setActiveStep,
-    setContentType,
-    setSelectedTemplateId,
-    setTitle,
-    setSelectedKeywords,
-    setCreativity,
-    setContentPreferences,
-    setWordCountOption,
-    setGeneratedContent,
-    setGeneratedContentData,
-    setIsGenerating,
-    setIsLoadingTopics,
-    setTopics,
-    setTitleSuggestions,
-    setSelectedTopic,
-    setRagEnabled,
-    setAIProvider,
-    setAIModel
-  };
+  }, [state.aiProvider]);
+  
+  return [state, dispatch] as const;
 }
