@@ -1,7 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getDomainKeywords, getKeywordVolume } from "./services.ts";
-import { corsHeaders } from "./config.ts";
+import { corsHeaders, AUTH_HEADER } from "./config.ts";
+import { makeDataForSEORequest } from "./api-client.ts";
 
 // CORS headers for cross-origin requests
 function formatErrorResponse(error: unknown) {
@@ -55,7 +56,7 @@ serve(async (req) => {
       );
     }
     
-    const { action, domain, keywords, location_code = 2840 } = body;
+    const { action, domain, keywords, location_code = 2840, endpoint, data } = body;
     
     if (!action) {
       throw new Error('Action is required');
@@ -77,6 +78,17 @@ serve(async (req) => {
           throw new Error('Keywords array is required');
         }
         result = await getKeywordVolume(keywords, location_code);
+        break;
+        
+      case 'proxy_request':
+        if (!endpoint) {
+          throw new Error('Endpoint is required');
+        }
+        if (!data) {
+          throw new Error('Data is required');
+        }
+        console.log(`Proxying request to DataForSEO API: ${endpoint}`);
+        result = await makeDataForSEORequest(endpoint, "POST", data);
         break;
         
       default:

@@ -3,8 +3,6 @@
 import { getApiKey as getApiKeyFromService } from "@/services/apiIntegrationService";
 
 // DataForSEO API configuration
-export const DATAFORSEO_LOGIN = "armin@revologyanalytics.com";
-export const DATAFORSEO_PASSWORD = "ab4016dc9302b8cf";
 export const DATAFORSEO_API_URL = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced";
 export const DATAFORSEO_KEYWORDS_API_URL = "https://api.dataforseo.com/v3/keywords_data/google/search_volume/live";
 
@@ -25,7 +23,7 @@ let dynamicApiKeys: Record<string, string> = {
   // Initialize with default keys that can be overridden
   openai: OPENAI_API_KEY,
   gemini: "AIzaSyCJIDNvI7w8jpjyWLI9yaPp3PWAeD95AnA",
-  dataforseo: `${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`,
+  dataforseo: "",
   rapidapi: API_KEY
 };
 

@@ -19,17 +19,6 @@ export function useDataForSeoClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getCredentials = () => {
-    const apiCredentials = getApiKey('dataforseo');
-    
-    if (!apiCredentials) {
-      throw new Error('DataForSEO API credentials not configured');
-    }
-    
-    const [login, password] = apiCredentials.split(':');
-    return { login, password };
-  };
-
   const callDataForSeoApi = async (
     endpoint: string, 
     data: any,
@@ -39,30 +28,62 @@ export function useDataForSeoClient() {
     setError(null);
     
     try {
-      const { login, password } = getCredentials();
-      const auth = 'Basic ' + btoa(`${login}:${password}`);
+      // First try to get credentials from the API integration service
+      const apiCredentials = getApiKey('dataforseo');
       
-      const response = await fetch(`https://api.dataforseo.com${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': auth
-        },
-        body: JSON.stringify(data)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API error ${response.status}: ${errorText}`);
+      if (!apiCredentials) {
+        // If no credentials are found in the frontend, use the Supabase Edge Function
+        const response = await fetch(`https://rgtptfhlkplnahzehpci.supabase.co/functions/v1/dataforseo`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'proxy_request',
+            endpoint: endpoint,
+            data: data
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API error ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          throw new Error(`DataForSEO error: ${result.error}`);
+        }
+        
+        return result as DataForSeoResponse;
+      } else {
+        // If credentials are found in the frontend, use them directly
+        const [login, password] = apiCredentials.split(':');
+        const auth = 'Basic ' + btoa(`${login}:${password}`);
+        
+        const response = await fetch(`https://api.dataforseo.com${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': auth
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API error ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.status_code !== 20000) {
+          throw new Error(`DataForSEO error: ${result.status_message}`);
+        }
+        
+        return result as DataForSeoResponse;
       }
-      
-      const result = await response.json();
-      
-      if (result.status_code !== 20000) {
-        throw new Error(`DataForSEO error: ${result.status_message}`);
-      }
-      
-      return result as DataForSeoResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);

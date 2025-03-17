@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,6 @@ const ApiIntegrationManager = () => {
       // Check if Pinecone is configured
       const pineconeConfigured = isPineconeConfigured();
       
-      // Update DataForSEO configuration
-      const dataforseoKey = "armin@revologyanalytics.com:ab4016dc9302b8cf"; // Default credentials
-      
       setApis(prev => prev.map(api => {
         if (api.id === "pinecone") {
           return { 
@@ -47,7 +43,6 @@ const ApiIntegrationManager = () => {
         if (api.id === "dataforseo") {
           return {
             ...api,
-            apiKey: dataforseoKey,
             isConfigured: true,
             isActive: true
           };
