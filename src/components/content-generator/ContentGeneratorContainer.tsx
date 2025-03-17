@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -27,7 +28,29 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
   const { templates } = useContentTemplates();
   const { contentPreferences, selectedPreferences, togglePreference } = useContentPreferences();
   
+  // Load state from localStorage on initial render
   useEffect(() => {
+    const savedState = localStorage.getItem('contentGeneratorState');
+    
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        // Only restore if we have generated content
+        if (parsedState.generatedContent || parsedState.contentHtml) {
+          Object.entries(parsedState).forEach(([key, value]) => {
+            if (key !== 'isGenerating') { // Don't restore isGenerating flag
+              dispatch({ type: 'SET_' + key.toUpperCase(), payload: value });
+            }
+          });
+          toast.info("Restored previously generated content");
+          return; // Skip the reset if we restored state
+        }
+      } catch (error) {
+        console.error("Error parsing saved content generator state:", error);
+      }
+    }
+    
+    // If no saved state or error, reset to initial state
     dispatch({ type: 'RESET_STATE' });
     
     if (selectedKeywords && selectedKeywords.length > 0) {
@@ -38,6 +61,18 @@ const ContentGeneratorContainer: React.FC<ContentGeneratorContainerProps> = ({
       dispatch({ type: 'SET_TITLE', payload: initialTitle });
     }
   }, []);
+  
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    // Only save state if we have generated content
+    if (state.generatedContent || state.contentHtml) {
+      const stateToSave = {
+        ...state,
+        isGenerating: false // Always save with isGenerating = false
+      };
+      localStorage.setItem('contentGeneratorState', JSON.stringify(stateToSave));
+    }
+  }, [state]);
   
   useEffect(() => {
     if (selectedKeywords && selectedKeywords.length > 0) {

@@ -14,11 +14,13 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   initialTitle = ""
 }) => {
   return (
-    <ContentGeneratorContainer 
-      domain={domain}
-      selectedKeywords={selectedKeywords}
-      initialTitle={initialTitle}
-    />
+    <div className="w-full">
+      <ContentGeneratorContainer 
+        domain={domain}
+        selectedKeywords={selectedKeywords}
+        initialTitle={initialTitle}
+      />
+    </div>
   );
 };
 

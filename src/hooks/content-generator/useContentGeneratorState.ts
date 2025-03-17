@@ -53,61 +53,6 @@ type ContentGeneratorAction =
   | { type: 'SET_CONTENT_PREFERENCES'; payload: string[] }
   | { type: 'RESET_STATE'; };
 
-// Reducer function
-const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGeneratorAction): ContentGeneratorState => {
-  switch (action.type) {
-    case 'SET_STEP':
-      return { ...state, step: action.payload };
-    case 'SET_CONTENT_TYPE':
-      return { ...state, contentType: action.payload };
-    case 'SET_TEMPLATE_ID':
-      return { ...state, selectedTemplateId: action.payload };
-    case 'SET_TITLE':
-      return { ...state, title: action.payload };
-    case 'SET_KEYWORDS':
-      return { ...state, keywords: action.payload };
-    case 'SET_CREATIVITY':
-      return { ...state, creativity: action.payload };
-    case 'SET_RAG_ENABLED':
-      return { ...state, ragEnabled: action.payload };
-    case 'SET_IS_GENERATING':
-      return { ...state, isGenerating: action.payload };
-    case 'SET_GENERATED_CONTENT':
-      return { ...state, generatedContent: action.payload };
-    case 'SET_CONTENT_HTML':
-      return { ...state, contentHtml: action.payload };
-    case 'SET_CONTENT_DATA':
-      return { ...state, contentData: action.payload };
-    case 'SET_AI_PROVIDER':
-      return { ...state, aiProvider: action.payload };
-    case 'SET_AI_MODEL':
-      return { ...state, aiModel: action.payload };
-    case 'SET_WORD_COUNT_OPTION':
-      return { ...state, wordCountOption: action.payload };
-    case 'SET_SUBHEADINGS':
-      return { ...state, selectedSubheadings: action.payload };
-    case 'SET_IS_LOADING_TOPICS':
-      return { ...state, isLoadingTopics: action.payload };
-    case 'SET_TOPICS':
-      return { ...state, topics: action.payload };
-    case 'SET_TITLE_SUGGESTIONS':
-      return { ...state, titleSuggestions: action.payload };
-    case 'SET_SELECTED_TOPIC':
-      return { ...state, selectedTopic: action.payload };
-    case 'SET_CONTENT_PREFERENCES':
-      return { ...state, contentPreferences: action.payload };
-    case 'RESET_STATE':
-      // Reset to initial state but keep the AI provider and model
-      return {
-        ...initialState,
-        aiProvider: state.aiProvider,
-        aiModel: state.aiModel
-      };
-    default:
-      return state;
-  }
-};
-
 // Define initialState outside the hook so it can be used in the RESET_STATE action
 const primaryModel = getPrimaryModelForProvider('openai');
   
@@ -133,6 +78,100 @@ const initialState: ContentGeneratorState = {
   contentPreferences: []
 };
 
+// Add these helper functions to support serialization/deserialization
+const serializeState = (state: ContentGeneratorState): string => {
+  return JSON.stringify(state);
+};
+
+const deserializeState = (serializedState: string): Partial<ContentGeneratorState> => {
+  try {
+    return JSON.parse(serializedState);
+  } catch (error) {
+    console.error("Error deserializing state:", error);
+    return {};
+  }
+};
+
+// Reducer function
+const contentGeneratorReducer = (state: ContentGeneratorState, action: ContentGeneratorAction): ContentGeneratorState => {
+  let newState: ContentGeneratorState;
+  
+  switch (action.type) {
+    case 'SET_STEP':
+      newState = { ...state, step: action.payload };
+      break;
+    case 'SET_CONTENT_TYPE':
+      newState = { ...state, contentType: action.payload };
+      break;
+    case 'SET_TEMPLATE_ID':
+      newState = { ...state, selectedTemplateId: action.payload };
+      break;
+    case 'SET_TITLE':
+      newState = { ...state, title: action.payload };
+      break;
+    case 'SET_KEYWORDS':
+      newState = { ...state, keywords: action.payload };
+      break;
+    case 'SET_CREATIVITY':
+      newState = { ...state, creativity: action.payload };
+      break;
+    case 'SET_RAG_ENABLED':
+      newState = { ...state, ragEnabled: action.payload };
+      break;
+    case 'SET_IS_GENERATING':
+      newState = { ...state, isGenerating: action.payload };
+      break;
+    case 'SET_GENERATED_CONTENT':
+      newState = { ...state, generatedContent: action.payload };
+      break;
+    case 'SET_CONTENT_HTML':
+      newState = { ...state, contentHtml: action.payload };
+      break;
+    case 'SET_CONTENT_DATA':
+      newState = { ...state, contentData: action.payload };
+      break;
+    case 'SET_AI_PROVIDER':
+      newState = { ...state, aiProvider: action.payload };
+      break;
+    case 'SET_AI_MODEL':
+      newState = { ...state, aiModel: action.payload };
+      break;
+    case 'SET_WORD_COUNT_OPTION':
+      newState = { ...state, wordCountOption: action.payload };
+      break;
+    case 'SET_SUBHEADINGS':
+      newState = { ...state, selectedSubheadings: action.payload };
+      break;
+    case 'SET_IS_LOADING_TOPICS':
+      newState = { ...state, isLoadingTopics: action.payload };
+      break;
+    case 'SET_TOPICS':
+      newState = { ...state, topics: action.payload };
+      break;
+    case 'SET_TITLE_SUGGESTIONS':
+      newState = { ...state, titleSuggestions: action.payload };
+      break;
+    case 'SET_SELECTED_TOPIC':
+      newState = { ...state, selectedTopic: action.payload };
+      break;
+    case 'SET_CONTENT_PREFERENCES':
+      newState = { ...state, contentPreferences: action.payload };
+      break;
+    case 'RESET_STATE':
+      // Reset to initial state but keep the AI provider and model
+      newState = {
+        ...initialState,
+        aiProvider: state.aiProvider,
+        aiModel: state.aiModel
+      };
+      break;
+    default:
+      return state;
+  }
+  
+  return newState;
+};
+
 export function useContentGeneratorState() {
   // Create reducer
   const [state, dispatch] = useReducer(contentGeneratorReducer, initialState);
@@ -147,4 +186,3 @@ export function useContentGeneratorState() {
   
   return [state, dispatch] as const;
 }
-
