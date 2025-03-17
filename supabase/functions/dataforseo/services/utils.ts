@@ -52,7 +52,14 @@ export function extractItems(result: any, errorMessage: string): any[] {
     return [];
   }
   
-  return result.tasks[0].result?.[0]?.items || [];
+  const items = result.tasks[0].result?.[0]?.items;
+  
+  if (!items) {
+    console.warn("No items found in result");
+    return [];
+  }
+  
+  return items;
 }
 
 /**
@@ -60,6 +67,8 @@ export function extractItems(result: any, errorMessage: string): any[] {
  */
 export function safeGet(obj: any, path: string, defaultValue: any = null): any {
   try {
+    if (!obj) return defaultValue;
+    
     const parts = path.split('.');
     let current = obj;
     

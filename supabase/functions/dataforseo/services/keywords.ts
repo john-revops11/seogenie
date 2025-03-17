@@ -1,6 +1,6 @@
 
 import { makeDataForSEORequest } from "../api-client.ts";
-import { cleanDomain, formatErrorResponse, extractItems } from "./utils.ts";
+import { cleanDomain, formatErrorResponse, extractItems, safeGet } from "./utils.ts";
 
 /**
  * Get domain keywords data
@@ -27,8 +27,20 @@ export async function getDomainKeywords(domain: string, location_code = 2840, so
       '/v3/keywords_data/google_ads/keywords_for_site/live', 
       'POST', 
       data, 
-      90000 // Increased to 90 second timeout specifically for keywords endpoint
+      120000 // Increased to 120 second timeout specifically for keywords endpoint
     );
+    
+    // Check if the result is valid and has the expected structure
+    if (!result || !result.tasks || result.tasks.length === 0) {
+      console.warn(`Received empty or invalid response for domain: ${cleanedDomain}`);
+      return {
+        tasks: [{
+          result: [{
+            items: []
+          }]
+        }]
+      };
+    }
     
     // Extract keywords from response with better error handling
     let keywords = [];

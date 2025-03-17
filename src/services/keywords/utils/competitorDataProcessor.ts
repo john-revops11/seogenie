@@ -18,12 +18,15 @@ export const processCompetitorData = async (
     toast.info(`Analyzing competitor: ${normalizedDomain}`);
     console.log(`Fetching keywords for competitor: ${domain} with location code: ${locationCode}`);
     
+    // Clean domain by removing protocol prefixes if present
+    const cleanedDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    
     // Call our DataForSEO edge function with improved error handling and longer timeout
     const { data, error } = await Promise.race([
       supabase.functions.invoke('dataforseo', {
         body: {
           action: 'domain_keywords',
-          domain: domain,
+          domain: cleanedDomain,
           location_code: locationCode,
           sort_by: "relevance"
         }
@@ -48,6 +51,8 @@ export const processCompetitorData = async (
         errorMessage = `Request timed out for ${normalizedDomain}. The DataForSEO API may be experiencing delays. Please try again later.`;
       } else if (errorMessage.includes('network') || errorMessage.includes('failed to send')) {
         errorMessage = `Network error when analyzing ${normalizedDomain}. Please check your connection and try again.`;
+      } else if (errorMessage.includes('failed to fetch')) {
+        errorMessage = `Failed to connect to the DataForSEO service. Please check your network connection or try again later.`;
       }
       
       throw new Error(errorMessage);

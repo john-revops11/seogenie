@@ -12,7 +12,7 @@ import {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey'
 };
 
 serve(async (req) => {
@@ -31,6 +31,8 @@ serve(async (req) => {
       action = body.action;
       params = { ...body };
       delete params.action;
+      
+      console.log(`Processing request: action=${action}, params=${JSON.stringify(params, null, 2)}`);
     } catch (jsonError) {
       console.error("Error parsing request JSON:", jsonError);
       return new Response(JSON.stringify({
@@ -69,6 +71,11 @@ serve(async (req) => {
       
       switch (action) {
         case "competitors_domain":
+          // Validate domain parameter
+          if (!params.domain) {
+            throw new Error("Missing required 'domain' parameter");
+          }
+          
           result = await getCompetitorDomains(
             params.domain,
             params.location_code,
@@ -81,12 +88,16 @@ serve(async (req) => {
               throw new Error("Missing required 'domain' parameter");
             }
             
+            // Clean domain by removing protocol prefixes if present
+            const cleanedDomain = params.domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+            console.log(`Processing domain_keywords for cleaned domain: ${cleanedDomain}`);
+            
             result = await getDomainKeywords(
-              params.domain,
+              cleanedDomain,
               params.location_code,
               params.sort_by
             );
-            console.log(`Successfully fetched keywords for ${params.domain}`);
+            console.log(`Successfully fetched keywords for ${cleanedDomain}`);
           } catch (error) {
             console.error(`Error in domain_keywords for ${params.domain}:`, error);
             clearTimeout(timeoutId);
@@ -116,6 +127,10 @@ serve(async (req) => {
           }
           break;
         case "domain_intersection":
+          if (!params.target1 || !params.target2) {
+            throw new Error("Missing required 'target1' or 'target2' parameter");
+          }
+          
           result = await getDomainIntersection(
             params.target1,
             params.target2,
@@ -123,12 +138,20 @@ serve(async (req) => {
           );
           break;
         case "domain_overview":
+          if (!params.domain) {
+            throw new Error("Missing required 'domain' parameter");
+          }
+          
           result = await getDomainOverview(
             params.domain,
             params.location_code
           );
           break;
         case "ranked_keywords":
+          if (!params.domain) {
+            throw new Error("Missing required 'domain' parameter");
+          }
+          
           result = await getRankedKeywords(
             params.domain,
             params.location_code,
@@ -143,6 +166,20 @@ serve(async (req) => {
       
       // Clear the timeout since the request completed successfully
       clearTimeout(timeoutId);
+      
+      // Check if result is empty or undefined
+      if (!result || !result.tasks || result.tasks.length === 0) {
+        console.warn(`Empty or undefined result for ${action} request`);
+        return new Response(JSON.stringify({
+          success: true,
+          results: [],
+        }), {
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        });
+      }
       
       return new Response(JSON.stringify({
         success: true,

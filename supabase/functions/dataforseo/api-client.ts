@@ -6,7 +6,7 @@ export async function makeDataForSEORequest(
   endpoint: string, 
   method: string, 
   data: any = null,
-  timeoutMs: number = 45000 // Increased default timeout to 45 seconds
+  timeoutMs: number = 60000 // Increased default timeout to 60 seconds
 ) {
   const url = `https://api.dataforseo.com${endpoint}`;
   
