@@ -26,8 +26,8 @@ export function useKeywordGapPagination(keywordGaps: KeywordGap[] | null) {
     
     // Apply competitor filter if not "all"
     if (filterCompetitor !== "all") {
-      filtered = filtered.filter(
-        (gap) => gap.competitor === filterCompetitor
+      filtered = filtered.filter(gap => 
+        gap.competitors && gap.competitors.includes(filterCompetitor)
       );
     }
     
