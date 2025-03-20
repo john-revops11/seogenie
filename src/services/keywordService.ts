@@ -1,5 +1,5 @@
 
-// Re-export types and functions from specialized modules
+// Re-export functions from specialized modules
 export * from './keywords/api';
 export * from './keywords/domainAnalysis';
 export * from './keywords/contentGeneration';

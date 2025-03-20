@@ -29,8 +29,8 @@ export type DataForSEOEndpoint =
   | '/v3/dataforseo_labs/google/keyword_suggestions/live';
 
 // Generate a consistent hash for caching
-export const generateRequestHash = (endpoint: string, data: any): string => {
-  const requestString = `${endpoint}${JSON.stringify(data)}`;
+export const generateRequestHash = (data: any): string => {
+  const requestString = JSON.stringify(data);
   return uuidv5(requestString, NAMESPACE);
 };
 
@@ -50,15 +50,30 @@ export const ENDPOINT_COSTS: Record<string, number> = {
   '/v3/dataforseo_labs/google/keyword_suggestions/live': 0.04,
 };
 
-// Helper function to check if a table exists
+// Helper function to check if a table exists via RPC
 export async function tableExists(tableName: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from(tableName)
-      .select('count')
-      .limit(1);
-      
-    return !error;
+    const { data, error } = await supabase.rpc(
+      'check_table_exists',
+      { table_name: tableName }
+    );
+    
+    if (error) {
+      // If RPC doesn't exist, fallback to a more gentle query
+      try {
+        // Just attempt to get a count from the profiles table as a safe check
+        const { error: testError } = await supabase
+          .from('profiles')
+          .select('count')
+          .limit(1);
+          
+        return !testError;
+      } catch {
+        return false;
+      }
+    }
+    
+    return !!data;
   } catch (e) {
     return false;
   }
@@ -116,7 +131,7 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
   const url = `https://api.dataforseo.com${endpoint}`;
   
   // Generate a request hash for caching
-  const requestHash = generateRequestHash(endpoint, data);
+  const requestHash = generateRequestHash({ endpoint, data });
   
   // Try to get the user's ID for database caching
   const { data: { user } } = await supabase.auth.getUser();
@@ -129,11 +144,8 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
     return cachedItem.data as T;
   }
   
-  // Check if the api_requests table exists
-  const apiRequestsTableExists = await tableExists('api_requests');
-  
-  // Check if we have a cached response in the database
-  if (userId && apiRequestsTableExists) {
+  // Check if we have an RPC function for getting cached responses
+  if (userId) {
     try {
       const { data: cachedResponse, error } = await supabase.rpc(
         'get_cached_api_response',
@@ -186,8 +198,8 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
         timestamp: Date.now()
       };
       
-      // Store in database if user is authenticated and table exists
-      if (userId && apiRequestsTableExists) {
+      // Store in database if user is authenticated
+      if (userId) {
         try {
           const expirationDate = new Date();
           expirationDate.setDate(expirationDate.getDate() + 7); // Cache for 7 days
@@ -230,8 +242,8 @@ export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: a
       timestamp: Date.now()
     };
     
-    // Store in database if user is authenticated and table exists
-    if (userId && apiRequestsTableExists) {
+    // Store in database if user is authenticated
+    if (userId) {
       try {
         const expirationDate = new Date();
         expirationDate.setDate(expirationDate.getDate() + 7); // Cache for 7 days
