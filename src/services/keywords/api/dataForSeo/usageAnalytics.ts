@@ -22,8 +22,8 @@ export const getDataForSEOUsageCost = async (userId?: string): Promise<{ totalCo
     }
     
     return {
-      totalCost: data.total_cost || 0,
-      requestCount: data.request_count || 0
+      totalCost: data[0]?.total_cost || 0,
+      requestCount: data[0]?.request_count || 0
     };
   } catch (e) {
     console.error("Error accessing API usage data:", e);

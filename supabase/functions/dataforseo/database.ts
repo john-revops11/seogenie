@@ -16,12 +16,22 @@ export async function initializeDatabase() {
     
     // Create api_requests table if it doesn't exist
     if (!tableNames.includes('api_requests')) {
-      await supabase.rpc('create_api_requests_table');
+      const { error: createApiRequestsError } = await supabase.rpc('create_api_requests_table');
+      if (createApiRequestsError) {
+        console.error('Error creating api_requests table:', createApiRequestsError);
+      } else {
+        console.log('Created api_requests table successfully');
+      }
     }
     
     // Create api_usage table if it doesn't exist
     if (!tableNames.includes('api_usage')) {
-      await supabase.rpc('create_api_usage_table');
+      const { error: createApiUsageError } = await supabase.rpc('create_api_usage_table');
+      if (createApiUsageError) {
+        console.error('Error creating api_usage table:', createApiUsageError);
+      } else {
+        console.log('Created api_usage table successfully');
+      }
     }
     
     console.log('Database initialization completed');
