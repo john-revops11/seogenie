@@ -8,7 +8,7 @@ export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
 
 // Only export types from types.ts that don't conflict with keywordGaps
-export type {
+export {
   KeywordData, 
   DataForSEOTaskIdentifier, 
   DataForSEOTaskStatus,
