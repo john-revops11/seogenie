@@ -1,6 +1,4 @@
-
 import { ApiStates, ApiHealth, ApiStatus } from "@/types/systemHealth";
-import { PineconeClient } from "@pinecone-database/pinecone";
 import { toast } from "sonner";
 import { API_CHANGE_EVENT } from "./apiIntegrationEvents";
 import { getApiKey } from "@/services/apiIntegrationService";

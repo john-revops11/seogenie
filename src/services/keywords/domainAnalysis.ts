@@ -28,7 +28,7 @@ export const analyzeDomains = async (
     
     // Get main domain keywords from DataForSEO
     let mainKeywords: KeywordData[] = [];
-    let apiHadErrors = false;
+    let useFallbackData = false;
     
     try {
       console.log(`Fetching keywords for main domain: ${formattedMainDomain}`);
@@ -69,12 +69,8 @@ export const analyzeDomains = async (
           toast.error(`DataForSEO API error: ${errorMessage}`, { id: "dataseo-error" });
         }
         
-        // Mark that we had API errors
-        apiHadErrors = true;
-        
-        // Use sample data instead of failing completely
-        mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
-        toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
+        // Mark that we should use fallback data
+        useFallbackData = true;
       } else if (!data || !data.success) {
         // Extract error details for better error messages
         let errorMessage = data?.error || 'Unknown API error';
@@ -93,36 +89,46 @@ export const analyzeDomains = async (
         }
         
         toast.warning(errorMessage);
-        apiHadErrors = true;
-        
-        // Use sample data instead of failing completely
-        mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
-        toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
+        useFallbackData = true;
       } else if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
         // Handle empty results case gracefully
-        toast.info(`No keywords found for ${formattedMainDomain}. Using sample data instead.`);
+        toast.info(`No keywords found for ${formattedMainDomain}.`);
         
-        // Use sample data for domains with no keywords
-        mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
-        toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
+        // Check if we should use sample data
+        if (confirm(`No keywords found for ${formattedMainDomain}. Would you like to see sample data instead?`)) {
+          useFallbackData = true;
+        } else {
+          // Return empty result if user doesn't want sample data
+          return {
+            keywords: [],
+            success: true
+          };
+        }
       } else {
         mainKeywords = data.results;
-        console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
-        toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain}`);
+        console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain from DataForSEO`);
+        toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain} from DataForSEO`);
       }
     } catch (error) {
       console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
       toast.error(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
-      // Use sample data as fallback
-      mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
-      toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
-      apiHadErrors = true;
+      // Ask user if they want to see sample data
+      if (confirm(`Failed to fetch data for ${formattedMainDomain}. Would you like to see sample data instead?`)) {
+        useFallbackData = true;
+      } else {
+        return {
+          keywords: [],
+          success: false,
+          error: 'API request failed and user declined to use sample data'
+        };
+      }
     }
     
-    // If we have no keywords for the main domain but didn't get an error, continue with an empty array
-    if (mainKeywords.length === 0) {
-      console.warn(`No keywords found for main domain ${formattedMainDomain}, continuing with empty array`);
+    // Use fallback data if needed
+    if (useFallbackData) {
+      mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
+      toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
     }
     
     // Process competitor domains if main domain was successful or returned empty results
@@ -141,8 +147,8 @@ export const analyzeDomains = async (
       }
     }
     
-    // If we're using sample data or API had errors, enhance with fake competitor data
-    if (shouldUseSampleData(mainKeywords, apiHadErrors)) {
+    // If we're using sample data, enhance with fake competitor data
+    if (useFallbackData) {
       const normalizedCompetitors = competitorDomains.map(domain => 
         domain.replace(/^https?:\/\//, '').replace(/^www\./, '')
       );
