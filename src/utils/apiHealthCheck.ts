@@ -1,3 +1,4 @@
+
 import { ApiStates, ApiHealth, ApiStatus } from "@/types/systemHealth";
 import { PineconeClient } from "@pinecone-database/pinecone";
 import { toast } from "sonner";
@@ -10,7 +11,7 @@ import {
 } from "@/services/keywords/api/dataForSeo/dataForSeoClient";
 
 export const checkPineconeHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<Record<string, ApiHealth>>>
+  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
 ) => {
   try {
     setApiStates(prev => ({
@@ -66,7 +67,7 @@ export const checkPineconeHealth = async (
 };
 
 export const checkOpenAIHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<Record<string, ApiHealth>>>
+  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
 ) => {
   try {
     setApiStates(prev => ({
@@ -136,7 +137,7 @@ export const checkOpenAIHealth = async (
 };
 
 export const checkGeminiHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<Record<string, ApiHealth>>>
+  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
 ) => {
   try {
     setApiStates(prev => ({
@@ -214,7 +215,7 @@ export const checkGeminiHealth = async (
 };
 
 export const checkDataForSeoHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<Record<string, ApiHealth>>>
+  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
 ) => {
   setApiStates(prev => ({
     ...prev,
@@ -288,7 +289,7 @@ export const checkDataForSeoHealth = async (
   }
 };
 
-export const checkOtherApis = (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
+export const checkOtherApis = (setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>) => {
   // Google Ads
   try {
     setApiStates(prev => ({
