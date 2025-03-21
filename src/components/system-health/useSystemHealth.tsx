@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ApiStates } from "@/types/systemHealth";
 import { toast } from "sonner";
@@ -10,7 +9,7 @@ import {
   checkDataForSeoHealth
 } from "@/utils/apiHealthCheck";
 
-export const useSystemHealth = () => {
+export function useSystemHealth() {
   const [apiStates, setApiStates] = useState<ApiStates>({
     pinecone: { status: "idle" },
     openai: { status: "idle", models: [
@@ -29,6 +28,7 @@ export const useSystemHealth = () => {
   });
   
   const [expanded, setExpanded] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   
   useEffect(() => {
     checkApiStatuses();
@@ -48,20 +48,49 @@ export const useSystemHealth = () => {
   
   const checkApiStatuses = async () => {
     console.log("Checking API statuses...");
+    setIsChecking(true);
     
-    // Check Pinecone
-    await checkPineconeHealth(setApiStates);
-    
-    // Check OpenAI
-    await checkOpenAIHealth(setApiStates);
-    
-    // Check Gemini
-    await checkGeminiHealth(setApiStates);
-    
-    // Check DataForSeo
-    await checkDataForSeoHealth(setApiStates);
-    
-    console.log("API status check completed");
+    try {
+      // Check Pinecone
+      await checkPineconeHealth(setApiStates);
+      
+      // Check OpenAI
+      await checkOpenAIHealth(setApiStates);
+      
+      // Check Gemini
+      await checkGeminiHealth(setApiStates);
+      
+      // Check DataForSEO API specifically
+      try {
+        const { testDataForSeoConnection } = await import('@/services/keywords/api/dataForSeo/testConnection');
+        const isDataForSEOConnected = await testDataForSeoConnection();
+        
+        if (isDataForSEOConnected) {
+          setApiStates(prev => ({
+            ...prev,
+            dataForSeo: { 
+              status: "success",
+              details: {
+                verified: true,
+                usingRealData: true
+              }
+            }
+          }));
+          
+          window.dispatchEvent(new CustomEvent(API_CHANGE_EVENT, {
+            detail: { apiId: "dataForSeo", action: "connected" }
+          }));
+        }
+      } catch (dfError) {
+        console.error("Error checking DataForSEO API:", dfError);
+      }
+      
+      console.log("API status check completed");
+    } catch (error) {
+      console.error("Error checking API statuses:", error);
+    } finally {
+      setIsChecking(false);
+    }
   };
   
   const retryApiConnection = (apiName: keyof ApiStates) => {
@@ -127,4 +156,4 @@ export const useSystemHealth = () => {
     retryApiConnection,
     openDocsForApi
   };
-};
+}

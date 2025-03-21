@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Info } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   TooltipProvider, 
   TooltipTrigger 
 } from "@/components/ui/tooltip";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 interface RagToggleProps {
   ragEnabled: boolean;
@@ -16,6 +17,13 @@ interface RagToggleProps {
 }
 
 const RagToggle: React.FC<RagToggleProps> = ({ ragEnabled, onRagToggle }) => {
+  const [isPineconeReady, setIsPineconeReady] = useState(false);
+  
+  useEffect(() => {
+    // Check if Pinecone is configured
+    setIsPineconeReady(isPineconeConfigured());
+  }, []);
+  
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -34,12 +42,15 @@ const RagToggle: React.FC<RagToggleProps> = ({ ragEnabled, onRagToggle }) => {
         </div>
         <Switch
           id="rag-toggle"
-          checked={ragEnabled}
+          checked={ragEnabled && isPineconeReady}
           onCheckedChange={onRagToggle}
+          disabled={!isPineconeReady}
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        Enhances content with relevant information from your website's existing content
+        {isPineconeReady 
+          ? "Enhances content with relevant information from your website's existing content"
+          : "Pinecone vector database not configured. RAG functionality is disabled."}
       </p>
     </div>
   );

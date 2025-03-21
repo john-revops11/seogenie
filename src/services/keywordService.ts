@@ -1,11 +1,31 @@
 
-// Re-export types and functions from specialized modules
-export * from './keywords/types';
+// Re-export functions from specialized modules
 export * from './keywords/api';
 export * from './keywords/domainAnalysis';
 export * from './keywords/contentGeneration';
+// Export KeywordGap from keywordGaps instead of types to avoid ambiguity
 export * from './keywords/keywordGaps';
 export * from './keywords/seoRecommendations';
+
+// Only export types from types.ts that don't conflict with keywordGaps
+export type {
+  KeywordData, 
+  DataForSEOTaskIdentifier, 
+  DataForSEOTaskStatus,
+  DomainKeywordResponse,
+  GoogleKeywordInsightResponse,
+  DataForSEOKeywordTask,
+  ContentGenerationRequest,
+  ContentGenerationResponse,
+  ContentBlock,
+  EditableContentBlock,
+  ContentOutline,
+  RagInfo,
+  GeneratedContent,
+  ContentTemplate,
+  SeoRecommendation,
+  TrendData
+} from './keywords/types';
 
 // Re-export utilities for keyword analysis
 export * from './keywords/utils/mockDataGenerator';
@@ -58,6 +78,3 @@ export const removeCompetitorDomain = (
     return normalizedDomain !== normalizedDomainToRemove;
   });
 };
-
-// Re-export API source type from keywordGaps
-export type { ApiSource } from './keywords/keywordGaps';

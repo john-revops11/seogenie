@@ -10,8 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon, Sparkles, Activity, Database } from "lucide-react";
-import { isPineconeConfigured } from "@/services/vector/pineconeService";
-import PineconeConfigForm from "./PineconeConfigForm";
+import { isPineconeConfigured, testPineconeConnection } from "@/services/vector/pineconeService";
 import { toast } from "sonner";
 
 interface RagSettingsProps {
@@ -38,19 +37,9 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
       if (isPineconeConfig) {
         // Try to make a test request to verify the connection
         try {
-          const response = await fetch(`https://revology-rag-llm-6hv3n2l.svc.aped-4627-b74a.pinecone.io/describe_index_stats`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Api-Key': 'pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797'
-            },
-            body: JSON.stringify({ filter: {} })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.info("Loaded Pinecone API key from localStorage");
-            console.info("Pinecone connection successful:", data);
+          const testResult = await testPineconeConnection();
+          if (testResult.success) {
+            console.info("Pinecone connection successful:", testResult.data);
             setIsPineconeReady(true);
             
             // If RAG is available but not enabled, enable it automatically
@@ -59,7 +48,7 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
               toast.success("RAG-enhanced content generation automatically enabled");
             }
           } else {
-            console.error("Pinecone API error:", response.status);
+            console.error("Pinecone API error:", testResult.message);
             setIsPineconeReady(false);
           }
         } catch (error) {
@@ -91,12 +80,6 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
     } else {
       toast.info("Standard content generation mode activated");
     }
-  };
-  
-  const handleConfigSuccess = () => {
-    setIsPineconeReady(true);
-    checkPineconeStatus();
-    toast.success("Pinecone configured successfully!");
   };
   
   return (
@@ -166,7 +149,7 @@ export const RagSettings = ({ enabled, onToggle }: RagSettingsProps) => {
       
       {isExpanded && (
         <div className="pl-6 pt-2">
-          <PineconeConfigForm onConfigSuccess={handleConfigSuccess} />
+          <p className="text-sm">To configure Pinecone, please visit the System Health page.</p>
         </div>
       )}
     </div>
