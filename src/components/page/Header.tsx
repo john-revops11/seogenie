@@ -29,7 +29,7 @@ export const Header = ({ analysisComplete, onReset }: HeaderProps) => {
             className="flex items-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
           >
             <RotateCcw className="w-4 h-4" />
-            Reset Analysis Data
+            Reset Data
           </Button>
         )}
         <Avatar className="w-12 h-12 border-2 border-revology">

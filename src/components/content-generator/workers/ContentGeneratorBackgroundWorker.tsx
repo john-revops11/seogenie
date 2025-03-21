@@ -1,7 +1,6 @@
 
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
-import { generateContent } from '@/hooks/content-generator/contentGenerator';
 
 interface ContentGeneratorBackgroundWorkerProps {
   isGenerating: boolean;
@@ -21,15 +20,65 @@ const ContentGeneratorBackgroundWorker: React.FC<ContentGeneratorBackgroundWorke
   useEffect(() => {
     if (!isGenerating) return;
     
-    const performContentGeneration = async () => {
+    const generateContent = async () => {
       try {
-        // Notify the user that generation will continue in the background if page is hidden
-        if (document.hidden) {
-          toast.info("Content generation will continue in the background");
-        }
+        const { generateContent } = await import("@/hooks/content-generator/contentGenerator");
+        // Create background worker to handle content generation
+        const worker = new Worker(
+          URL.createObjectURL(
+            new Blob([
+              `self.onmessage = async (e) => {
+                const { domain, keywords, contentType, title, creativity, contentPreferences, templateId, aiProvider, aiModel, ragEnabled, wordCountOption, customSubheadings } = e.data;
+                
+                try {
+                  // Import would not work in a worker so we'll post a message to handle it in the main thread
+                  self.postMessage({ type: 'status', status: 'generating' });
+                } catch (error) {
+                  self.postMessage({ type: 'error', error: error.toString() });
+                }
+              }`
+            ], { type: 'application/javascript' })
+          )
+        );
         
-        // Perform generation directly without using a worker
-        const result = await generateContent({
+        worker.onmessage = async (e) => {
+          if (e.data.type === 'status' && e.data.status === 'generating') {
+            // Perform generation in main thread since imports won't work in worker
+            try {
+              const result = await generateContent({
+                domain,
+                keywords: contentGeneratorState.keywords,
+                contentType: contentGeneratorState.contentType,
+                title: contentGeneratorState.title,
+                creativity: contentGeneratorState.creativity,
+                contentPreferences: contentGeneratorState.contentPreferences || [],
+                templateId: contentGeneratorState.selectedTemplateId,
+                aiProvider: contentGeneratorState.aiProvider,
+                aiModel: contentGeneratorState.aiModel,
+                ragEnabled: contentGeneratorState.ragEnabled,
+                wordCountOption: contentGeneratorState.wordCountOption,
+                customSubheadings: contentGeneratorState.selectedSubheadings
+              });
+              
+              // Use the handler to process the result
+              await onContentGenerated(result);
+            } catch (error) {
+              console.error("Error generating content:", error);
+              toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              onSetBackgroundActive(false);
+            }
+            
+            worker.terminate();
+          } else if (e.data.type === 'error') {
+            console.error("Worker error:", e.data.error);
+            toast.error(`Failed to generate content: ${e.data.error}`);
+            onSetBackgroundActive(false);
+            worker.terminate();
+          }
+        };
+        
+        // Start the worker
+        worker.postMessage({
           domain,
           keywords: contentGeneratorState.keywords,
           contentType: contentGeneratorState.contentType,
@@ -44,8 +93,10 @@ const ContentGeneratorBackgroundWorker: React.FC<ContentGeneratorBackgroundWorke
           customSubheadings: contentGeneratorState.selectedSubheadings
         });
         
-        // Use the handler to process the result
-        await onContentGenerated(result);
+        // Notify the user that generation will continue in the background
+        if (document.hidden) {
+          toast.info("Content generation will continue in the background");
+        }
       } catch (error) {
         console.error("Error generating content:", error);
         toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -53,8 +104,7 @@ const ContentGeneratorBackgroundWorker: React.FC<ContentGeneratorBackgroundWorke
       }
     };
     
-    // Start the content generation process
-    performContentGeneration();
+    generateContent();
     onSetBackgroundActive(true);
   }, [isGenerating]);
 

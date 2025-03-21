@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,46 +63,11 @@ const App = () => {
                 </Layout>
               </ProtectedRoute>
             } />
-            {/* Main tabs routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/domain-analysis" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
+            {/* Add the content route */}
             <Route path="/content" element={
               <ProtectedRoute>
                 <Layout>
                   <ContentGenerator domain="" />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/position-tracking" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/history" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
                 </Layout>
               </ProtectedRoute>
             } />
