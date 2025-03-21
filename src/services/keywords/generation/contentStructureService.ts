@@ -1,5 +1,6 @@
 
 import { ContentBlock, ContentOutline, GeneratedContent } from '../types';
+import { formatBlocksToHtml } from './contentBlockService';
 
 /**
  * Generates standard content using just OpenAI (no RAG)
@@ -146,6 +147,9 @@ export const generateStandardContent = async (
     content: `<p>The conclusion will provide a concise summary reinforcing key insights and recommending actionable next steps.</p>`
   });
   
+  // Generate initial content string from blocks
+  const initialContent = formatBlocksToHtml(initialBlocks);
+  
   const content: GeneratedContent = {
     title: title,
     metaDescription: metaDescription,
@@ -153,7 +157,8 @@ export const generateStandardContent = async (
     blocks: initialBlocks,
     keywords: keywords,
     contentType: contentType,
-    generationMethod: 'standard'
+    generationMethod: 'standard',
+    content: initialContent
   };
   
   // Fill in the content blocks with AI-generated content
@@ -166,4 +171,3 @@ export const generateStandardContent = async (
     preferences
   );
 };
-

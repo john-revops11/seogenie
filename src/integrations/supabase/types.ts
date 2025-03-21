@@ -22,6 +22,8 @@ export type Database = {
           outline: string[] | null
           rag_enabled: boolean | null
           title: string
+          topic: string | null
+          user_id: string | null
         }
         Insert: {
           ai_model?: string | null
@@ -35,6 +37,8 @@ export type Database = {
           outline?: string[] | null
           rag_enabled?: boolean | null
           title: string
+          topic?: string | null
+          user_id?: string | null
         }
         Update: {
           ai_model?: string | null
@@ -48,6 +52,32 @@ export type Database = {
           outline?: string[] | null
           rag_enabled?: boolean | null
           title?: string
+          topic?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
         }
         Relationships: []
       }

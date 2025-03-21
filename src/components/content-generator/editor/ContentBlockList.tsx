@@ -30,27 +30,28 @@ const ContentBlockList: React.FC<ContentBlockListProps> = ({
       {blocks.map((block, index) => (
         <div 
           key={block.id} 
-          className="relative group border rounded-md p-4 hover:bg-gray-50 transition-colors"
+          className="relative group"
         >
-          {editingBlockId === block.id ? (
-            <div className="space-y-2">
-              <WysiwygEditor 
-                initialContent={block.content}
-                onUpdate={(html) => onSaveBlock(block.id, html)}
-              />
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onSaveBlock(block.id, block.content)}
-                >
-                  Done
-                </Button>
+          <div className="pt-8">
+            {editingBlockId === block.id ? (
+              <div className="space-y-2 border-2 rounded-lg p-5 mb-4 shadow-sm bg-white">
+                <WysiwygEditor 
+                  initialContent={block.content}
+                  onUpdate={(html) => onSaveBlock(block.id, html)}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={() => onSaveBlock(block.id, block.content)}
+                  >
+                    Done
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <ContentBlockRenderer block={block} />
-          )}
+            ) : (
+              <ContentBlockRenderer block={block} showBadge={true} />
+            )}
+          </div>
           
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
             {editingBlockId !== block.id && (

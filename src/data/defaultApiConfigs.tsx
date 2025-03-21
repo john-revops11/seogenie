@@ -17,8 +17,9 @@ export const getDefaultApiConfigs = (): ApiDetails[] => [
     description: "Vector database for semantic search",
     icon: <Database className="h-5 w-5 text-blue-600" />,
     iconName: "database",
-    isConfigured: false,
-    isActive: false
+    apiKey: "pcsk_2JMBqy_NGwjS5UqWkqAWDN6BGuW73KRJ9Hgd6G6T91LPpzsgkUMwchzzpXEQoFn7A1g797",
+    isConfigured: true,
+    isActive: true
   },
   {
     id: "openai",
@@ -76,6 +77,6 @@ export const getDefaultApiConfigs = (): ApiDetails[] => [
     iconName: "search",
     apiKey: "armin@revologyanalytics.com:ab4016dc9302b8cf",
     isConfigured: true,
-    isActive: false
+    isActive: true
   }
 ];

@@ -7,8 +7,7 @@ import {
   checkPineconeHealth, 
   checkOpenAIHealth,
   checkGeminiHealth,
-  checkDataForSeoHealth, 
-  checkOtherApis
+  checkDataForSeoHealth
 } from "@/utils/apiHealthCheck";
 
 export const useSystemHealth = () => {
@@ -16,18 +15,16 @@ export const useSystemHealth = () => {
     pinecone: { status: "idle" },
     openai: { status: "idle", models: [
       { id: "gpt-4o", name: "GPT-4o", provider: "openai", capabilities: ["text", "vision", "function calling"] },
-      { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: ["text", "function calling"] },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", capabilities: ["text", "vision", "function calling"] },
       { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "openai", capabilities: ["text", "function calling"] },
       { id: "text-embedding-3-small", name: "Text Embedding v3 Small", provider: "openai", capabilities: ["embeddings"] },
-      { id: "text-embedding-3-large", name: "Text Embedding v3 Large", provider: "openai", capabilities: ["embeddings"] },
     ] },
     gemini: { status: "idle", models: [
       { id: "gemini-pro", name: "Gemini Pro", provider: "gemini", capabilities: ["text"] },
       { id: "gemini-pro-vision", name: "Gemini Pro Vision", provider: "gemini", capabilities: ["text", "vision"] }
     ] },
-    googleAds: { status: "idle" },
     dataForSeo: { status: "idle" },
+    googleAds: { status: "idle" },
     rapidApi: { status: "idle" }
   });
   
@@ -63,9 +60,6 @@ export const useSystemHealth = () => {
     
     // Check DataForSeo
     await checkDataForSeoHealth(setApiStates);
-    
-    // Check other APIs
-    checkOtherApis(setApiStates);
     
     console.log("API status check completed");
   };
@@ -115,12 +109,6 @@ export const useSystemHealth = () => {
         break;
       case "pinecone":
         docsUrl = "https://docs.pinecone.io/";
-        break;
-      case "googleAds":
-        docsUrl = "https://developers.google.com/google-ads/api/docs/start";
-        break;
-      case "rapidApi":
-        docsUrl = "https://docs.rapidapi.com/";
         break;
       default:
         docsUrl = "";

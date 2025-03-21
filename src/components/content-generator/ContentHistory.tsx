@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { 
   Card, 
   CardContent, 
@@ -27,11 +28,17 @@ import {
   ArrowRight, 
   Search, 
   Download,
-  Eye
+  Eye,
+  User
 } from "lucide-react";
 import { useContentHistory, ContentHistoryItem } from "@/hooks/content-generator/useContentHistory";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useContentGeneratorState } from "@/hooks/content-generator/useContentGeneratorState";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
+import { v4 as uuidv4 } from 'uuid';
 
 interface ContentHistoryProps {
   onViewContent?: (content: ContentHistoryItem) => void;
@@ -46,17 +53,59 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
     currentPage, 
     totalPages,
     fetchHistory, 
-    deleteHistoryItem 
+    deleteHistoryItem,
+    getHistoryItemById,
+    currentUserId
   } = useContentHistory();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState<ContentHistoryItem | null>(null);
+  const [usernames, setUsernames] = useState<{[key: string]: string}>({});
+  const navigate = useNavigate();
+  
+  // Get usernames for user IDs
+  useEffect(() => {
+    const getUsernames = async () => {
+      const userIds = Array.from(new Set(
+        historyItems
+          .filter(item => item.user_id)
+          .map(item => item.user_id as string)
+      ));
+      
+      if (userIds.length === 0) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', userIds);
+          
+        if (error) throw error;
+        
+        const usernameMap = {};
+        data.forEach(profile => {
+          const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+          usernameMap[profile.id] = name || profile.email.split('@')[0];
+        });
+        
+        setUsernames(usernameMap);
+      } catch (error) {
+        console.error("Error fetching usernames:", error);
+      }
+    };
+    
+    if (historyItems.length > 0) {
+      getUsernames();
+    }
+  }, [historyItems]);
 
   // Filter items based on search term
   const filteredItems = historyItems.filter(item => 
     item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    item.content_type.toLowerCase().includes(searchTerm.toLowerCase())
+    item.content_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.topic && item.topic.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.user_id && usernames[item.user_id] && usernames[item.user_id].toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Format date function
@@ -96,6 +145,64 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
       onViewContent(item);
     }
   };
+  
+  // Load content in the generator
+  const loadContentInGenerator = async (item: ContentHistoryItem) => {
+    try {
+      // Convert the history item to a GeneratedContent object
+      const contentBlocks: ContentBlock[] = item.content.split('\n').map(html => ({
+        id: uuidv4(),
+        type: html.startsWith('<h1>') ? 'heading1' : 
+              html.startsWith('<h2>') ? 'heading2' : 
+              html.startsWith('<h3>') ? 'heading3' : 'paragraph',
+        content: html,
+        metadata: {}
+      }));
+      
+      const generatedContent: GeneratedContent = {
+        title: item.title,
+        contentType: item.content_type,
+        keywords: item.keywords,
+        metaDescription: item.meta_description || '',
+        outline: item.outline || [],
+        content: item.content,
+        blocks: contentBlocks,
+        generationMethod: item.rag_enabled ? 'rag' : 'standard',
+        aiProvider: item.ai_provider || 'openai',
+        aiModel: item.ai_model || 'gpt-4',
+        topic: item.topic || undefined
+      };
+      
+      // Save the content to localStorage
+      const contentStateToSave = {
+        step: 5,
+        contentType: item.content_type,
+        selectedTemplateId: '',
+        title: item.title,
+        keywords: item.keywords,
+        creativity: 50,
+        ragEnabled: item.rag_enabled,
+        isGenerating: false,
+        generatedContent: generatedContent,
+        contentHtml: item.content,
+        aiProvider: item.ai_provider || 'openai',
+        aiModel: item.ai_model || 'gpt-4',
+        wordCountOption: 'standard',
+        selectedSubheadings: item.outline || [],
+        contentPreferences: [],
+        topic: item.topic || ''
+      };
+      
+      localStorage.setItem('contentGeneratorState', JSON.stringify(contentStateToSave));
+      
+      // Navigate to content generator
+      toast.success("Content loaded in generator");
+      navigate('/content');
+    } catch (error) {
+      console.error("Error loading content in generator:", error);
+      toast.error("Failed to load content in generator");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -120,6 +227,25 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
                     <Badge key={i} variant="outline">{keyword}</Badge>
                   ))}
                 </div>
+                {selectedItem.topic && (
+                  <div className="mt-2">
+                    <span className="text-sm text-muted-foreground">Topic: </span>
+                    <Badge variant="secondary">{selectedItem.topic}</Badge>
+                  </div>
+                )}
+                <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                  <User className="mr-1 h-4 w-4" />
+                  <span>
+                    {selectedItem.user_id ? usernames[selectedItem.user_id] || 'Unknown User' : 'Unknown User'}
+                  </span>
+                  <span className="mx-2">•</span>
+                  <Calendar className="mr-1 h-4 w-4" />
+                  <span>{formatDate(selectedItem.created_at)}</span>
+                  <span className="mx-2">•</span>
+                  <Badge variant={selectedItem.rag_enabled ? "default" : "outline"}>
+                    {selectedItem.rag_enabled ? "RAG Enhanced" : "Standard Generation"}
+                  </Badge>
+                </div>
               </div>
               
               <div className="prose max-w-none dark:prose-invert" 
@@ -140,6 +266,13 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
                   onClick={() => downloadContent(selectedItem)}
                 >
                   <Download className="mr-2 size-4" /> Download
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => loadContentInGenerator(selectedItem)}
+                >
+                  <FileText className="mr-2 size-4" /> Open in Generator
                 </Button>
               </div>
             </div>
@@ -179,50 +312,70 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
                     <TableRow>
                       <TableHead>Title</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Keywords</TableHead>
+                      <TableHead>Topic</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>RAG</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredItems.map((item) => (
-                      <TableRow key={item.id}>
+                      <TableRow 
+                        key={item.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleViewContent(item)}
+                      >
                         <TableCell className="font-medium">{item.title}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{item.content_type}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {item.keywords.slice(0, 2).map((keyword, i) => (
-                              <Badge key={i} variant="secondary" className="mr-1">
-                                {keyword}
-                              </Badge>
-                            ))}
-                            {item.keywords.length > 2 && (
-                              <Badge variant="secondary">+{item.keywords.length - 2}</Badge>
-                            )}
+                          {item.topic ? (
+                            <Badge variant="secondary">{item.topic}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">None</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <User className="mr-1 h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">
+                              {item.user_id ? usernames[item.user_id] || 'Unknown' : 'Unknown'}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span>{formatDate(item.created_at)}</span>
+                            <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{formatDate(item.created_at)}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
+                          <Badge variant={item.rag_enabled ? "default" : "secondary"}>
+                            {item.rag_enabled ? "RAG" : "Standard"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleViewContent(item)}
-                              title="View Content"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                loadContentInGenerator(item);
+                              }}
+                              title="Open in Generator"
                             >
-                              <Eye className="h-4 w-4" />
+                              <FileText className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => copyContent(item.content)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyContent(item.content);
+                              }}
                               title="Copy Content"
                             >
                               <Copy className="h-4 w-4" />
@@ -230,7 +383,10 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => downloadContent(item)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                downloadContent(item);
+                              }}
                               title="Download Content"
                             >
                               <Download className="h-4 w-4" />
@@ -238,7 +394,8 @@ const ContentHistory: React.FC<ContentHistoryProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (confirm("Are you sure you want to delete this content?")) {
                                   deleteHistoryItem(item.id);
                                 }

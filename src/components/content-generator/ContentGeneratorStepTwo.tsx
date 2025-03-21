@@ -1,15 +1,13 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
-import { WORD_COUNT_OPTIONS } from "./WordCountSelector";
+import { toast } from "sonner";
+import { generateTitlesWithAI } from "@/hooks/content-generator/aiModels";
+import { generateTopicSuggestions } from "@/utils/topicGenerator";
+import KeywordManager from "./step-two/KeywordManager";
+import TopicSuggestions from "./step-two/TopicSuggestions";
+import TitleSuggestions from "./step-two/TitleSuggestions";
+import ContentPreferences from "./step-two/ContentPreferences";
 
 interface ContentGeneratorStepTwoProps {
   title: string;
@@ -19,6 +17,7 @@ interface ContentGeneratorStepTwoProps {
   contentPreferences: string[];
   selectedPreferences: string[];
   wordCountOption: string;
+  contentType: string;
   onTitleChange: (title: string) => void;
   onKeywordsChange: (keywords: string[]) => void;
   onCreativityChange: (value: number) => void;
@@ -37,6 +36,7 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   contentPreferences,
   selectedPreferences,
   wordCountOption,
+  contentType,
   onTitleChange,
   onKeywordsChange,
   onCreativityChange,
@@ -46,23 +46,81 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
   onNext,
   onBack
 }) => {
-  const [newKeyword, setNewKeyword] = React.useState("");
-  
-  const handleAddKeyword = () => {
-    if (newKeyword.trim() && !keywords.includes(newKeyword.trim())) {
-      onKeywordsChange([...keywords, newKeyword.trim()]);
-      setNewKeyword("");
+  const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
+  const [loadingTitles, setLoadingTitles] = useState(false);
+  const [suggestedTopics, setSuggestedTopics] = useState<string[]>([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
+
+  const generateTopics = () => {
+    if (keywords.length === 0) {
+      toast.error("Please add at least one keyword to generate topic suggestions");
+      return;
+    }
+
+    setLoadingTopics(true);
+    try {
+      // Create simple topics based on keywords
+      const topics = keywords.map(keyword => `Guide to ${keyword}`);
+      
+      const currentYear = new Date().getFullYear();
+      const additionalTopics = [
+        ...keywords.map(k => `Complete Guide to ${k} in ${currentYear}`),
+        ...keywords.map(k => `How to Master ${k}: Expert Tips`),
+        ...keywords.map(k => `${k}: Everything You Need to Know`),
+        ...keywords.map(k => `The Ultimate ${k} Strategy Guide`),
+      ];
+      
+      setSuggestedTopics([...topics, ...additionalTopics].slice(0, 15));
+      toast.success("Topic suggestions generated!");
+    } catch (error) {
+      console.error("Error generating topic suggestions:", error);
+      toast.error("Failed to generate topic suggestions. Please try again.");
+    } finally {
+      setLoadingTopics(false);
     }
   };
 
-  const handleRemoveKeyword = (keyword: string) => {
-    onKeywordsChange(keywords.filter(k => k !== keyword));
+  const handleTopicSelect = (topic: string) => {
+    setSelectedTopic(topic);
+    onTitleChange(topic);
+    generateTitleSuggestionsForTopic(topic);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddKeyword();
+  const generateTitleSuggestionsForTopic = async (topic: string) => {
+    if (!topic) {
+      toast.error("Please select a topic first");
+      return;
+    }
+
+    setLoadingTitles(true);
+    try {
+      const provider = 'openai';
+      const titles = await generateTitlesWithAI(provider, topic, keywords, contentType);
+      
+      // If we don't get enough titles, generate some simple ones
+      if (titles.length < 5) {
+        const currentYear = new Date().getFullYear();
+        const additionalTitles = [
+          `The Complete Guide to ${topic} (${currentYear} Edition)`,
+          `How to Master ${topic}: Expert Strategies and Tips`,
+          `${topic}: A Comprehensive Guide for Success`,
+          `Understanding ${topic}: From Basics to Advanced`,
+          `The Ultimate ${topic} Guide: Everything You Need to Know`
+        ];
+        
+        const combinedTitles = [...titles, ...additionalTitles];
+        setSuggestedTitles(Array.from(new Set(combinedTitles)).slice(0, 10));
+      } else {
+        setSuggestedTitles(titles);
+      }
+      
+      toast.success("Title suggestions generated!");
+    } catch (error) {
+      console.error("Error generating title suggestions:", error);
+      toast.error("Failed to generate title suggestions. Please try again.");
+    } finally {
+      setLoadingTitles(false);
     }
   };
 
@@ -70,117 +128,39 @@ const ContentGeneratorStepTwo: React.FC<ContentGeneratorStepTwoProps> = ({
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Step 2: Content Details</h3>
       
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            placeholder="Enter your content title"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="keywords">Keywords</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="keywords"
-              value={newKeyword}
-              onChange={(e) => setNewKeyword(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Add keywords"
-            />
-            <Button type="button" onClick={handleAddKeyword} variant="secondary">
-              Add
-            </Button>
-          </div>
-          
-          {keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {keywords.map((keyword) => (
-                <Badge key={keyword} variant="secondary" className="px-2 py-1">
-                  {keyword}
-                  <X 
-                    className="ml-1 h-3 w-3 cursor-pointer" 
-                    onClick={() => handleRemoveKeyword(keyword)}
-                  />
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label>Creativity Level</Label>
-            <span className="text-sm text-muted-foreground">{creativity}%</span>
-          </div>
-          <Slider
-            value={[creativity]}
-            min={0}
-            max={100}
-            step={1}
-            onValueChange={([value]) => onCreativityChange(value)}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Conservative</span>
-            <span>Balanced</span>
-            <span>Creative</span>
-          </div>
-        </div>
+      <KeywordManager 
+        keywords={keywords}
+        onKeywordsChange={onKeywordsChange}
+        onGenerateTopics={generateTopics}
+      />
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="rag-toggle">Use RAG (Retrieval Augmented Generation)</Label>
-            <Switch
-              id="rag-toggle"
-              checked={ragEnabled}
-              onCheckedChange={onRagToggle}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Enhances content with relevant information from your website's existing content
-          </p>
-        </div>
-        
-        <div className="space-y-2">
-          <Label>Word Count</Label>
-          <select 
-            className="w-full p-2 border rounded-md"
-            value={wordCountOption}
-            onChange={(e) => onWordCountOptionChange(e.target.value)}
-          >
-            {WORD_COUNT_OPTIONS.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.description}
-              </option>
-            ))}
-          </select>
-        </div>
+      <TopicSuggestions 
+        topics={suggestedTopics}
+        selectedTopic={selectedTopic}
+        isLoading={loadingTopics}
+        onTopicSelect={handleTopicSelect}
+        onGenerateTopics={generateTopics}
+      />
 
-        <Separator className="my-4" />
-        
-        <div className="space-y-2">
-          <Label>Content Preferences</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {contentPreferences.map((preference) => (
-              <div key={preference} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={`pref-${preference}`}
-                  checked={selectedPreferences.includes(preference)}
-                  onChange={() => onTogglePreference(preference)}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor={`pref-${preference}`} className="text-sm">
-                  {preference}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <TitleSuggestions 
+        title={title}
+        suggestedTitles={suggestedTitles}
+        isLoading={loadingTitles}
+        onTitleChange={onTitleChange}
+        onGenerateTitles={() => generateTitleSuggestionsForTopic(selectedTopic)}
+      />
+
+      <ContentPreferences 
+        creativity={creativity}
+        ragEnabled={ragEnabled}
+        wordCountOption={wordCountOption}
+        contentPreferences={contentPreferences}
+        selectedPreferences={selectedPreferences}
+        onCreativityChange={onCreativityChange}
+        onRagToggle={onRagToggle}
+        onWordCountOptionChange={onWordCountOptionChange}
+        onTogglePreference={onTogglePreference}
+      />
       
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>

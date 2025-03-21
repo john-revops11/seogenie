@@ -1,5 +1,4 @@
 
-import { DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD } from '../../apiConfig';
 import { getApiKey } from '../apiBase';
 
 /**
@@ -7,17 +6,14 @@ import { getApiKey } from '../apiBase';
  */
 export const getDataForSeoCredentials = (): { encodedCredentials: string, login: string, password: string } => {
   // Get API credentials from dynamic API keys
-  const dataForSeoCredentials = getApiKey("dataforseo");
+  const dataForSeoCredentials = getApiKey("dataforseo") || "armin@revologyanalytics.com:ab4016dc9302b8cf";
   
-  let login, password;
+  let login = 'armin@revologyanalytics.com';
+  let password = 'ab4016dc9302b8cf';
   
   if (dataForSeoCredentials && dataForSeoCredentials.includes(':')) {
     // If credentials are in username:password format
     [login, password] = dataForSeoCredentials.split(':');
-  } else {
-    // Fall back to default credentials
-    login = DATAFORSEO_LOGIN;
-    password = DATAFORSEO_PASSWORD;
   }
   
   // Create authorization string

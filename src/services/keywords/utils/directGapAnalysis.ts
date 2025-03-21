@@ -87,7 +87,8 @@ export const findDirectKeywordGaps = (
             rank: position,
             isTopOpportunity: false,
             relevance: relevance,
-            competitiveAdvantage: competitiveAdvantage
+            competitiveAdvantage: competitiveAdvantage,
+            keywordType: "gap"
           };
           
           const competitorGaps = gapsByCompetitor.get(competitor) || [];
@@ -98,6 +99,58 @@ export const findDirectKeywordGaps = (
         }
       }
     }
+  }
+  
+  // Add shared keywords (keywords where both main domain and competitors rank)
+  const sharedKeywords = keywords.filter(kw => {
+    const mainRanks = kw.position !== null && kw.position <= 30;
+    const anyCompetitorRanks = kw.competitorRankings && 
+      Object.keys(kw.competitorRankings).some(comp => 
+        competitorDomainNames.includes(comp) && 
+        kw.competitorRankings[comp] !== null && 
+        kw.competitorRankings[comp]! <= 30
+      );
+    
+    return mainRanks && anyCompetitorRanks;
+  }).slice(0, targetGapCount);
+  
+  for (const kw of sharedKeywords) {
+    directGaps.push({
+      keyword: kw.keyword,
+      volume: kw.monthly_search,
+      difficulty: kw.competition_index,
+      opportunity: 'medium',
+      competitor: null,
+      rank: kw.position || 0,
+      isTopOpportunity: false,
+      relevance: 70,
+      competitiveAdvantage: 60,
+      keywordType: "shared"
+    });
+  }
+  
+  // Add missing keywords (keywords that nobody ranks for but might be valuable)
+  const missingKeywords = keywords.filter(kw => {
+    const mainDoesntRank = kw.position === null || kw.position > 30;
+    const noCompetitorRanks = !kw.competitorRankings || 
+      Object.values(kw.competitorRankings).every(pos => pos === null || pos > 30);
+    
+    return mainDoesntRank && noCompetitorRanks && kw.monthly_search > 100;
+  }).slice(0, targetGapCount);
+  
+  for (const kw of missingKeywords) {
+    directGaps.push({
+      keyword: kw.keyword,
+      volume: kw.monthly_search,
+      difficulty: kw.competition_index,
+      opportunity: kw.monthly_search > 500 ? 'high' : 'medium',
+      competitor: null,
+      rank: null,
+      isTopOpportunity: false,
+      relevance: 40,
+      competitiveAdvantage: 0,
+      keywordType: "missing"
+    });
   }
   
   for (const competitorGaps of gapsByCompetitor.values()) {

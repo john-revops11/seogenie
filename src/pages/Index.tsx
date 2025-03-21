@@ -1,19 +1,25 @@
-
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { DashboardTabContent } from "@/components/tabs/DashboardTabContent";
 import { ContentTabContent } from "@/components/tabs/ContentTabContent";
 import { HistoryTabContent } from "@/components/tabs/HistoryTabContent";
 import SettingsTabContent from "@/components/tabs/SettingsTabContent";
 import AIChatTabContent from "@/components/tabs/AIChatTabContent";
+import { PositionTrackingTabContent } from "@/components/tabs/PositionTrackingTabContent";
+import SeoAnalyticsTabContent from "@/components/tabs/SeoAnalyticsTabContent";
 import useDomainAnalysis from "@/hooks/useDomainAnalysis";
 import { useApiManagement } from "@/hooks/useApiManagement";
 import { Header } from "@/components/page/Header";
-import { ApiHealthCard } from "@/components/api-integration/ApiHealthCard";
+import { DomainAnalyticsDashboard } from "@/components/dashboard/DomainAnalyticsDashboard";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { TabNavigation } from "@/components/page/TabNavigation";
 
 const Index = () => {
-  // Domain Analysis State from custom hook
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  
   const {
     mainDomain, setMainDomain,
     competitorDomains, 
@@ -32,7 +38,6 @@ const Index = () => {
     removeCompetitorFromAnalysis
   } = useDomainAnalysis();
 
-  // API Management state from custom hook
   const {
     showApiForm,
     newApiName,
@@ -43,7 +48,6 @@ const Index = () => {
     handleAddNewApi
   } = useApiManagement();
 
-  // Content generation state
   const [contentType, setContentType] = useState("blog");
   const [creativity, setCreativity] = useState(50);
   const [contentPreferences, setContentPreferences] = useState<string[]>([]);
@@ -68,32 +72,45 @@ const Index = () => {
     setAnalysisError(null);
   }, [mainDomain, setAnalysisError]);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    
+    fetchUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
   const goToAnalysisTab = () => {
     const tabsElement = document.getElementById('main-tabs');
     if (tabsElement) {
-      // Find the dashboard tab trigger and click it
-      const dashboardTrigger = tabsElement.querySelector('[data-value="dashboard"]');
-      if (dashboardTrigger && dashboardTrigger instanceof HTMLElement) {
-        dashboardTrigger.click();
+      const domainAnalysisTrigger = tabsElement.querySelector('[data-value="domain-analysis"]');
+      if (domainAnalysisTrigger && domainAnalysisTrigger instanceof HTMLElement) {
+        domainAnalysisTrigger.click();
       }
     }
   };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <ApiHealthCard />
       <Header analysisComplete={analysisComplete} onReset={handleReset} />
       
       <Tabs defaultValue="dashboard" className="space-y-4" id="main-tabs">
-        <TabsList>
-          <TabsTrigger value="dashboard" data-value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        
+        <TabNavigation />
+
         <TabsContent value="dashboard" className="space-y-4">
+          <DomainAnalyticsDashboard />
+        </TabsContent>
+        
+        <TabsContent value="domain-analysis" className="space-y-4">
           <DashboardTabContent 
             mainDomain={mainDomain}
             competitorDomains={competitorDomains}
@@ -122,6 +139,14 @@ const Index = () => {
             allKeywords={keywordData.map(k => k.keyword)}
             onGoToAnalysis={goToAnalysisTab}
           />
+        </TabsContent>
+        
+        <TabsContent value="position-tracking" className="space-y-4">
+          <PositionTrackingTabContent domain={mainDomain} />
+        </TabsContent>
+        
+        <TabsContent value="seo-analytics" className="space-y-4">
+          <SeoAnalyticsTabContent />
         </TabsContent>
         
         <TabsContent value="ai-chat" className="space-y-6">

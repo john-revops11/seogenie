@@ -43,8 +43,8 @@ export function KeywordGapHeader({
           </div>
           
           <KeywordGapDataSourceSelector 
-            apiSource={apiSource}
-            onApiSourceChange={onApiSourceChange}
+            value={apiSource}
+            onChange={onApiSourceChange}
             locationCode={locationCode}
             onLocationChange={onLocationChange}
           />

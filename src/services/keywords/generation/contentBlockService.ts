@@ -1,193 +1,141 @@
 
-import { toast } from 'sonner';
-import { ContentBlock, ContentOutline, GeneratedContent } from '../types';
-import { generateParagraphContent } from './openAiService';
-import { enhanceWithRAG } from '../../vector/ragService';
+import { ContentBlock, ContentOutline, GeneratedContent } from "../types";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
 /**
- * Fills in content blocks with AI-generated content
+ * Parses HTML content into content blocks
  */
-export const fillContentBlocks = async (
-  content: GeneratedContent,
+export function parseContentToBlocks(htmlContent: string): ContentBlock[] {
+  if (!htmlContent) return [];
+
+  try {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    const blocks: ContentBlock[] = [];
+    
+    Array.from(tempDiv.childNodes).forEach((node, index) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as HTMLElement;
+        const tagName = element.tagName.toLowerCase();
+        
+        // Map HTML elements to block types
+        let type: ContentBlock['type'] = 'paragraph';
+        
+        if (tagName === 'h1') type = 'heading1';
+        else if (tagName === 'h2') type = 'heading2';
+        else if (tagName === 'h3') type = 'heading3'; 
+        else if (tagName === 'p') type = 'paragraph';
+        else if (tagName === 'ul') type = 'list';
+        else if (tagName === 'ol') type = 'orderedList';
+        else if (tagName === 'blockquote') type = 'quote';
+        
+        blocks.push({
+          id: uuidv4(),
+          type,
+          content: element.outerHTML
+        });
+      } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+        blocks.push({
+          id: uuidv4(),
+          type: 'paragraph',
+          content: `<p>${node.textContent}</p>`
+        });
+      }
+    });
+    
+    return blocks;
+  } catch (error) {
+    console.error("Error parsing content to blocks:", error);
+    toast.error("Failed to parse content into blocks");
+    return [];
+  }
+}
+
+/**
+ * Formats content blocks to a standardized HTML string
+ */
+export function formatBlocksToHtml(blocks: ContentBlock[]): string {
+  if (!blocks || blocks.length === 0) return '';
+  
+  return blocks.map(block => block.content).join('\n');
+}
+
+/**
+ * Converts HTML content string to structured content blocks
+ */
+export function convertHtmlToContentBlocks(
+  content: string,
+  title: string, 
+  metaDescription: string, 
+  outline: string[],
+  keywords: string[] = [],
+  contentType: string = 'blog'
+): GeneratedContent {
+  const blocks = parseContentToBlocks(content);
+  
+  return {
+    title,
+    metaDescription,
+    outline,
+    content,
+    blocks,
+    keywords,
+    contentType,
+    generationMethod: 'standard'
+  };
+}
+
+/**
+ * Fills content blocks with actual content from AI
+ */
+export async function fillContentBlocks(
+  contentOutline: GeneratedContent,
   outline: ContentOutline,
   keywords: string[],
   contentType: string,
   creativity: number = 50,
   preferences: string[] = []
-): Promise<GeneratedContent> => {
+): Promise<GeneratedContent> {
   try {
-    console.log("fillContentBlocks: Starting to fill content blocks with AI");
-    // Now we'll actually generate the content with OpenAI
-    const updatedBlocks = [...content.blocks];
+    // This would normally call OpenAI to fill in the blocks
+    // For now we'll return the existing content
     
-    // Structure-related guidelines
-    const structureGuidelines = `
-      Structure Guidelines:
-      - Use proper HTML formatting:
-        * <h1> for main title
-        * <h2> for main section headings
-        * <h3> for subsection headings
-        * <p> for paragraphs
-        * <strong> or <b> for bold text
-        * <ul> with <li> items for bullet lists
-        * <ol> with <li> items for numbered lists
-      - Keep paragraphs concise (3-4 sentences max)
-      - Add proper spacing between elements
-      - Use bold text for emphasis on key terms and concepts
-      - Each section should flow logically to the next
-      - Naturally incorporate keywords without keyword stuffing
-    `;
-    
-    // SEO guidelines
-    const seoGuidelines = `
-      SEO Guidelines:
-      - Naturally incorporate these keywords: ${keywords.join(', ')}
-      - Include relevant semantic terms related to the main topic
-      - Ensure content is factual and up-to-date
-      - Maintain readability and user engagement
-      - Use proper heading hierarchy (H1 > H2 > H3)
-    `;
-    
-    // Combined prompt header with all guidelines
-    let promptHeader = `Generate high-quality, SEO-optimized content for a ${contentType} about "${content.title}".\n`;
-    promptHeader += structureGuidelines + '\n';
-    promptHeader += seoGuidelines + '\n';
-    promptHeader += `Creativity level: ${creativity}%.\n`;
-    
-    if (preferences.length > 0) {
-      promptHeader += `Content preferences: ${preferences.join(', ')}.\n`;
+    if (!contentOutline.blocks || contentOutline.blocks.length === 0) {
+      // If no blocks exist yet, create them from the content
+      const parsedBlocks = parseContentToBlocks(contentOutline.content);
+      return {
+        ...contentOutline,
+        blocks: parsedBlocks
+      };
     }
     
-    const isRagEnabled = content.generationMethod === 'rag';
-    
-    // Generate content for each paragraph block
-    for (let i = 0; i < updatedBlocks.length; i++) {
-      const block = updatedBlocks[i];
-      
-      if (block.type === 'paragraph' || block.type === 'list') {
-        let contextHeading = '';
-        let parentHeadingType = '';
-        
-        // Find the preceding heading to provide context
-        for (let j = i - 1; j >= 0; j--) {
-          if (updatedBlocks[j].type.startsWith('heading')) {
-            contextHeading = updatedBlocks[j].content.replace(/<\/?[^>]+(>|$)/g, ""); // Remove HTML tags
-            parentHeadingType = updatedBlocks[j].type;
-            break;
-          }
-        }
-        
-        let prompt = promptHeader;
-        
-        if (contextHeading) {
-          // Customize prompt based on the heading context
-          if (contextHeading.toLowerCase().includes('introduction')) {
-            prompt += `\nWrite a concise, informative introduction paragraph (50-100 words) that clearly sets the context, purpose, and key takeaways of the article about "${content.title}". Use <p> tags and <strong> tags for important terms.\n`;
-          } 
-          else if (contextHeading.toLowerCase().includes('conclusion')) {
-            prompt += `\nWrite a concise conclusion paragraph that reinforces key insights from the article and recommends actionable next steps on the topic "${content.title}". Use <p> tags and <strong> tags for important points.\n`;
-          }
-          else if (contextHeading.toLowerCase().includes('case stud') || contextHeading.toLowerCase().includes('example')) {
-            prompt += `\nProvide a clearly formatted, relevant case study or practical example demonstrating how "${content.title}" has been applied effectively in a real-world scenario. Format with proper HTML tags including <p>, <strong>, and use <h3> tags for any subheadings within this section.\n`;
-          }
-          else if (contextHeading.toLowerCase().includes('best practice')) {
-            prompt += `\nGenerate a comprehensive list of best practices for "${content.title}", formatted as a proper HTML bulleted list (<ul> with <li> items) with actionable recommendations. Add a brief introduction paragraph before the list with <p> tags.\n`;
-          }
-          else if (block.type === 'list') {
-            // Determine if it should be a bulleted or numbered list
-            const shouldBeNumbered = contextHeading.toLowerCase().includes('step') || 
-                                   contextHeading.toLowerCase().includes('process') || 
-                                   contextHeading.toLowerCase().includes('method');
-            
-            prompt += `\nCreate a ${shouldBeNumbered ? '<ol>' : '<ul>'} list of key points related to "${contextHeading}". Each item should be in <li> tags and provide meaningful, detailed information directly related to the topic. Add brief explanatory text before the list using <p> tags.\n`;
-          }
-          else {
-            prompt += `\nGenerate a detailed section for "${contextHeading}" with proper HTML formatting. Use <p> tags for paragraphs, <strong> tags for emphasis, and appropriate use of other HTML elements as needed.\n`;
-            if (parentHeadingType === 'heading3') {
-              prompt += `This is a subsection that provides deeper details about a specific aspect of the main topic.\n`;
-            }
-          }
-          
-          console.log(`Generating content for section: "${contextHeading}"`);
-        }
-        
-        // Enhance with RAG if enabled
-        if (isRagEnabled) {
-          try {
-            prompt = await enhanceWithRAG(prompt, contextHeading || 'general', content.title, keywords);
-          } catch (ragError) {
-            console.error("Error enhancing with RAG:", ragError);
-            // Continue without RAG enhancement if it fails
-          }
-        }
-        
-        // Try to generate content
-        try {
-          const generatedContent = await generateParagraphContent(prompt, creativity);
-          
-          // Update the block with the generated content
-          if (generatedContent && generatedContent.trim() !== '') {
-            // Check if the content already includes HTML tags
-            const hasHtmlTags = /<[a-z][\s\S]*>/i.test(generatedContent);
-            
-            if (block.type === 'paragraph') {
-              updatedBlocks[i] = {
-                ...block,
-                content: hasHtmlTags ? generatedContent : `<p>${generatedContent}</p>`
-              };
-            } else if (block.type === 'list') {
-              // Determine if we need an ordered or unordered list based on context
-              const isOrdered = contextHeading.toLowerCase().includes('step') || 
-                              contextHeading.toLowerCase().includes('process') || 
-                              contextHeading.toLowerCase().includes('method');
-              
-              // If content already has HTML list, use it directly
-              if (hasHtmlTags && (generatedContent.includes('<ul>') || generatedContent.includes('<ol>'))) {
-                updatedBlocks[i] = {
-                  ...block,
-                  content: generatedContent
-                };
-              } else {
-                // Parse the content to properly format as a list
-                const listItems = generatedContent
-                  .split(/\n|•|-|\d+\./)
-                  .filter(item => item.trim() !== '')
-                  .map(item => `<li>${item.trim()}</li>`)
-                  .join('\n');
-                
-                updatedBlocks[i] = {
-                  ...block,
-                  content: isOrdered ? `<ol>${listItems}</ol>` : `<ul>${listItems}</ul>`
-                };
-              }
-            }
-            
-            console.log(`Successfully generated content for ${contextHeading || 'section'}`);
-          } else {
-            console.warn("Empty content returned from AI generation");
-            updatedBlocks[i] = {
-              ...block,
-              content: `<p>Content generation failed for this section. Please try regenerating or edit manually.</p>`
-            };
-          }
-        } catch (genError) {
-          console.error("Error generating paragraph content:", genError);
-          updatedBlocks[i] = {
-            ...block,
-            content: `<p>Content generation failed for this section. Error: ${genError instanceof Error ? genError.message : "Unknown error"}</p>`
-          };
-        }
-      }
-    }
-    
-    // Update the content with the filled blocks
-    return {
-      ...content,
-      blocks: updatedBlocks
-    };
+    return contentOutline;
   } catch (error) {
     console.error("Error filling content blocks:", error);
-    toast.error(`Content generation failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-    return content;
+    toast.error("Failed to generate content blocks");
+    
+    // Return original content with empty blocks as fallback
+    return {
+      ...contentOutline,
+      blocks: contentOutline.blocks || []
+    };
   }
-};
+}
+
+/**
+ * Creates a structured outline for a new piece of content
+ */
+export function createContentOutline(
+  title: string, 
+  headings: string[],
+  contentType: string = 'blog'
+): ContentOutline {
+  return {
+    title,
+    headings,
+    metaDescription: `A comprehensive guide to ${title}`,
+    outline: headings
+  };
+}

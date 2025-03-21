@@ -21,10 +21,11 @@ export const useKeywordGaps = () => {
   };
   
   const clearKeywordGapsCache = () => {
-    keywordGapsCache.data = null;
+    keywordGapsCache.data = [];
     keywordGapsCache.domain = "";
     keywordGapsCache.competitorDomains = [];
     keywordGapsCache.keywordsLength = 0;
+    keywordGapsCache.currentPage = 1;
     keywordGapsCache.page = 1;
     // Keep the locationCode and selectedKeywords
   };
@@ -40,7 +41,7 @@ export const useKeywordGaps = () => {
     
     // Check if all competitors are the same
     return !newCompetitors.every(comp => 
-      keywordGapsCache.competitorDomains.includes(comp)
+      keywordGapsCache.competitorDomains?.includes(comp)
     );
   };
   
@@ -50,21 +51,7 @@ export const useKeywordGaps = () => {
     return keywordGapsCache.data
       .filter(gap => selectedKeywords.includes(gap.keyword))
       .sort((a, b) => {
-        // Sort by isTopOpportunity first (true comes first)
-        if (a.isTopOpportunity !== b.isTopOpportunity) {
-          return a.isTopOpportunity ? -1 : 1;
-        }
-        // Then by competitive advantage (higher comes first)
-        if (a.competitiveAdvantage !== b.competitiveAdvantage && 
-            a.competitiveAdvantage !== undefined && b.competitiveAdvantage !== undefined) {
-          return b.competitiveAdvantage - a.competitiveAdvantage;
-        }
-        // Then by relevance (higher comes first)
-        if (a.relevance !== b.relevance && 
-            a.relevance !== undefined && b.relevance !== undefined) {
-          return b.relevance - a.relevance;
-        }
-        // Finally by volume (higher comes first)
+        // Sort by volume (higher comes first)
         return b.volume - a.volume;
       });
   };

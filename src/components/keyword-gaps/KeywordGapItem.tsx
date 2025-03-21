@@ -13,7 +13,8 @@ interface KeywordGapItemProps {
 }
 
 export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordGapItemProps) {
-  const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty, gap.volume);
+  const intent = categorizeKeywordIntent(gap.keyword, gap.difficulty || 0, gap.volume);
+  const competitor = gap.competitors && gap.competitors.length > 0 ? gap.competitors[0] : null;
   
   // Function to handle keyword selection/deselection with cache update
   const handleKeywordSelection = () => {
@@ -48,8 +49,13 @@ export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordG
       <div>
         <div className="font-medium">{gap.keyword}</div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="text-amber-500 font-medium">Rank {gap.rank}</span> on {gap.competitor}
-          <Badge className={`text-xs ${getIntentBadgeColor(gap.keyword, gap.difficulty, gap.volume)}`}>
+          {gap.mainDomainRanks !== undefined && (
+            <span className="text-amber-500 font-medium">
+              {gap.mainDomainRanks ? "Your domain ranks" : "Competitor ranks"}
+            </span>
+          )}
+          {competitor && <span>on {competitor}</span>}
+          <Badge className={`text-xs ${getIntentBadgeColor(gap.keyword, gap.difficulty || 0, gap.volume)}`}>
             {intent.charAt(0).toUpperCase() + intent.slice(1)}
           </Badge>
         </div>
@@ -58,8 +64,8 @@ export function KeywordGapItem({ gap, isSelected, onKeywordSelection }: KeywordG
         <Badge variant="outline" className="text-xs">
           {gap.volume.toLocaleString()} vol
         </Badge>
-        <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty)}`}>
-          {gap.difficulty} KD
+        <Badge variant="outline" className={`text-xs ${getDifficultyColor(gap.difficulty || 0)}`}>
+          {gap.difficulty || 0} KD
         </Badge>
         <Button 
           variant={isSelected ? "outline" : "revology"}

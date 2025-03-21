@@ -1,5 +1,5 @@
 
-import { retrieveSimilarDocuments, isPineconeConfigured, testPineconeConnection } from '@/services/vector/pineconeService';
+import { retrieveSimilarDocuments, isPineconeConfigured, testPineconeConnection, createEmbedding } from '@/services/vector/pineconeService';
 import { toast } from 'sonner';
 
 interface RagResult {
@@ -130,6 +130,9 @@ export const enhanceContentWithRAG = async (
     // Create a comprehensive query combining title and keywords
     const query = `${title} ${baseKeywords.join(' ')}`;
     
+    // Create embedding for the query using OpenAI's text-embedding-3-small model
+    const queryEmbedding = await createEmbedding(query);
+    
     // Retrieve similar documents from Pinecone
     const similarDocuments = await retrieveSimilarDocuments(query, 5, { 
       contentType: contentType 
@@ -160,6 +163,40 @@ export const enhanceContentWithRAG = async (
     console.error("Error enhancing content with RAG:", error);
     toast.error(`RAG enhancement failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     return defaultResult;
+  }
+};
+
+/**
+ * Indexes a title and content in Pinecone for future RAG use
+ */
+export const indexContentForRAG = async (
+  title: string,
+  content: string,
+  keywords: string[],
+  metadata: Record<string, any> = {}
+): Promise<boolean> => {
+  try {
+    const { indexDocument } = await import('@/services/vector/pineconeService');
+    
+    // Combine title and content for embedding
+    const textToEmbed = `${title}\n\n${content}`;
+    
+    // Add metadata
+    const enhancedMetadata = {
+      ...metadata,
+      title,
+      keywords,
+      type: 'content',
+      createdAt: new Date().toISOString()
+    };
+    
+    // Index the document
+    await indexDocument(textToEmbed, enhancedMetadata);
+    
+    return true;
+  } catch (error) {
+    console.error("Error indexing content for RAG:", error);
+    return false;
   }
 };
 

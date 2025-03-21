@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { GeneratedContent } from "@/services/keywords/types";
+import { GeneratedContent, ContentBlock } from "@/services/keywords/types";
 
 export interface ContentHistoryItem {
   id: string;
@@ -16,6 +16,8 @@ export interface ContentHistoryItem {
   rag_enabled: boolean;
   ai_provider: string | null;
   ai_model: string | null;
+  user_id: string | null;
+  topic: string | null;
 }
 
 export function useContentHistory() {
@@ -24,7 +26,33 @@ export function useContentHistory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const itemsPerPage = 10;
+
+  // Get the current user session
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session?.user) {
+        setSessionUserId(session.user.id);
+      }
+    };
+
+    getSession();
+
+    // Subscribe to auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setSessionUserId(session.user.id);
+      } else {
+        setSessionUserId(null);
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
 
   // Fetch content history with pagination
   const fetchHistory = async (page = 1) => {
@@ -65,21 +93,24 @@ export function useContentHistory() {
   const saveToHistory = async (content: GeneratedContent) => {
     try {
       // Convert blocks to HTML string for storage
-      const contentHtml = content.blocks.map(block => block.content).join('\n');
+      const contentHtml = content.blocks?.map(block => block.content).join('\n') || content.content || '';
       
       const { error } = await supabase.from("content_history").insert({
-        title: content.title,
-        content_type: content.contentType,
-        keywords: content.keywords,
-        meta_description: content.metaDescription,
-        outline: content.outline,
+        title: content.title || 'Untitled Content',
+        content_type: content.contentType || '',
+        keywords: content.keywords || [],
+        meta_description: content.metaDescription || null,
+        outline: content.outline || null,
         content: contentHtml,
         rag_enabled: content.generationMethod === 'rag',
         ai_provider: content.aiProvider || null,
-        ai_model: content.aiModel || null
+        ai_model: content.aiModel || null,
+        user_id: sessionUserId,
+        topic: content.topic || null
       });
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
@@ -120,6 +151,27 @@ export function useContentHistory() {
     }
   };
 
+  // Get a specific history item by ID
+  const getHistoryItemById = async (id: string): Promise<ContentHistoryItem | null> => {
+    try {
+      const { data, error } = await supabase
+        .from("content_history")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data as ContentHistoryItem;
+    } catch (error) {
+      console.error("Error fetching history item:", error);
+      toast.error("Failed to load content item");
+      return null;
+    }
+  };
+
   // Load history on component mount
   useEffect(() => {
     fetchHistory();
@@ -133,6 +185,8 @@ export function useContentHistory() {
     totalCount,
     fetchHistory,
     saveToHistory,
-    deleteHistoryItem
+    deleteHistoryItem,
+    getHistoryItemById,
+    currentUserId: sessionUserId
   };
 }

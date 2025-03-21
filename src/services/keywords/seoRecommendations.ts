@@ -15,12 +15,12 @@ export function convertToSeoRecommendation(oldRec: {
     difficulty: oldRec.implementationDifficulty as 'easy' | 'medium' | 'hard',
     priority: oldRec.priority as 'high' | 'medium' | 'low',
     implementation: oldRec.details,
-    category: oldRec.type as 'onPage' | 'technical' | 'content' | 'offPage' | 'summary',
+    category: oldRec.type,
     // Keep the old properties for backward compatibility
     type: oldRec.type,
     recommendation: oldRec.recommendation,
     details: oldRec.details,
-    implementationDifficulty: oldRec.implementationDifficulty
+    implementationDifficulty: oldRec.implementationDifficulty as 'easy' | 'medium' | 'hard'
   };
 }
 

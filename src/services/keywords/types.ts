@@ -1,82 +1,22 @@
+// Define DataForSEO types to avoid import error
+export interface DataForSEOTaskIdentifier {
+  id: string;
+  type: string;
+  status: string;
+}
 
-import { AIProvider } from "@/types/aiModels";
+export type DataForSEOTaskStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface KeywordData {
   keyword: string;
-  volume?: number;
-  difficulty?: number;
-  cpc?: number;
-  competition?: number | string;
-  trending?: number;
-  intent?: string;
-  
-  // Add the missing properties used by DataForSEO and related components
-  monthly_search?: number;
-  competition_index?: number;
-  position?: number | null;
+  monthly_search: number;
+  competition: number | string;
+  competition_index: number;
+  cpc: number;
+  position: number | null;
   rankingUrl?: string | null;
-  competitorRankings?: Record<string, number>;
-  competitorUrls?: Record<string, string>;
-}
-
-export interface CompetitorData {
-  domain: string;
-  keywords?: KeywordData[];
-  traffic?: number;
-  rank?: number;
-}
-
-export interface DomainAnalysisResult {
-  success: boolean;
-  domain?: string;
-  competitors?: CompetitorData[];
-  keywords?: KeywordData[];
-  error?: string;
-}
-
-export interface KeywordTableRow {
-  keyword: string;
-  volume?: number;
-  difficulty?: number;
-  intent?: string;
-  position?: number;
-  url?: string;
-  competitors?: {
-    domain: string;
-    position?: number;
-    url?: string;
-  }[];
-}
-
-export interface ContentBlock {
-  id: string;
-  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image' | 'code';
-  content: string;
-}
-
-export interface GeneratedContent {
-  id?: string;
-  title: string;
-  metaDescription: string;
-  outline: string[];
-  blocks: ContentBlock[];
-  keywords: string[];
-  contentType: string;
-  generationMethod: 'standard' | 'rag';
-  aiProvider?: AIProvider;
-  aiModel?: string;
-  createdAt?: string;
-  wordCountOption?: string;
-  wordCount?: {
-    min: number;
-    max: number;
-    target: number;
-  };
-  // Add the missing ragInfo property
-  ragInfo?: {
-    chunksRetrieved: number;
-    relevanceScore: number;
-  };
+  competitorRankings?: Record<string, number | null>;
+  competitorUrls?: Record<string, string | null>;
 }
 
 export interface KeywordGap {
@@ -84,60 +24,174 @@ export interface KeywordGap {
   volume: number;
   difficulty: number;
   opportunity: 'high' | 'medium' | 'low';
-  competitor: string;
-  rank: number;
+  competitor: string | null;
+  rank: number | null;
+  isTopOpportunity: boolean;
   relevance?: number;
   competitiveAdvantage?: number;
-  isTopOpportunity?: boolean;
-}
-
-export interface KeywordResearchPrompt {
-  keyword: string;
-  relatedKeywords: string[];
-}
-
-export interface SeoRecommendation {
-  title: string;
-  description: string;
-  impact: 'high' | 'medium' | 'low';
-  difficulty: 'easy' | 'medium' | 'hard';
-  priority: 'high' | 'medium' | 'low';
-  implementation: string;
-  category: 'onPage' | 'technical' | 'content' | 'offPage' | 'summary';
-  type?: string;
-  recommendation?: string;
-  details?: string;
-  implementationDifficulty?: string;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+  keywordType?: 'gap' | 'missing' | 'shared';
 }
 
 export interface DomainKeywordResponse {
   success: boolean;
-  data?: any[];
   reason?: string;
+  data: Array<{
+    keyword: string;
+    monthly_search: number;
+    competition: number;
+    competition_index: number;
+    low_bid: number;
+    high_bid: number;
+  }>;
 }
 
 export interface GoogleKeywordInsightResponse {
   status: string;
-  keyword?: string;
-  keywords?: any[];
+  domain: string;
+  keywords: Array<{
+    keyword: string;
+    volume: number;
+    difficulty: number;
+    cpc: number;
+    current_rank?: number;
+  }>;
+}
+
+export interface DataForSEOKeywordTask {
+  id: string;
+  status: DataForSEOTaskStatus;
+  created: string;
+  taskType: 'domain_keywords' | 'competitors' | 'intersection';
+  domain?: string;
+  competitors?: string[];
+  domains?: string[];
+  locationCode?: number;
+  taskIdentifier?: DataForSEOTaskIdentifier;
+}
+
+export interface ApiSource {
+  value: string;
+  label: string;
+}
+
+export interface ContentGenerationRequest {
+  title: string;
+  topic: string;
+  keyword: string;
+  secondaryKeywords: string[];
+  outline: string[];
+  style: string;
+  audience: string;
+  wordCount: number;
+  creativity: number;
+  useRag: boolean;
+  contentType: string;
+  aiModel: string; 
+  aiProvider: string;
+}
+
+export interface ContentGenerationResponse {
+  content: string;
+  title: string;
+  outline: string[];
+  metaDescription?: string;
+  keywords: string[];
+}
+
+// Content block types
+export interface ContentBlock {
+  id: string;
+  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list' | 'quote' | 'image' | 'orderedList';
+  content: string;
+  metadata?: {
+    level?: number;
+    section?: string;
+    heading?: string;
+    [key: string]: any;
+  };
+}
+
+// Editable content block extends ContentBlock
+export interface EditableContentBlock extends ContentBlock {
+  isEditing: boolean;
+}
+
+export interface ContentOutline {
+  title?: string;
+  metaDescription?: string;
+  headings: string[];
+  outline?: string[];
+  wordCountTarget?: number;
+  keywordDensity?: number;
+  structureNotes?: string[];
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
+}
+
+export interface RagInfo {
+  chunksRetrieved: number;
+  relevanceScore: number;
+  topicsFound?: string[];
+  enabled?: boolean;
+  usedOpenAIEmbeddings?: boolean;
+  model?: string;
+}
+
+export interface GeneratedContent {
+  title: string;
+  metaDescription: string;
+  outline: string[];
+  content: string;
+  blocks: ContentBlock[];
+  keywords?: string[];
+  contentType?: string;
+  generationMethod?: 'standard' | 'rag';
+  aiProvider?: string;
+  aiModel?: string;
+  wordCountOption?: string;
+  wordCount?: {
+    min: number;
+    max: number;
+    target: number;
+  };
+  customBlocksContent?: string;
+  ragInfo?: RagInfo;
+  topic?: string;
 }
 
 export interface ContentTemplate {
   id: string;
   name: string;
-  contentType: string;
-  structure: string[];
   description: string;
+  contentType: string;
+  structure?: string[];
+  headings?: string[];
+  promptTemplate?: string;
+  outline?: string[];
+  sampleContent?: string;
 }
 
-export interface ContentOutline {
-  title: string;
-  headings: string[];
-  faqs: Array<{question: string, answer: string}>;
+export interface SeoRecommendation {
+  type?: string;
+  category?: string;
+  title?: string;
+  recommendation?: string;
+  details?: string;
+  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  difficulty?: 'easy' | 'medium' | 'hard';
+  implementationDifficulty?: 'easy' | 'medium' | 'hard';
+  impact?: 'high' | 'medium' | 'low';
+  timeToImplement?: string;
+  implementation?: string;
+}
+
+export interface TrendData {
+  date: string;
+  value: number;
+  change?: number;
+  month?: string;
+  volume?: number;
 }

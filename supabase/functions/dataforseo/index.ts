@@ -1,100 +1,74 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { getDomainKeywords, getKeywordVolume } from "./services.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "./config.ts";
-
-// CORS headers for cross-origin requests
-function formatErrorResponse(error: unknown) {
-  let errorMessage = "Unknown error occurred";
-  let errorDetails = {};
-  
-  if (error instanceof Error) {
-    // Try to parse if this is a structured error message from our API client
-    try {
-      const parsedError = JSON.parse(error.message);
-      errorMessage = parsedError.message;
-      errorDetails = parsedError.details || {};
-    } catch {
-      // Not a JSON string, use the error message directly
-      errorMessage = error.message;
-    }
-  }
-  
-  return {
-    success: false, 
-    error: errorMessage,
-    errorDetails
-  };
-}
+import {
+  getDomainKeywords,
+  getCompetitorDomains,
+  getRankedKeywords,
+  getDomainIntersection,
+  getDomainOverview
+} from "./services.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
-  
-  // Only accept POST requests
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Only POST requests are supported' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-  
+
   try {
-    console.log("DataForSEO Edge Function received a request");
+    // Get the request body
+    const body = await req.json();
+    const action = body.action;
     
-    let body;
-    try {
-      body = await req.json();
-      console.log("Request body:", JSON.stringify(body).substring(0, 200));
-    } catch (error) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    const { action, domain, keywords, location_code = 2840 } = body;
-    
-    if (!action) {
-      throw new Error('Action is required');
-    }
-    
+    console.log(`DataForSEO function called with action: ${action}`);
     let result;
-    
+
+    // Route the request to the appropriate service based on the action
     switch (action) {
       case 'domain_keywords':
-        if (!domain) {
-          throw new Error('Domain is required');
-        }
-        console.log(`Fetching keywords for domain: ${domain}`);
-        result = await getDomainKeywords(domain, location_code);
+        result = await getDomainKeywords(body.domain, body.location_code, body.language_code);
         break;
-        
-      case 'keyword_volume':
-        if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
-          throw new Error('Keywords array is required');
-        }
-        result = await getKeywordVolume(keywords, location_code);
+      case 'competitor_domains':
+        result = await getCompetitorDomains(body.domain, body.location_code, body.limit);
         break;
-        
+      case 'ranked_keywords':
+        result = await getRankedKeywords(
+          body.domain, 
+          body.location_code || 2840, 
+          body.language_code || "en", 
+          body.limit || 100,
+          body.order_by || ["keyword_data.keyword_info.search_volume,desc"]
+        );
+        break;
+      case 'domain_intersection':
+        result = await getDomainIntersection(
+          body.target1, 
+          body.target2, 
+          body.location_code, 
+          body.limit
+        );
+        break;
+      case 'domain_overview':
+        result = await getDomainOverview(body.domain, body.location_code);
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
-    
-    return new Response(
-      JSON.stringify(result),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+
+    // Return the result
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error(`Error in DataForSEO function:`, error);
     
-    const formattedError = formatErrorResponse(error);
-    
-    return new Response(
-      JSON.stringify(formattedError),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
   }
 });

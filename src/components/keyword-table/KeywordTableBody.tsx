@@ -1,6 +1,6 @@
 
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 import { KeywordData } from "@/services/keywordService";
 import { Badge } from "@/components/ui/badge";
 import RankingLink from "./RankingLink";
@@ -47,16 +47,40 @@ const KeywordTableBody = ({
               </Badge>
             </TableCell>
             <TableCell>
-              <RankingLink url={item.rankingUrl} position={item.position} />
+              {item.rankingUrl ? (
+                <a 
+                  href={item.rankingUrl.startsWith('http') ? item.rankingUrl : `https://${item.rankingUrl}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center text-blue-600 hover:text-blue-800"
+                >
+                  <span className="mr-1">#{item.position || 'N/A'}</span>
+                  <ExternalLink size={14} />
+                </a>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
             </TableCell>
             {competitorDomains.map((competitor, idx) => {
               const domainName = extractDomainName(competitor);
+              const competitorUrl = item.competitorUrls?.[domainName];
+              const competitorRank = item.competitorRankings?.[domainName];
+              
               return (
                 <TableCell key={idx}>
-                  <RankingLink 
-                    url={item.competitorUrls?.[domainName]} 
-                    position={item.competitorRankings?.[domainName]} 
-                  />
+                  {competitorUrl ? (
+                    <a 
+                      href={competitorUrl.startsWith('http') ? competitorUrl : `https://${competitorUrl}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center text-blue-600 hover:text-blue-800"
+                    >
+                      <span className="mr-1">#{competitorRank || 'N/A'}</span>
+                      <ExternalLink size={14} />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
                 </TableCell>
               );
             })}
