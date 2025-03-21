@@ -136,3 +136,77 @@ export const analyzeKeywordsWithAI = async (
     throw error;
   }
 };
+
+/**
+ * Saves keyword gaps to Supabase
+ */
+export const saveKeywordGaps = async (
+  mainDomain: string, 
+  competitorDomains: string[],
+  keywordGaps: KeywordGap[]
+) => {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    
+    if (!userId) {
+      console.warn("Cannot save keyword gaps: User not authenticated");
+      return false;
+    }
+    
+    const timestamp = new Date().toISOString();
+    
+    // Insert keyword gaps data
+    const { error } = await supabase
+      .from('keyword_gaps')
+      .insert({
+        user_id: userId,
+        main_domain: mainDomain,
+        competitor_domains: competitorDomains,
+        keyword_gaps: keywordGaps,
+        created_at: timestamp,
+        gaps_count: keywordGaps.length,
+      });
+    
+    if (error) {
+      console.error("Failed to save keyword gaps:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving keyword gaps:", error);
+    return false;
+  }
+};
+
+/**
+ * Gets saved keyword gaps for a user
+ */
+export const getSavedKeywordGaps = async () => {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    
+    if (!userId) {
+      console.warn("Cannot fetch keyword gaps: User not authenticated");
+      return [];
+    }
+    
+    const { data, error } = await supabase
+      .from('keyword_gaps')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Failed to fetch keyword gaps:", error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching keyword gaps:", error);
+    return [];
+  }
+};
