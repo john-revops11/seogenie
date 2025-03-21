@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +11,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Layout from "./components/Layout";
-import ContentGenerator from "./components/ContentGenerator";
 
 const queryClient = new QueryClient();
 
@@ -56,49 +56,6 @@ const App = () => {
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            {/* Main tabs routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/domain-analysis" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/content" element={
-              <ProtectedRoute>
-                <Layout>
-                  <ContentGenerator domain="" />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/position-tracking" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/history" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
               <ProtectedRoute>
                 <Layout>
                   <Index />

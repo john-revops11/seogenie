@@ -1,13 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Code, FileEdit } from "lucide-react";
 import { GeneratedContent } from "@/services/keywords/types";
 import ContentActions from "./preview/ContentActions";
 import ContentMetaInfo from "./preview/ContentMetaInfo";
-import ContentPreviewTab from "./preview/ContentPreviewTab";
-import ContentBlocksTab from "./preview/ContentBlocksTab";
 
 interface ContentPreviewProps {
   content: string;
@@ -28,14 +26,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>("preview");
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(content || "");
   
-  useEffect(() => {
-    if (content) {
-      setEditedContent(content);
-    }
-  }, [content]);
-
   if (!generatedContent || !content) {
     return (
       <div className="text-center text-muted-foreground py-12">
@@ -58,7 +49,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
         
         <ContentActions 
           activeTab={activeTab}
-          content={isEditing ? editedContent : content}
+          content={content}
           generatedContent={generatedContent}
           onRegenerateContent={onRegenerateContent}
           isGenerating={isGenerating}
@@ -81,15 +72,49 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
         </TabsList>
         
         <TabsContent value="preview" className="mt-4">
-          <ContentPreviewTab 
-            content={content}
-            isEditing={isEditing}
-            setIsEditing={setIsEditing}
-          />
+          {content ? (
+            <div className="bg-white rounded-md p-6 border">
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-40 border rounded-md bg-muted">
+              <p className="text-muted-foreground">No content to preview</p>
+            </div>
+          )}
+          
+          {isEditing && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+                className="flex items-center gap-1"
+              >
+                <FileEdit className="h-3.5 w-3.5" /> Edit
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="blocks" className="mt-4">
-          <ContentBlocksTab generatedContent={generatedContent} />
+          {generatedContent && generatedContent.blocks ? (
+            <div className="bg-white rounded-md p-6 border">
+              {generatedContent.blocks.map((block, index) => (
+                <div key={index} className="mb-4">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {block.type}
+                  </p>
+                  <div className="border p-2 rounded">
+                    {block.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-40 border rounded-md bg-muted">
+              <p className="text-muted-foreground">No content blocks available</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
       

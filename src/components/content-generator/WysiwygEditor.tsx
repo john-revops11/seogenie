@@ -2,20 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { 
-  Bold, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Quote, 
-  Heading1, 
-  Heading2, 
-  Heading3, 
-  AlignLeft,
-  AlignCenter,
-  AlignJustify
-} from "lucide-react";
-import ContentBlockEditingToolbar from "./editor/ContentBlockEditingToolbar";
+import { Bold, Italic, List, ListOrdered, Quote, Heading1, Heading2, Heading3 } from "lucide-react";
 
 interface WysiwygEditorProps {
   initialContent: string;
@@ -70,15 +57,6 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({ initialContent, onUpdate 
       case 'quote':
         formattedText = `<blockquote>${selectedText}</blockquote>`;
         break;
-      case 'alignLeft':
-        formattedText = `<div style="text-align: left">${selectedText}</div>`;
-        break;
-      case 'alignCenter':
-        formattedText = `<div style="text-align: center">${selectedText}</div>`;
-        break;
-      case 'alignJustify':
-        formattedText = `<div style="text-align: justify">${selectedText}</div>`;
-        break;
       default:
         return;
     }
@@ -100,7 +78,32 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({ initialContent, onUpdate 
 
   return (
     <div className="space-y-2">
-      <ContentBlockEditingToolbar onApplyFormatting={applyFormatting} />
+      <div className="flex flex-wrap gap-1 mb-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('bold')}>
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('italic')}>
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('h1')}>
+          <Heading1 className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('h2')}>
+          <Heading2 className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('h3')}>
+          <Heading3 className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('ul')}>
+          <List className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('ol')}>
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => applyFormatting('quote')}>
+          <Quote className="h-4 w-4" />
+        </Button>
+      </div>
       
       <Textarea
         id="wysiwyg-editor"

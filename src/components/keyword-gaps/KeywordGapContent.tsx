@@ -47,10 +47,8 @@ export function KeywordGapContent({
       
       const gapsByCompetitor = new Map<string, number>();
       keywordGaps.forEach(gap => {
-        if (gap.competitors && gap.competitors.length > 0) {
-          // Get the first competitor for each gap
-          const firstCompetitor = gap.competitors[0];
-          gapsByCompetitor.set(firstCompetitor, (gapsByCompetitor.get(firstCompetitor) || 0) + 1);
+        if (gap.competitor) {
+          gapsByCompetitor.set(gap.competitor, (gapsByCompetitor.get(gap.competitor) || 0) + 1);
         }
       });
       console.log("Gaps distribution by competitor:", Object.fromEntries(gapsByCompetitor));
@@ -69,20 +67,20 @@ export function KeywordGapContent({
     
     // Apply KD filter
     filtered = filtered.filter(
-      kw => (kw.difficulty || 0) >= kdFilter[0] && (kw.difficulty || 0) <= kdFilter[1]
+      kw => kw.difficulty >= kdFilter[0] && kw.difficulty <= kdFilter[1]
     );
     
     // Apply keyword type filter
     if (keywordTypeFilter !== "all") {
       if (keywordTypeFilter === "gaps") {
         // Keyword gaps: Keywords that competitors rank for but the main domain doesn't
-        filtered = filtered.filter(kw => kw.isHighValue === true);
+        filtered = filtered.filter(kw => kw.opportunity === "high");
       } else if (keywordTypeFilter === "missing") {
         // Missing keywords: Keywords that the main domain doesn't rank for at all
-        filtered = filtered.filter(kw => kw.mainDomainRanks === false);
+        filtered = filtered.filter(kw => !kw.relevance || kw.relevance < 30);
       } else if (keywordTypeFilter === "shared") {
         // Shared keywords: Keywords that both main domain and competitors rank for
-        filtered = filtered.filter(kw => kw.isLongTail === true);
+        filtered = filtered.filter(kw => kw.competitiveAdvantage && kw.competitiveAdvantage > 50);
       }
     }
     

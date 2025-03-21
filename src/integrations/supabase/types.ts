@@ -9,75 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      api_requests: {
-        Row: {
-          cost: number
-          created_at: string | null
-          endpoint: string
-          expires_at: string
-          id: string
-          request_data: Json
-          request_hash: string
-          response_data: Json
-          user_id: string | null
-        }
-        Insert: {
-          cost?: number
-          created_at?: string | null
-          endpoint: string
-          expires_at: string
-          id?: string
-          request_data: Json
-          request_hash: string
-          response_data: Json
-          user_id?: string | null
-        }
-        Update: {
-          cost?: number
-          created_at?: string | null
-          endpoint?: string
-          expires_at?: string
-          id?: string
-          request_data?: Json
-          request_hash?: string
-          response_data?: Json
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      api_usage: {
-        Row: {
-          api_name: string
-          created_at: string | null
-          estimated_cost: number
-          id: string
-          request_count: number
-          updated_at: string | null
-          usage_date: string
-          user_id: string | null
-        }
-        Insert: {
-          api_name: string
-          created_at?: string | null
-          estimated_cost?: number
-          id?: string
-          request_count?: number
-          updated_at?: string | null
-          usage_date: string
-          user_id?: string | null
-        }
-        Update: {
-          api_name?: string
-          created_at?: string | null
-          estimated_cost?: number
-          id?: string
-          request_count?: number
-          updated_at?: string | null
-          usage_date?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       content_history: {
         Row: {
           ai_model: string | null
@@ -155,46 +86,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_table_exists: {
-        Args: {
-          table_name: string
-        }
-        Returns: boolean
-      }
-      get_cached_api_response: {
-        Args: {
-          p_request_hash: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      get_dataforseo_usage: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: {
-          total_cost: number
-          request_count: number
-        }[]
-      }
-      get_tables: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          table_name: string
-        }[]
-      }
-      store_api_request: {
-        Args: {
-          p_user_id: string
-          p_endpoint: string
-          p_request_data: Json
-          p_response_data: Json
-          p_expires_at: string
-          p_request_hash: string
-          p_cost: number
-        }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

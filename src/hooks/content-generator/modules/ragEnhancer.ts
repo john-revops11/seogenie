@@ -1,6 +1,6 @@
 
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
-import { enhanceWithRAG } from "@/services/vector/ragService";
+import { enhanceWithRAG } from "@/services/vector/contentEnhancer";
 import { RAGInfo } from "../types/contentGeneratorTypes";
 
 /**
