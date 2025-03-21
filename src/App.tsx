@@ -63,8 +63,44 @@ const App = () => {
                 </Layout>
               </ProtectedRoute>
             } />
-            {/* Add the content route */}
+            {/* Content route */}
             <Route path="/content" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContentGenerator domain="" />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            {/* Add routes for the other main tabs */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Index />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/domain-analysis" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContentGenerator domain="" />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/position-tracking" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContentGenerator domain="" />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/history" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContentGenerator domain="" />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
               <ProtectedRoute>
                 <Layout>
                   <ContentGenerator domain="" />

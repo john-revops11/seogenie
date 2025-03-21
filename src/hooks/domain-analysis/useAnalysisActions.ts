@@ -27,9 +27,10 @@ export function useAnalysisActions(
     setMainDomain("");
     setCompetitorDomains([""]);
     
+    // Only remove the domain analysis data from localStorage
     localStorage.removeItem('seoAnalysisData');
     
-    toast.success("Analysis data has been reset");
+    toast.success("Domain analysis data has been reset");
   };
 
   const handleAnalyze = async () => {
