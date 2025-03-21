@@ -1,31 +1,84 @@
-
-import { ContentOutline } from "@/services/keywords/types";
-import { v4 as uuidv4 } from 'uuid';
+import { ContentOutlineResult } from "../types/contentGeneratorTypes";
 
 /**
- * Creates a content outline based on the title and custom subheadings if provided
+ * Creates a content outline based on title and optional custom subheadings
  */
 export function createContentOutline(
   title: string,
   customSubheadings?: string[]
-): ContentOutline {
+): ContentOutlineResult {
+  // If custom subheadings are provided, use them
   if (customSubheadings && customSubheadings.length > 0) {
     return {
-      headings: customSubheadings,
-      faqs: [],
+      headings: customSubheadings
     };
   }
   
-  // Default outline when no custom subheadings provided
+  // Otherwise, generate default headings based on the title
   return {
     headings: [
       "Introduction",
-      `What is ${title}`,
-      "Key Benefits",
-      "How to Implement",
-      "Best Practices",
+      `What is ${title}?`,
+      `Benefits of ${title}`,
+      `How to implement ${title}`,
+      "Best practices",
       "Conclusion"
-    ],
-    faqs: [],
+    ]
   };
+}
+
+/**
+ * Creates a custom outline based on specified parameters
+ */
+export function createCustomOutline(
+  title: string,
+  contentType: string,
+  keywords: string[]
+): ContentOutlineResult {
+  // Create different outlines based on content type
+  switch (contentType.toLowerCase()) {
+    case 'blog':
+      return {
+        headings: [
+          "Introduction",
+          `What is ${title}?`,
+          `Benefits of ${title}`,
+          `How to implement ${title}`,
+          "Best practices",
+          "Conclusion"
+        ]
+      };
+    case 'guide':
+      return {
+        headings: [
+          "Introduction",
+          `Understanding ${title}`,
+          "Step-by-step guide",
+          "Common challenges",
+          "Tips for success",
+          "Conclusion"
+        ]
+      };
+    case 'case study':
+      return {
+        headings: [
+          "Background",
+          "Challenge",
+          "Solution",
+          "Implementation",
+          "Results",
+          "Key learnings"
+        ]
+      };
+    default:
+      return {
+        headings: [
+          "Introduction",
+          `About ${title}`,
+          "Main points",
+          "Details",
+          "Conclusion"
+        ]
+      };
+  }
 }
