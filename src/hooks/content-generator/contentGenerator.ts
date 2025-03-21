@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { GenerateContentParams, ContentGenerationResult } from "./types/contentGeneratorTypes";
 import { createContentOutline } from "./modules/outlineGenerator";
 import { generateIntroSection, generateSectionContent } from "./modules/sectionGenerator";
+import { isPineconeConfigured } from "@/services/vector/pineconeService";
 
 /**
  * Main content generation function
@@ -34,7 +35,17 @@ export const generateContent = async (params: GenerateContentParams): Promise<Co
   }
 
   try {
-    console.log(`Generating content with RAG ${ragEnabled ? 'enabled' : 'disabled'}`);
+    // Check if RAG is enabled but Pinecone is not configured
+    const ragIsAvailable = ragEnabled && isPineconeConfigured();
+    
+    if (ragEnabled && !isPineconeConfigured()) {
+      toast.warning("RAG is enabled but Pinecone is not configured. Continuing with standard generation.");
+      console.log("RAG enabled but Pinecone not configured");
+    } else if (ragEnabled) {
+      console.log("Generating content with RAG enabled");
+    } else {
+      console.log("Generating content with standard approach (RAG disabled)");
+    }
     
     // Generate content outline
     const outline = createContentOutline(title, customSubheadings);
@@ -58,7 +69,7 @@ export const generateContent = async (params: GenerateContentParams): Promise<Co
       creativity,
       aiProvider,
       aiModel,
-      ragEnabled
+      ragIsAvailable
     );
     
     html += intro.html;
@@ -85,7 +96,7 @@ export const generateContent = async (params: GenerateContentParams): Promise<Co
         creativity,
         aiProvider,
         aiModel,
-        ragEnabled
+        ragIsAvailable
       );
       
       html += section.html;
@@ -113,7 +124,7 @@ export const generateContent = async (params: GenerateContentParams): Promise<Co
       ragInfo: ragUsed ? {
         chunksRetrieved: 8,
         relevanceScore: 0.87,
-        topicsFound: []
+        topicsFound: keywords
       } : undefined
     };
 

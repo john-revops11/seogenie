@@ -1,6 +1,5 @@
 
 import { AIProvider } from "@/types/aiModels";
-import { GeneratedContent } from "@/services/keywords/types";
 
 export interface GenerateContentParams {
   domain: string;
@@ -19,11 +18,16 @@ export interface GenerateContentParams {
 
 export interface ContentGenerationResult {
   content: string;
-  generatedContent: GeneratedContent;
+  generatedContent: any;
 }
 
 export interface RAGInfo {
   chunksRetrieved: number;
   relevanceScore: number;
   topicsFound: string[];
+}
+
+export interface ContentOutlineResult {
+  headings: string[];
+  faqs?: Array<{ question: string; answer: string }>;
 }
