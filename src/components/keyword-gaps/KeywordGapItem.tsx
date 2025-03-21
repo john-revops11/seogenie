@@ -1,7 +1,8 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Plus, FileText, X } from "lucide-react";
-import { KeywordGap } from "@/services/keywords/keywordGaps";
+import { KeywordGap } from "@/services/keywordService";
 import { categorizeKeywordIntent } from "./KeywordGapUtils";
 import { keywordGapsCache } from "./KeywordGapUtils";
 
