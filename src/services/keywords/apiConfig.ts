@@ -16,7 +16,7 @@ export const GOOGLE_KEYWORD_API_HOST = "google-keyword-research-api.p.rapidapi.c
 export const GOOGLE_KEYWORD_API_URL = "https://google-keyword-research-api.p.rapidapi.com/keywords";
 
 // OpenAI configuration
-export const OPENAI_API_KEY = "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";
+export const OPENAI_API_KEY = "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";
 
 // Dynamic API key accessor - allows getting API keys that are set at runtime
 let dynamicApiKeys: Record<string, string> = {

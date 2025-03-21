@@ -25,18 +25,24 @@ export function KeywordGapDataSourceSelector({
         value={value}
         onValueChange={(val) => onChange(val as ApiSource)}
       >
-        <SelectTrigger className="h-8 w-[200px]">
+        <SelectTrigger className="h-8 w-[160px]">
           <SelectValue placeholder="Select source" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="dataforseo-intersection">
-            DataForSEO Domain Intersection
+            DataForSEO Intersection
           </SelectItem>
           <SelectItem value="dataforseo-live">
-            DataForSEO Live API
+            DataForSEO Live
           </SelectItem>
-          <SelectItem value="ai-generated">
-            AI-Generated Gap Analysis
+          <SelectItem value="dataforseo-task">
+            DataForSEO Task
+          </SelectItem>
+          <SelectItem value="semrush">
+            SEMrush API
+          </SelectItem>
+          <SelectItem value="sample">
+            Sample Data
           </SelectItem>
         </SelectContent>
       </Select>
@@ -51,9 +57,11 @@ export function KeywordGapDataSourceSelector({
           <p className="text-sm">
             Select the data source for keyword gap analysis:
             <ul className="mt-2 list-disc pl-4 space-y-1">
-              <li><strong>DataForSEO Domain Intersection:</strong> Most accurate method that directly compares domains to find keyword gaps using DataForSEO's specialized API.</li>
-              <li><strong>DataForSEO Live API:</strong> Uses real-time keyword data from DataForSEO for all domains and analyzes the differences.</li>
-              <li><strong>AI-Generated Gap Analysis:</strong> Uses AI algorithms to analyze existing keyword data and identify potential gaps and opportunities.</li>
+              <li><strong>DataForSEO Intersection:</strong> Uses domain intersection API for direct competitor keyword comparison.</li>
+              <li><strong>DataForSEO Live:</strong> Uses real-time SERP data from DataForSEO.</li>
+              <li><strong>DataForSEO Task:</strong> Creates a background task for in-depth analysis.</li>
+              <li><strong>SEMrush API:</strong> Uses SEMrush API (requires configuration).</li>
+              <li><strong>Sample Data:</strong> Provides sample data for testing.</li>
             </ul>
           </p>
         </TooltipContent>

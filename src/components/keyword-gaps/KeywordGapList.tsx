@@ -21,7 +21,7 @@ export function KeywordGapList({ keywords, selectedKeywords, onKeywordSelection 
     <div className="space-y-4">
       {keywords.map((gap, index) => (
         <KeywordGapItem
-          key={`${gap.keyword}-${index}`}
+          key={`${gap.keyword}-${gap.competitor}-${index}`}
           gap={gap}
           isSelected={selectedKeywords.includes(gap.keyword)}
           onKeywordSelection={onKeywordSelection}

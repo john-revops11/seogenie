@@ -1,81 +1,103 @@
 
-import { DomainAnalyticsDashboard } from "@/components/dashboard/DomainAnalyticsDashboard";
-import { UserAuthDisplay } from "@/components/dashboard/UserAuthDisplay";
-import { AlertMessages } from "@/components/dashboard/AlertMessages";
-import { DataForSeoStatusIndicator } from "@/components/dashboard/DataForSeoStatusIndicator";
-import SystemHealthCard from "@/components/SystemHealthCard";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { KeywordData } from "@/services/keywords/types";
+import { DashboardContent } from "@/components/domain-analysis/DashboardContent";
+import { AnalysisError } from "@/components/domain-analysis/AnalysisError";
+import { DomainAnalysisForm } from "@/components/domain-analysis/DomainAnalysisForm";
+import KeywordResearch from "@/components/KeywordResearch";
 
 interface DashboardTabContentProps {
-  mainDomain?: string;
-  competitorDomains?: string[];
-  isAnalyzing?: boolean;
-  progress?: number;
-  analysisComplete?: boolean;
-  keywordData?: KeywordData[];
-  analysisError?: string | null;
-  onMainDomainChange?: (value: string) => void;
-  onAddCompetitorDomain?: (domain: string) => void;
-  onRemoveCompetitorDomain?: (index: number) => void;
-  onUpdateCompetitorDomain?: (index: number, value: string) => void;
-  onAnalyze?: () => void;
-  onReset?: () => void;
-  onAddCompetitor?: (domain: string) => void;
-  onRemoveCompetitor?: (domain: string) => void;
-  onGenerateContentFromKeyword?: (keyword: string) => void;
-  onRunSeoStrategy?: () => void;
+  mainDomain: string;
+  competitorDomains: string[];
+  isAnalyzing: boolean;
+  progress: number;
+  analysisComplete: boolean;
+  keywordData: any[];
+  analysisError: string | null;
+  onMainDomainChange: (domain: string) => void;
+  onAddCompetitorDomain: () => void;
+  onRemoveCompetitorDomain: (index: number) => void;
+  onUpdateCompetitorDomain: (index: number, value: string) => void;
+  onAnalyze: () => void;
+  onReset: () => void;
+  onAddCompetitor: (competitor: string) => void;
+  onRemoveCompetitor: (competitor: string) => void;
+  onGenerateContentFromKeyword: (keyword: string, relatedKeywords: string[]) => void;
+  onRunSeoStrategy: () => void;
 }
 
-export function DashboardTabContent(props: DashboardTabContentProps) {
-  const [user, setUser] = useState<any>(null);
-  const [apiCallsMade, setApiCallsMade] = useState(false);
-  
-  // Fetch user data
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    
-    fetchUser();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-    });
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-  
-  // Determine if API calls have been made
-  useEffect(() => {
-    if (props.analysisComplete || props.isAnalyzing || props.analysisError) {
-      setApiCallsMade(true);
-    }
-  }, [props.analysisComplete, props.isAnalyzing, props.analysisError]);
-  
+export const DashboardTabContent = ({
+  mainDomain,
+  competitorDomains,
+  isAnalyzing,
+  progress,
+  analysisComplete,
+  keywordData,
+  analysisError,
+  onMainDomainChange,
+  onAddCompetitorDomain,
+  onRemoveCompetitorDomain,
+  onUpdateCompetitorDomain,
+  onAnalyze,
+  onReset,
+  onAddCompetitor,
+  onRemoveCompetitor,
+  onGenerateContentFromKeyword,
+  onRunSeoStrategy
+}: DashboardTabContentProps) => {
+  // Filter out empty competitor domains
+  const validCompetitorDomains = competitorDomains.filter(domain => domain && domain.trim() !== "");
+
+  if (analysisError) {
+    return (
+      <div className="space-y-6">
+        <AnalysisError errorMessage={analysisError} onReset={onReset} />
+        
+        <KeywordResearch 
+          domain={mainDomain || "example.com"}
+          competitorDomains={validCompetitorDomains}
+          keywords={keywordData || []}
+          onGenerateContent={onGenerateContentFromKeyword}
+          onRunSeoStrategy={onRunSeoStrategy}
+        />
+      </div>
+    );
+  }
+
+  if (!analysisComplete) {
+    return (
+      <div className="space-y-6">
+        <DomainAnalysisForm 
+          mainDomain={mainDomain}
+          competitorDomains={competitorDomains}
+          isAnalyzing={isAnalyzing}
+          progress={progress}
+          onMainDomainChange={onMainDomainChange}
+          onAddCompetitorDomain={onAddCompetitorDomain}
+          onRemoveCompetitorDomain={onRemoveCompetitorDomain}
+          onUpdateCompetitorDomain={onUpdateCompetitorDomain}
+          onAnalyze={onAnalyze}
+        />
+        
+        <KeywordResearch 
+          domain={mainDomain || "example.com"}
+          competitorDomains={validCompetitorDomains}
+          keywords={[]}
+          onGenerateContent={onGenerateContentFromKeyword}
+          onRunSeoStrategy={onRunSeoStrategy}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="container max-w-screen-xl mx-auto px-4 py-8 space-y-8">
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-start mb-8">
-        <UserAuthDisplay user={user} />
-        <SystemHealthCard />
-      </div>
-      
-      <AlertMessages 
-        apiCallsMade={apiCallsMade}
-        hasQuotaError={props.analysisError?.includes("quota") || props.analysisError?.includes("limit") || false}
-        error={props.analysisError || null}
-        hasLimitedData={props.analysisComplete && (!props.keywordData || props.keywordData.length === 0)}
-      />
-      
-      <div className="mb-8">
-        <DataForSeoStatusIndicator />
-      </div>
-      
-      <DomainAnalyticsDashboard />
-    </div>
+    <DashboardContent 
+      domain={mainDomain}
+      competitorDomains={validCompetitorDomains}
+      keywords={keywordData}
+      isAnalyzing={isAnalyzing}
+      onAddCompetitor={onAddCompetitor}
+      onRemoveCompetitor={onRemoveCompetitor}
+      onGenerateContentFromKeyword={onGenerateContentFromKeyword}
+      onRunSeoStrategy={onRunSeoStrategy}
+    />
   );
-}
+};

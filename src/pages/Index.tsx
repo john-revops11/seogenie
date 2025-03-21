@@ -107,7 +107,7 @@ const Index = () => {
         <TabNavigation />
 
         <TabsContent value="dashboard" className="space-y-4">
-          <DashboardTabContent />
+          <DomainAnalyticsDashboard />
         </TabsContent>
         
         <TabsContent value="domain-analysis" className="space-y-4">

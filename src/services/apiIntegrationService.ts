@@ -1,161 +1,128 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { ApiDetails } from "@/types/apiIntegration";
+import { 
+  setApiKey as setApiKeyConfig, 
+  removeApiKey as removeApiKeyConfig,
+  getApiKey as getConfigApiKey 
+} from "@/services/keywords/apiConfig";
+import { configurePinecone } from "@/services/vector/pineconeService";
+import { testSemrushConnection } from "@/services/keywords/semrushApi";
+import { toast } from "sonner";
+import { broadcastApiChange } from "@/utils/apiIntegrationEvents";
 
-type ApiIntegrationType = 'openai' | 'dataforseo' | 'semrush' | 'ahrefs';
+// Load APIs from localStorage
+export const loadApisFromStorage = (): ApiDetails[] => {
+  try {
+    const savedApis = localStorage.getItem('apiIntegrations');
+    if (savedApis) {
+      return JSON.parse(savedApis);
+    }
+  } catch (error) {
+    console.error("Error loading saved API integrations:", error);
+  }
+  return [];
+};
 
-// In-memory cache for API keys
-const apiKeysCache: Record<string, { key: string, expiresAt: number }> = {};
+// Save APIs to localStorage
+export const saveApisToStorage = (apis: ApiDetails[]) => {
+  try {
+    const apisToSave = apis.map(api => ({
+      id: api.id,
+      name: api.name,
+      description: api.description,
+      iconName: api.iconName,
+      apiKey: api.apiKey,
+      isConfigured: api.isConfigured,
+      isActive: api.isActive
+    }));
+    
+    localStorage.setItem('apiIntegrations', JSON.stringify(apisToSave));
+  } catch (error) {
+    console.error("Error saving API integrations:", error);
+  }
+};
 
-/**
- * Get an API key from the cache or Supabase
- */
-export const getApiKey = async (type: ApiIntegrationType): Promise<string | null> => {
-  // First check the cache
-  const cachedItem = apiKeysCache[type];
-  if (cachedItem && Date.now() < cachedItem.expiresAt) {
-    return cachedItem.key;
+// Add a new API
+export const addApi = (name: string, apiKey: string, description: string): ApiDetails => {
+  const newId = name.toLowerCase().replace(/\s+/g, '');
+  
+  const newApi: ApiDetails = {
+    id: newId,
+    name,
+    description: description || "Custom API integration",
+    iconName: "activity",
+    apiKey,
+    isConfigured: true,
+    isActive: true
+  };
+  
+  setApiKeyConfig(newId, apiKey);
+  broadcastApiChange(newId, 'add');
+  
+  toast.success(`Added new API integration: ${name}`);
+  
+  return newApi;
+};
+
+// Update an API
+export const updateApi = async (
+  api: ApiDetails, 
+  previousConfig?: ApiDetails
+): Promise<void> => {
+  const configChanged = previousConfig?.apiKey !== api.apiKey || 
+                     previousConfig?.isActive !== api.isActive;
+  
+  if (api.id === "pinecone" && api.apiKey) {
+    configurePinecone(api.apiKey);
   }
   
-  try {
-    // Check if user is authenticated
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      console.warn(`Cannot get API key for ${type}: User not authenticated`);
-      return null;
+  if (api.apiKey) {
+    setApiKeyConfig(api.id, api.apiKey);
+    
+    if (configChanged) {
+      broadcastApiChange(api.id, 'update');
     }
     
-    // Fetch the API key from Supabase
-    const { data, error } = await supabase
-      .from('api_integrations')
-      .select('api_key')
-      .eq('user_id', userData.user.id)
-      .eq('api_type', type)
-      .single();
-    
-    if (error) {
-      if (error.code !== 'PGRST116') { // Record not found error
-        console.error(`Error fetching ${type} API key:`, error);
+    if (api.id === "semrush") {
+      const isConnected = await testSemrushConnection();
+      if (isConnected) {
+        toast.success("SemRush API connection successful");
+      } else {
+        toast.error("SemRush API connection failed. Please check your API key.");
       }
-      return null;
     }
-    
-    if (!data?.api_key) {
-      return null;
-    }
-    
-    // Cache the API key for 5 minutes
-    apiKeysCache[type] = {
-      key: data.api_key,
-      expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
-    };
-    
-    return data.api_key;
-  } catch (error) {
-    console.error(`Error getting ${type} API key:`, error);
-    return null;
+  } else if (previousConfig?.apiKey) {
+    removeApiKeyConfig(api.id);
+    broadcastApiChange(api.id, 'remove');
   }
+  
+  toast.success(`Updated ${api.name} API configuration`);
 };
 
-/**
- * Save an API integration key to Supabase
- */
-export const saveApiKey = async (type: ApiIntegrationType, key: string): Promise<boolean> => {
-  try {
-    // Check if user is authenticated
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      console.warn(`Cannot save API key for ${type}: User not authenticated`);
-      return false;
-    }
-    
-    // Check if an entry already exists
-    const { data: existingData, error: existingError } = await supabase
-      .from('api_integrations')
-      .select('id')
-      .eq('user_id', userData.user.id)
-      .eq('api_type', type)
-      .single();
-    
-    if (existingError && existingError.code !== 'PGRST116') { // Record not found error is OK
-      console.error(`Error checking existing ${type} API key:`, existingError);
-      return false;
-    }
-    
-    let result;
-    
-    if (existingData?.id) {
-      // Update existing entry
-      result = await supabase
-        .from('api_integrations')
-        .update({ api_key: key, updated_at: new Date().toISOString() })
-        .eq('id', existingData.id);
-    } else {
-      // Insert new entry
-      result = await supabase
-        .from('api_integrations')
-        .insert({
-          user_id: userData.user.id,
-          api_type: type,
-          api_key: key,
-        });
-    }
-    
-    if (result.error) {
-      console.error(`Error saving ${type} API key:`, result.error);
-      return false;
-    }
-    
-    // Update the cache
-    apiKeysCache[type] = {
-      key,
-      expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
-    };
-    
-    return true;
-  } catch (error) {
-    console.error(`Error saving ${type} API key:`, error);
-    return false;
+// Remove an API
+export const removeApi = (apiId: string, apis: ApiDetails[]): ApiDetails[] => {
+  const isBuiltIn = ["pinecone", "openai", "dataforseo", "googleads", "rapidapi", "semrush"].includes(apiId);
+  
+  let updatedApis: ApiDetails[];
+  
+  if (isBuiltIn) {
+    updatedApis = apis.map(api => 
+      api.id === apiId ? { ...api, isConfigured: false, apiKey: undefined, isActive: false } : api
+    );
+    removeApiKeyConfig(apiId);
+    broadcastApiChange(apiId, 'remove');
+    toast.success(`Removed API key for ${apis.find(api => api.id === apiId)?.name}`);
+  } else {
+    updatedApis = apis.filter(api => api.id !== apiId);
+    removeApiKeyConfig(apiId);
+    broadcastApiChange(apiId, 'remove');
+    toast.success(`Removed custom API integration`);
   }
+  
+  return updatedApis;
 };
 
-/**
- * Check if an API key is configured
- */
-export const isApiConfigured = async (type: ApiIntegrationType): Promise<boolean> => {
-  const key = await getApiKey(type);
-  return !!key;
-};
-
-/**
- * Remove an API key from Supabase
- */
-export const removeApiKey = async (type: ApiIntegrationType): Promise<boolean> => {
-  try {
-    // Check if user is authenticated
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      console.warn(`Cannot remove API key for ${type}: User not authenticated`);
-      return false;
-    }
-    
-    // Delete the entry
-    const { error } = await supabase
-      .from('api_integrations')
-      .delete()
-      .eq('user_id', userData.user.id)
-      .eq('api_type', type);
-    
-    if (error) {
-      console.error(`Error removing ${type} API key:`, error);
-      return false;
-    }
-    
-    // Remove from cache
-    delete apiKeysCache[type];
-    
-    return true;
-  } catch (error) {
-    console.error(`Error removing ${type} API key:`, error);
-    return false;
-  }
+// Export function that gets the API key for use in other parts of the app
+export const getApiKey = (service: string): string => {
+  return getConfigApiKey(service);
 };

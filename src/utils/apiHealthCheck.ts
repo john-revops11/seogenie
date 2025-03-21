@@ -1,16 +1,8 @@
-import { ApiStates, ApiHealth, ApiStatus } from "@/types/systemHealth";
-import { toast } from "sonner";
-import { API_CHANGE_EVENT } from "./apiIntegrationEvents";
-import { getApiKey } from "@/services/apiIntegrationService";
+import { ApiStates } from "@/types/systemHealth";
+import { getApiKey } from "@/services/keywords/apiConfig";
 import { isPineconeConfigured } from "@/services/vector/pineconeService";
-import { 
-  callDataForSeoApi, 
-  getDataForSEOUsageCost 
-} from "@/services/keywords/api/dataForSeo/dataForSeoClient";
 
-export const checkPineconeHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
-) => {
+export const checkPineconeHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
   try {
     setApiStates(prev => ({
       ...prev,
@@ -64,9 +56,7 @@ export const checkPineconeHealth = async (
   }
 };
 
-export const checkOpenAIHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
-) => {
+export const checkOpenAIHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
   try {
     setApiStates(prev => ({
       ...prev,
@@ -134,9 +124,7 @@ export const checkOpenAIHealth = async (
   }
 };
 
-export const checkGeminiHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
-) => {
+export const checkGeminiHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
   try {
     setApiStates(prev => ({
       ...prev,
@@ -212,82 +200,104 @@ export const checkGeminiHealth = async (
   }
 };
 
-export const checkDataForSeoHealth = async (
-  setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>
-) => {
-  setApiStates(prev => ({
-    ...prev,
-    dataForSeo: { ...prev.dataForSeo, status: "loading" }
-  }));
-  
+export const checkDataForSeoHealth = async (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
   try {
-    // First check if we have usage data - this is a more reliable check
-    const usageData = await getDataForSEOUsageCost();
+    setApiStates(prev => ({
+      ...prev,
+      dataForSeo: { status: "loading" }
+    }));
     
-    if (usageData) {
-      // If we have usage data, the connection is working
+    const dataForSeoApiKey = getApiKey("dataforseo");
+    console.log("Checking DataForSEO API health with key:", dataForSeoApiKey ? "Found key" : "No key found");
+    
+    if (!dataForSeoApiKey) {
+      console.log("DataForSEO API not configured");
       setApiStates(prev => ({
         ...prev,
         dataForSeo: { 
-          status: "success",
-          details: {
-            requestCount: usageData.requestCount,
-            totalCost: usageData.totalCost
-          }
+          status: "error", 
+          message: "DataForSEO API not configured" 
         }
       }));
-      
-      // Dispatch API change event
-      window.dispatchEvent(new CustomEvent(API_CHANGE_EVENT, {
-        detail: { apiId: "dataForSeo", action: "connected" }
-      }));
-      
       return;
     }
     
-    // If no usage data, try a simple API call to check connectivity
-    const testResult = await callDataForSeoApi('/v3/dataforseo_labs/google/related_keywords/live', [{ 
-      keyword: "seo",
-      location_code: 2840,
-      language_code: "en",
-      depth: 1,
-      limit: 1
-    }]);
+    // Parse credentials
+    let login, password;
     
-    if (testResult) {
+    // Check if credentials are in username:password format
+    if (dataForSeoApiKey.includes(':')) {
+      [login, password] = dataForSeoApiKey.split(':');
+      
+      if (!login || !password) {
+        console.log("Invalid DataForSEO credentials format");
+        setApiStates(prev => ({
+          ...prev,
+          dataForSeo: { 
+            status: "error", 
+            message: "Invalid format. Use: username:password" 
+          }
+        }));
+        return;
+      }
+    } else {
+      console.log("DataForSEO credentials not in username:password format");
       setApiStates(prev => ({
         ...prev,
-        dataForSeo: { status: "success" }
+        dataForSeo: { 
+          status: "error", 
+          message: "Invalid format. Use: username:password" 
+        }
       }));
+      return;
+    }
+    
+    const encodedCredentials = btoa(`${login}:${password}`);
+    console.log("Making request to DataForSEO API: locations endpoint");
+    
+    const response = await fetch("https://api.dataforseo.com/v3/merchant/google/locations", {
+      method: "GET",
+      headers: {
+        "Authorization": `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json"
+      }
+    });
+    
+    console.log(`DataForSEO API response status: ${response.status}`);
+    
+    if (response.ok) {
+      const responseData = await response.json();
+      console.log("DataForSEO connection successful", responseData);
       
-      // Dispatch API change event
-      window.dispatchEvent(new CustomEvent(API_CHANGE_EVENT, {
-        detail: { apiId: "dataForSeo", action: "connected" }
+      setApiStates(prev => ({
+        ...prev,
+        dataForSeo: { 
+          status: "success", 
+          message: "API connection verified",
+          details: {
+            username: login,
+            isActive: true
+          }
+        }
       }));
     } else {
-      throw new Error("Failed to connect to DataForSEO API");
+      const errorData = await response.json();
+      console.error("DataForSEO API error:", errorData);
+      throw new Error(`DataForSEO API returned ${response.status}: ${errorData?.message || "Unknown error"}`);
     }
   } catch (error) {
-    console.error("DataForSEO API check failed:", error);
-    
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+    console.error("Error testing DataForSEO connection:", error);
     setApiStates(prev => ({
       ...prev,
       dataForSeo: { 
         status: "error", 
-        message: errorMessage
+        message: error instanceof Error ? error.message : "Unknown error" 
       }
-    }));
-    
-    // Dispatch API change event
-    window.dispatchEvent(new CustomEvent(API_CHANGE_EVENT, {
-      detail: { apiId: "dataForSeo", action: "error" }
     }));
   }
 };
 
-export const checkOtherApis = (setApiStates: React.Dispatch<React.SetStateAction<ApiStates>>) => {
+export const checkOtherApis = (setApiStates: (callback: (prev: ApiStates) => ApiStates) => void) => {
   // Google Ads
   try {
     setApiStates(prev => ({

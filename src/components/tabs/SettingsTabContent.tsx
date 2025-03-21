@@ -7,7 +7,6 @@ import { Toggle } from "@/components/ui/toggle";
 import ContentTypeSelector from "@/components/content-generator/ContentTypeSelector";
 import ApiIntegrationManager from "@/components/ApiIntegrationManager";
 import { Separator } from "@/components/ui/separator";
-import DataForSeoUsageCard from "@/components/settings/DataForSeoUsageCard";
 
 interface SettingsTabContentProps {
   contentType: string;
@@ -119,15 +118,9 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
       
       <Separator />
       
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">API Integrations</h2>
-          <ApiIntegrationManager />
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">API Usage Statistics</h2>
-          <DataForSeoUsageCard />
-        </div>
+      <div>
+        <h2 className="text-xl font-semibold mb-4">API Integrations</h2>
+        <ApiIntegrationManager />
       </div>
     </div>
   );

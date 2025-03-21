@@ -28,7 +28,7 @@ export const analyzeDomains = async (
     
     // Get main domain keywords from DataForSEO
     let mainKeywords: KeywordData[] = [];
-    let useFallbackData = false;
+    let apiHadErrors = false;
     
     try {
       console.log(`Fetching keywords for main domain: ${formattedMainDomain}`);
@@ -69,16 +69,12 @@ export const analyzeDomains = async (
           toast.error(`DataForSEO API error: ${errorMessage}`, { id: "dataseo-error" });
         }
         
-        // Don't immediately use fallback data - ask user first
-        if (confirm(`Error fetching data from DataForSEO: ${errorMessage}. Would you like to use sample data instead?`)) {
-          useFallbackData = true;
-        } else {
-          return {
-            keywords: [],
-            success: false,
-            error: errorMessage
-          };
-        }
+        // Mark that we had API errors
+        apiHadErrors = true;
+        
+        // Use sample data instead of failing completely
+        mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
+        toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
       } else if (!data || !data.success) {
         // Extract error details for better error messages
         let errorMessage = data?.error || 'Unknown API error';
@@ -96,58 +92,40 @@ export const analyzeDomains = async (
           errorMessage = `Request to DataForSEO timed out. The service may be experiencing delays.`;
         }
         
-        // Don't immediately use fallback data - ask user first
-        if (confirm(`${errorMessage}. Would you like to use sample data instead?`)) {
-          useFallbackData = true;
-        } else {
-          return {
-            keywords: [],
-            success: false,
-            error: errorMessage
-          };
-        }
+        toast.warning(errorMessage);
+        apiHadErrors = true;
+        
+        // Use sample data instead of failing completely
+        mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
+        toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
       } else if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
         // Handle empty results case gracefully
-        toast.info(`No keywords found for ${formattedMainDomain}.`);
+        toast.info(`No keywords found for ${formattedMainDomain}. Using sample data instead.`);
         
-        // Check if we should use sample data
-        if (confirm(`No keywords found for ${formattedMainDomain}. Would you like to see sample data instead?`)) {
-          useFallbackData = true;
-        } else {
-          // Return empty result if user doesn't want sample data
-          return {
-            keywords: [],
-            success: true
-          };
-        }
+        // Use sample data for domains with no keywords
+        mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
+        toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
       } else {
         mainKeywords = data.results;
-        console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain from DataForSEO`);
-        toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain} from DataForSEO`);
+        console.log(`Successfully fetched ${mainKeywords.length} keywords for main domain`);
+        toast.success(`Found ${mainKeywords.length} keywords for ${formattedMainDomain}`);
       }
     } catch (error) {
       console.error(`Error fetching keywords for ${formattedMainDomain}:`, error);
       toast.error(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
-      // Ask user if they want to see sample data
-      if (confirm(`Failed to fetch data for ${formattedMainDomain}. Would you like to see sample data instead?`)) {
-        useFallbackData = true;
-      } else {
-        return {
-          keywords: [],
-          success: false,
-          error: 'API request failed and user declined to use sample data'
-        };
-      }
-    }
-    
-    // Use fallback data if needed
-    if (useFallbackData) {
-      mainKeywords = generateSampleKeywords(formattedMainDomain, 20);
+      // Use sample data as fallback
+      mainKeywords = generateSampleKeywords(formattedMainDomain, 15);
       toast.info("Using sample data for demonstration purposes", { id: "using-sample-data" });
+      apiHadErrors = true;
     }
     
-    // Process competitor domains if main domain was successful or using fallback data
+    // If we have no keywords for the main domain but didn't get an error, continue with an empty array
+    if (mainKeywords.length === 0) {
+      console.warn(`No keywords found for main domain ${formattedMainDomain}, continuing with empty array`);
+    }
+    
+    // Process competitor domains if main domain was successful or returned empty results
     const competitorResults = [];
     
     for (const domain of formattedCompetitorDomains) {
@@ -163,8 +141,8 @@ export const analyzeDomains = async (
       }
     }
     
-    // If we're using sample data, enhance with fake competitor data
-    if (useFallbackData) {
+    // If we're using sample data or API had errors, enhance with fake competitor data
+    if (shouldUseSampleData(mainKeywords, apiHadErrors)) {
       const normalizedCompetitors = competitorDomains.map(domain => 
         domain.replace(/^https?:\/\//, '').replace(/^www\./, '')
       );
@@ -178,14 +156,6 @@ export const analyzeDomains = async (
       competitorResults
     );
     
-    // Save the analysis results to Supabase
-    try {
-      await saveAnalysisResults(formattedMainDomain, formattedCompetitorDomains, mergedKeywords);
-    } catch (error) {
-      console.error("Failed to save analysis results:", error);
-      // Don't fail the whole process if saving fails
-    }
-    
     return {
       keywords: mergedKeywords,
       success: true
@@ -198,118 +168,5 @@ export const analyzeDomains = async (
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
-  }
-};
-
-// Save analysis results to Supabase
-export const saveAnalysisResults = async (
-  mainDomain: string,
-  competitorDomains: string[],
-  keywords: KeywordData[]
-) => {
-  try {
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-    
-    if (!userId) {
-      console.warn("Cannot save analysis results: User not authenticated");
-      return;
-    }
-    
-    const timestamp = new Date().toISOString();
-    const session_name = `${mainDomain} analysis - ${timestamp}`;
-    
-    // Insert analysis session
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('analysis_sessions')
-      .insert({
-        user_id: userId,
-        main_domain: mainDomain,
-        competitor_domains: competitorDomains,
-        session_name,
-        created_at: timestamp,
-        keywords_count: keywords.length,
-      })
-      .select('id')
-      .single();
-    
-    if (sessionError) {
-      console.error("Failed to save analysis session:", sessionError);
-      return;
-    }
-    
-    const sessionId = sessionData.id;
-    
-    // Save keywords data - we'll just save a sample for performance reasons
-    const keywordsSample = keywords.slice(0, 200); // Limit to 200 keywords
-    
-    const { error: keywordsError } = await supabase
-      .from('analysis_keywords')
-      .insert({
-        session_id: sessionId,
-        keywords_data: keywordsSample,
-      });
-    
-    if (keywordsError) {
-      console.error("Failed to save keywords data:", keywordsError);
-    } else {
-      console.log("Analysis results saved successfully");
-    }
-    
-  } catch (error) {
-    console.error("Error saving analysis results:", error);
-    throw error;
-  }
-};
-
-// Function to get saved analysis sessions
-export const getAnalysisSessions = async () => {
-  try {
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-    
-    if (!userId) {
-      console.warn("Cannot fetch analysis sessions: User not authenticated");
-      return [];
-    }
-    
-    const { data, error } = await supabase
-      .from('analysis_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error("Failed to fetch analysis sessions:", error);
-      return [];
-    }
-    
-    return data || [];
-    
-  } catch (error) {
-    console.error("Error fetching analysis sessions:", error);
-    return [];
-  }
-};
-
-// Function to get keywords for a specific session
-export const getSessionKeywords = async (sessionId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('analysis_keywords')
-      .select('keywords_data')
-      .eq('session_id', sessionId)
-      .single();
-    
-    if (error) {
-      console.error("Failed to fetch session keywords:", error);
-      return [];
-    }
-    
-    return data?.keywords_data || [];
-    
-  } catch (error) {
-    console.error("Error fetching session keywords:", error);
-    return [];
   }
 };

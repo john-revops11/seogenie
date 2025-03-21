@@ -41,38 +41,27 @@ export async function makeDataForSEORequest(
       const response = await fetch(url, options);
       clearTimeout(timeoutId);
       
-      // Log detailed information about the response
-      console.log(`DataForSEO API response status: ${response.status} ${response.statusText}`);
-      
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`DataForSEO API request failed with status ${response.status}: ${errorText}`);
         
-        // Handle specific error codes with more helpful messages
-        let errorMessage = `DataForSEO API request failed (${response.status} ${response.statusText})`;
-        
-        if (response.status === 401 || response.status === 403) {
-          errorMessage = 'Authentication failed. Please check your DataForSEO API credentials.';
-        } else if (response.status === 429) {
-          errorMessage = 'Rate limit exceeded. Too many requests to DataForSEO API.';
-        } else if (response.status === 404) {
+        // Handle specific error codes
+        if (response.status === 404) {
+          console.warn("Resource not found (404). This might be normal for some endpoints like backlinks for new domains.");
           // Special handling for backlinks endpoint which might return 404 for new domains
           if (endpoint.includes('backlinks')) {
-            console.warn("Resource not found (404). This might be normal for some endpoints like backlinks for new domains.");
             return {
               status_code: 20000,
               status_message: "No data found for this domain",
               tasks: [{
-                id: "empty_data",
-                status_code: 20000,
-                status_message: "No data available",
-                time: new Date().toISOString(),
                 result: []
               }]
             };
           }
         }
         
+        // Enhanced error message with more details
+        const errorMessage = `DataForSEO API request failed (${response.status} ${response.statusText})`;
         throw new Error(errorMessage);
       }
       
@@ -92,29 +81,18 @@ export async function makeDataForSEORequest(
           // If API returned an error response
           console.error(`API returned error code ${json.status_code}: ${json.status_message || 'Unknown error'}`);
           
-          // Provide more helpful error messages based on error codes
-          let errorMessage = json.status_message || 'API error';
-          
-          if (json.status_code === 40101) {
-            errorMessage = 'Invalid API credentials. Please check your DataForSEO username and password.';
-          } else if (json.status_code === 40001) {
-            errorMessage = 'Missing parameters in API request. This is likely a bug in the application.';
-          } else if (json.status_code === 50001) {
-            errorMessage = 'DataForSEO internal server error. Please try again later.';
-          }
-          
           // Create structured response - we'll handle this on the client
           return {
             status_code: json.status_code,
-            status_message: errorMessage,
+            status_message: json.status_message,
             error: true,
-            message: errorMessage
+            message: json.status_message || 'API error'
           };
         }
         
         return json;
       } catch (parseError) {
-        console.error(`Failed to parse DataForSEO response: ${text.substring(0, 500)}...`);
+        console.error(`Failed to parse DataForSEO response: ${text.substring(0, 100)}...`);
         throw new Error(`Failed to parse API response: ${parseError.message}`);
       }
     } catch (fetchError) {

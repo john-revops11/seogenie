@@ -1,6 +1,7 @@
 
 import { toast } from "sonner";
-import { ApiSource, KeywordGap, findKeywordGaps, findKeywordGapsWithDataForSEOIntersection } from "@/services/keywords/keywordGaps";
+import { KeywordGap } from "@/services/keywordService";
+import { findKeywordGaps, ApiSource, findKeywordGapsWithDataForSEOIntersection } from "@/services/keywords/keywordGaps";
 import { 
   keywordGapsCache, 
   getLocationNameByCode,
@@ -16,7 +17,7 @@ export function useKeywordGapApi() {
     domain: string,
     competitorDomains: string[],
     keywords: any[],
-    apiSource: ApiSource = 'dataforseo-intersection',
+    apiSource: ApiSource = 'sample',
     locationCode: number = 2840
   ): Promise<KeywordGap[] | null> => {
     try {
@@ -82,7 +83,7 @@ export function useKeywordGapApi() {
               validCompetitors, 
               keywords, 
               100, 
-              'dataforseo-live', // Fallback to DataForSEO Live API if intersection API fails
+              'sample', // Fallback to sample data if intersection API fails
               locationCode
             );
           }

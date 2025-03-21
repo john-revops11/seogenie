@@ -1,146 +1,205 @@
 
-import { toast } from "sonner";
+// DataForSEO API client service
+import { toast } from 'sonner';
+import { DataForSeoResponse } from '@/hooks/useDataForSeoClient'; 
 
-// Default DataForSEO credentials
-const DEFAULT_AUTH = "YXJtaW5AcmV2b2xvZ3lhbmFseXRpY3MuY29tOmFiNDAxNmRjOTMwMmI4Y2Y=";
+// DataForSEO credentials
+const username = "armin@revologyanalytics.com";
+const password = "ab4016dc9302b8cf";
 
-// Base DataForSEO API URL
-const API_BASE_URL = "https://api.dataforseo.com";
+export type DataForSEOEndpoint = 
+  | '/v3/dataforseo_labs/google/domain_rank_overview/live'
+  | '/v3/serp/google/organic/live/regular'
+  | '/v3/on_page/tasks_post'
+  | '/v3/backlinks/backlinks_overview/live'
+  | '/v3/keywords_data/google_ads/live/regular'
+  | '/v3/competitors_domain/google/organic/live/regular'
+  | '/v3/keywords_data/google_ads/keywords_for_site/live'
+  | '/v3/keywords_data/google/search_volume/live'
+  | '/v3/dataforseo_labs/google/domain_intersection/live'
+  | '/v3/dataforseo_labs/google/competitors_domain/live';
 
-// Interface for API responses
-interface ApiResponse<T> {
-  status_code: number;
-  status_message: string;
-  tasks: {
-    id: string;
-    status_code: number;
-    status_message: string;
-    result: T[];
-  }[];
-  error?: string;
-}
+// In-memory API response cache
+const apiCache: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_EXPIRATION = 5 * 60 * 1000; // 5 minutes
 
-/**
- * Generic function to call DataForSEO APIs
- */
-export const callDataForSeoApi = async <T>(
-  endpoint: string,
-  body: any[],
-  auth: string = DEFAULT_AUTH
-): Promise<ApiResponse<T> | null> => {
+export const callDataForSeoApi = async <T>(endpoint: DataForSEOEndpoint, data: any): Promise<T | null> => {
+  const credentials = btoa(`${username}:${password}`);
+  const url = `https://api.dataforseo.com${endpoint}`;
+  
+  // Create a cache key based on the endpoint and request data
+  const cacheKey = `${endpoint}_${JSON.stringify(data)}`;
+  
+  // Check if we have a valid cached response
+  const cachedItem = apiCache[cacheKey];
+  if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_EXPIRATION)) {
+    console.log(`Using cached DataForSEO API response for: ${endpoint}`);
+    return cachedItem.data as T;
+  }
+
   try {
-    console.log(`Making DataForSEO API request to ${endpoint}`);
+    console.log(`Calling DataForSEO API: ${endpoint}`);
     
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Basic ${auth}`
+        "Authorization": `Basic ${credentials}`
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(data)
     });
-    
+
+    // Special handling for backlinks API - create a fallback response for 404 errors
+    if (endpoint === '/v3/backlinks/backlinks_overview/live' && response.status === 404) {
+      console.log(`Backlink data not found for domain, creating fallback response`);
+      const target = data[0]?.target || "unknown";
+      
+      // Create a fallback response with zero values
+      const fallbackResponse = {
+        status_code: 200,
+        status_message: "No backlink data available for this domain",
+        tasks: [
+          {
+            id: "fallback",
+            status_code: 200,
+            status_message: "No data",
+            time: new Date().toISOString(),
+            result: [
+              {
+                target: target,
+                domain_rank: 0,
+                backlinks_count: 0,
+                referring_domains_count: 0
+              }
+            ]
+          }
+        ]
+      };
+      
+      // Cache the fallback response
+      apiCache[cacheKey] = {
+        data: fallbackResponse,
+        timestamp: Date.now()
+      };
+      
+      return fallbackResponse as T;
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`DataForSEO API error (${response.status}): ${errorText}`);
-      throw new Error(`API request failed with status ${response.status}`);
+      console.error(`DataForSEO API ${endpoint} responded with ${response.status}: ${errorText}`);
+      throw new Error(`API error (${response.status}): ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    
+    if (responseData.status_code !== 20000) {
+      throw new Error(`DataForSEO API error: ${responseData.status_message || 'Unknown error'}`);
     }
     
-    const data = await response.json();
+    // Cache the successful response
+    apiCache[cacheKey] = {
+      data: responseData,
+      timestamp: Date.now()
+    };
     
-    if (data.status_code !== 20000) {
-      console.error(`DataForSEO API error: ${data.status_message}`);
-      throw new Error(data.status_message || "Unknown API error");
-    }
-    
-    return data as ApiResponse<T>;
+    console.log("DataForSEO API response:", responseData);
+    return responseData as T;
   } catch (error) {
-    console.error(`Error calling DataForSEO API:`, error);
+    console.error(`Error calling DataForSEO API ${endpoint}:`, error);
+    
+    // Don't show toast for backlinks 404 error as we handle it gracefully
+    if (!(endpoint === '/v3/backlinks/backlinks_overview/live' && error instanceof Error && error.message.includes('404'))) {
+      toast.error(`API Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
     return null;
   }
 };
 
-/**
- * Fetch domain keywords from DataForSEO API
- */
-export const fetchDomainKeywords = async (
-  domain: string,
-  locationCode: number = 2840,
-  languageCode: string = "en",
-  limit: number = 500
-) => {
-  const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-  
-  return callDataForSeoApi(`/v3/dataforseo_labs/google/keywords_for_site/live`, [
-    {
-      target: cleanDomain,
-      location_code: locationCode,
-      language_code: languageCode,
-      include_serp_info: false,
-      include_subdomains: true,
-      ignore_synonyms: false,
-      include_clickstream_data: false,
-      limit: limit
-    }
-  ]);
+// Domain Analytics - this can provide most metrics in a single API call
+export const fetchDomainAnalytics = async (domain: string, locationCode: number = 2840): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_rank_overview/live', [{ 
+    target: domain,
+    location_code: locationCode,
+    language_code: "en",
+    ignore_synonyms: false
+  }]);
 };
 
-/**
- * Fetch domain analytics data
- */
-export const fetchDomainAnalytics = async (
-  domain: string,
-  locationCode: number = 2840
-) => {
-  const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-  
-  return callDataForSeoApi(`/v3/dataforseo_labs/google/domain_rank_overview/live`, [
+// Domain Keywords
+export const fetchDomainKeywords = async (domain: string): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/keywords_data/google_ads/keywords_for_site/live', [
     {
-      target: cleanDomain,
-      location_code: locationCode,
+      target: domain,
+      location_code: 2840,
       language_code: "en",
-      ignore_synonyms: false
+      sort_by: "relevance"
     }
   ]);
 };
 
-/**
- * Fetch backlink data for a domain
- */
-export const fetchBacklinkData = async (
-  domain: string
-) => {
-  const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-  
-  return callDataForSeoApi(`/v3/backlinks/summary/live`, [
-    {
-      target: cleanDomain,
-      limit: 10
-    }
-  ]);
+// Backlinks Analytics
+export const fetchBacklinkData = async (domain: string): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/backlinks/backlinks_overview/live', [{ 
+    target: domain,
+    limit: 10
+  }]);
 };
 
-/**
- * Fetch domain intersection data for keyword gaps
- */
+// Domain Intersection for Keyword Gaps
 export const fetchDomainIntersection = async (
-  target1Domain: string,
+  target1Domain: string, 
   target2Domain: string,
   locationCode: number = 2840
-) => {
-  const cleanTarget1 = target1Domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-  const cleanTarget2 = target2Domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+): Promise<DataForSeoResponse | null> => {
+  console.log(`DataForSEO Intersection - Target1: ${target1Domain}, Target2: ${target2Domain}, Location: ${locationCode}`);
   
-  return callDataForSeoApi(`/v3/dataforseo_labs/google/domain_intersection/live`, [
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/domain_intersection/live', [{ 
+    target1: target1Domain,
+    target2: target2Domain,
+    location_code: locationCode,
+    language_code: "en",
+    include_serp_info: true,
+    include_clickstream_data: false,
+    intersections: true,
+    item_types: ["organic", "paid", "featured_snippet"],
+    limit: 100
+  }]);
+};
+
+// Keyword Search Volume - used for bulk keyword data
+export const fetchKeywordVolume = async (keywords: string[]): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/keywords_data/google/search_volume/live', [
     {
-      target1: cleanTarget1,
-      target2: cleanTarget2,
-      location_code: locationCode,
       language_code: "en",
-      include_serp_info: true,
-      intersections: true,
-      item_types: ["organic"],
-      limit: 100
+      location_code: 2840,
+      keywords
     }
   ]);
+};
+
+// Competitors Domain - new function for the competitors feature
+export const fetchCompetitorsDomain = async (
+  targetDomain: string,
+  locationCode: number = 2840,
+  limit: number = 10
+): Promise<DataForSeoResponse | null> => {
+  return callDataForSeoApi<DataForSeoResponse>('/v3/dataforseo_labs/google/competitors_domain/live', [{ 
+    target: targetDomain,
+    location_code: locationCode,
+    language_code: "en",
+    exclude_top_domains: false,
+    ignore_synonyms: false,
+    include_clickstream_data: false,
+    item_types: ["organic", "paid"],
+    limit: limit,
+    order_by: ["sum_position,desc"]
+  }]);
+};
+
+// Clear API cache
+export const clearApiCache = (): void => {
+  Object.keys(apiCache).forEach(key => delete apiCache[key]);
+  console.log("DataForSEO API cache cleared");
 };

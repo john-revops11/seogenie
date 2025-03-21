@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,7 +63,15 @@ const App = () => {
                 </Layout>
               </ProtectedRoute>
             } />
-            {/* Main tabs routes */}
+            {/* Content route */}
+            <Route path="/content" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ContentGenerator domain="" />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            {/* Add routes for the other main tabs */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Layout>
@@ -73,13 +82,6 @@ const App = () => {
             <Route path="/domain-analysis" element={
               <ProtectedRoute>
                 <Layout>
-                  <Index />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/content" element={
-              <ProtectedRoute>
-                <Layout>
                   <ContentGenerator domain="" />
                 </Layout>
               </ProtectedRoute>
@@ -87,21 +89,21 @@ const App = () => {
             <Route path="/position-tracking" element={
               <ProtectedRoute>
                 <Layout>
-                  <Index />
+                  <ContentGenerator domain="" />
                 </Layout>
               </ProtectedRoute>
             } />
             <Route path="/history" element={
               <ProtectedRoute>
                 <Layout>
-                  <Index />
+                  <ContentGenerator domain="" />
                 </Layout>
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Layout>
-                  <Index />
+                  <ContentGenerator domain="" />
                 </Layout>
               </ProtectedRoute>
             } />
