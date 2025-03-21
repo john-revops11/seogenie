@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { KeywordGap } from "@/services/keywordService";
+import { KeywordGap } from "@/services/keywords/keywordGaps";
 import { useKeywordGaps } from "@/hooks/useKeywordGaps";
 import { 
   keywordGapsCache, 

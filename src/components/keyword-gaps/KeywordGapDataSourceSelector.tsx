@@ -25,24 +25,18 @@ export function KeywordGapDataSourceSelector({
         value={value}
         onValueChange={(val) => onChange(val as ApiSource)}
       >
-        <SelectTrigger className="h-8 w-[160px]">
+        <SelectTrigger className="h-8 w-[200px]">
           <SelectValue placeholder="Select source" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="dataforseo-intersection">
-            DataForSEO Intersection
+            DataForSEO Domain Intersection
           </SelectItem>
           <SelectItem value="dataforseo-live">
-            DataForSEO Live
+            DataForSEO Live API
           </SelectItem>
-          <SelectItem value="dataforseo-task">
-            DataForSEO Task
-          </SelectItem>
-          <SelectItem value="semrush">
-            SEMrush API
-          </SelectItem>
-          <SelectItem value="sample">
-            Sample Data
+          <SelectItem value="ai-generated">
+            AI-Generated Gap Analysis
           </SelectItem>
         </SelectContent>
       </Select>
@@ -57,11 +51,9 @@ export function KeywordGapDataSourceSelector({
           <p className="text-sm">
             Select the data source for keyword gap analysis:
             <ul className="mt-2 list-disc pl-4 space-y-1">
-              <li><strong>DataForSEO Intersection:</strong> Uses domain intersection API for direct competitor keyword comparison.</li>
-              <li><strong>DataForSEO Live:</strong> Uses real-time SERP data from DataForSEO.</li>
-              <li><strong>DataForSEO Task:</strong> Creates a background task for in-depth analysis.</li>
-              <li><strong>SEMrush API:</strong> Uses SEMrush API (requires configuration).</li>
-              <li><strong>Sample Data:</strong> Provides sample data for testing.</li>
+              <li><strong>DataForSEO Domain Intersection:</strong> Most accurate method that directly compares domains to find keyword gaps using DataForSEO's specialized API.</li>
+              <li><strong>DataForSEO Live API:</strong> Uses real-time keyword data from DataForSEO for all domains and analyzes the differences.</li>
+              <li><strong>AI-Generated Gap Analysis:</strong> Uses AI algorithms to analyze existing keyword data and identify potential gaps and opportunities.</li>
             </ul>
           </p>
         </TooltipContent>

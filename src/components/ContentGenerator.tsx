@@ -1,7 +1,8 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import ContentGeneratorContainer from "./content-generator/ContentGeneratorContainer";
 import { useContentHistory } from "@/hooks/content-generator/useContentHistory";
+import { useNavigate } from "react-router-dom";
 
 interface ContentGeneratorProps {
   domain: string;
@@ -15,10 +16,10 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({
   initialTitle = ""
 }) => {
   const { saveToHistory } = useContentHistory();
-
-  // Make sure the saveToHistory function is available to ContentGeneratorContainer
+  const navigate = useNavigate();
+  
   return (
-    <div className="w-full">
+    <div className="w-full px-4 py-6 space-y-6">
       <ContentGeneratorContainer 
         domain={domain}
         selectedKeywords={selectedKeywords}

@@ -27,9 +27,10 @@ export function useAnalysisActions(
     setMainDomain("");
     setCompetitorDomains([""]);
     
+    // Only remove the domain analysis data from localStorage
     localStorage.removeItem('seoAnalysisData');
     
-    toast.success("Analysis data has been reset");
+    toast.success("Domain analysis data has been reset");
   };
 
   const handleAnalyze = async () => {
@@ -63,7 +64,7 @@ export function useAnalysisActions(
     console.info("Analyzing domains:", formattedMainDomain, formattedCompetitorDomains);
     
     try {
-      // Set progress indicators manually
+      // Set progress indicators manually to show activity
       setTimeout(() => setProgress(30), 500);
       setTimeout(() => setProgress(60), 1500);
       
@@ -73,6 +74,18 @@ export function useAnalysisActions(
         const keywords = Array.isArray(result.keywords) ? result.keywords : [];
         setKeywordData(keywords);
         setProgress(100);
+        
+        // Save to localStorage for persistence
+        try {
+          localStorage.setItem('seoAnalysisData', JSON.stringify({
+            mainDomain: formattedMainDomain,
+            competitorDomains: formattedCompetitorDomains,
+            keywordData: keywords,
+            timestamp: new Date().toISOString()
+          }));
+        } catch (storageError) {
+          console.warn("Failed to save analysis data to localStorage:", storageError);
+        }
         
         setTimeout(() => {
           setIsAnalyzing(false);

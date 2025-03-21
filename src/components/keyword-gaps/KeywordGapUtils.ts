@@ -1,5 +1,4 @@
-
-import { KeywordGap } from "@/services/keywordService";
+import { KeywordGap } from "@/services/keywords/keywordGaps";
 
 // Cache object for keyword gaps data
 export const keywordGapsCache: {
@@ -23,7 +22,7 @@ export const keywordGapsCache: {
   itemsPerPage: 10,
   filterCompetitor: "all",
   locationCode: 2840,
-  apiSource: "sample",
+  apiSource: "dataforseo-intersection",
   selectedKeywords: [],
   page: 1
 };
@@ -102,8 +101,10 @@ export const getUniqueCompetitors = (keywordGaps: KeywordGap[]): string[] => {
   
   const competitors = new Set<string>();
   keywordGaps.forEach(gap => {
-    if (gap.competitor) {
-      competitors.add(gap.competitor);
+    if (gap.competitors && gap.competitors.length > 0) {
+      gap.competitors.forEach(comp => {
+        competitors.add(comp);
+      });
     }
   });
   
@@ -156,5 +157,3 @@ export const categorizeKeywordIntent = (
   // Default fallback
   return 'informational';
 };
-
-// Export additional utility functions as needed
